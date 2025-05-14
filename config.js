@@ -1,14 +1,12 @@
-const path = require("node:path");
-
 const CONFIG = {
   webviews: {
-    prismatic: {
+    settings: {
       command: "prismatic.settings",
-      entryPoint: "src/views/prismatic/index.tsx",
-      outdir: "dist/prismaticView",
-      scriptPath: "dist/prismaticView/index.js",
-      title: "Prismatic",
-      viewType: "prismatic.webview",
+      entryPoint: "src/views/settings/index.tsx",
+      outdir: "dist/settingsView",
+      scriptPath: "dist/settingsView/index.js",
+      title: "Settings",
+      viewType: "settings.webview",
     },
     executionResults: {
       command: "prismatic.executionResults",
@@ -27,10 +25,6 @@ const CONFIG = {
       viewType: "configWizard.webview",
     },
   },
-  // Add other configuration sections here
-  // build: { ... },
-  // paths: { ... },
-  // etc.
 };
 
 module.exports = { CONFIG };

@@ -16,12 +16,27 @@
     "commands": [
       {
         "command": "prismatic.configWizard",
-        "title": "Open Configuration Wizard",
+        "title": "Configuration Wizard",
         "category": "Prismatic"
       },
       {
-        "command": "prismatic.test",
-        "title": "Test Extension",
+        "command": "prismatic.me",
+        "title": "Me",
+        "category": "Prismatic"
+      },
+      {
+        "command": "prismatic.me:token",
+        "title": "Refresh Token",
+        "category": "Prismatic"
+      },
+      {
+        "command": "prismatic.login",
+        "title": "Login",
+        "category": "Prismatic"
+      },
+      {
+        "command": "prismatic.logout",
+        "title": "Logout",
         "category": "Prismatic"
       }
     ],
@@ -29,7 +44,7 @@
       "prismatic": [
         {
           "type": "webview",
-          "id": "prismatic.webview",
+          "id": "settings.webview",
           "name": "Prismatic"
         }
       ],
@@ -73,7 +88,8 @@
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "styled-components": "^6.1.17"
+    "styled-components": "^6.1.17",
+    "@prismatic-io/prism": "7.5.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.4.2",

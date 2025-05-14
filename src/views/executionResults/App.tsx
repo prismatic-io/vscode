@@ -8,22 +8,11 @@ import {
   Button,
 } from "@/views/executionResults/styles";
 import { ThemeProvider } from "@/theme/ThemeProvider";
-import type { ExecutionResultsDummyMessage } from "@/views/executionResults/types";
+import type { ExecutionResultsExampleMessage } from "@/views/executionResults/typeDefs";
 
 const App: React.FC = () => {
-  const {
-    state: message,
-    postMessage,
-    lastReceived,
-    hasReceivedMessages,
-  } = useWebviewMessage<ExecutionResultsDummyMessage>(
-    "executionResults.dummy",
-    "This is to display execution results."
-  );
-
-  const handleSendMessage = () => {
-    postMessage("Hello from Execution Results!");
-  };
+  const { message, postMessage, lastReceived, hasReceivedMessages } =
+    useWebviewMessage("executionResults.example");
 
   return (
     <ThemeProvider>
@@ -35,7 +24,11 @@ const App: React.FC = () => {
             <p>Last message received: {lastReceived?.toLocaleTimeString()}</p>
           )}
         </LastMessage>
-        <Button onClick={handleSendMessage}>Send Message to VS Code</Button>
+        <Button
+          onClick={() => postMessage("Post an example message successfully")}
+        >
+          Send Example Message to VS Code
+        </Button>
       </Container>
     </ThemeProvider>
   );

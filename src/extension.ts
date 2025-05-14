@@ -1,20 +1,27 @@
 import * as vscode from "vscode";
-import { StateManager } from "@/utils/stateManager";
-import { createPrismaticViewProvider } from "@/views/prismatic/PrismaticViewProvider";
-import { createExecutionResultsViewProvider } from "@/views/executionResults/ExecutionResultsViewProvider";
-import { createConfigWizardPanel } from "@/views/configWizard/ConfigWizardViewProvider";
+import { StateManager } from "@/lib/StateManager";
+import { createSettingsViewProvider } from "@/views/settings/ViewProvider";
+import { createExecutionResultsViewProvider } from "@/views/executionResults/ViewProvider";
+import { createConfigWizardPanel } from "@/views/configWizard/ViewProvider";
+import { PrismCLI } from "@/lib/PrismCLI";
+import { TokenManager } from "@/lib/TokenManager";
 
 // disposables
-let prismaticViewProvider: vscode.Disposable | undefined;
+let settingsViewProvider: vscode.Disposable | undefined;
 let executionResultsViewProvider: vscode.Disposable | undefined;
 let configWizardPanel: vscode.Disposable | undefined;
 let outputChannel: vscode.OutputChannel;
+let tokenManager: TokenManager;
+let stateManager: StateManager;
+let prismCLI: PrismCLI;
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
   try {
+    // note: create output channel
     outputChannel = vscode.window.createOutputChannel("Prismatic Debug");
+    context.subscriptions.push(outputChannel);
 
-    // force show the output channel. brings it to the front
+    // note: force show the output channel, bring to the front with internal info
     outputChannel.show(true);
     outputChannel.appendLine("Starting extension activation...");
     outputChannel.appendLine(
@@ -26,29 +33,155 @@ export function activate(context: vscode.ExtensionContext) {
     - logUri: ${context.logUri}
     `);
 
-    outputChannel.appendLine("Initializing state manager...");
-    StateManager.initialize(context);
+    // note: initialize state manager
+    outputChannel.appendLine("Initializing State Manager...");
+    stateManager = await StateManager.initialize(context);
 
+    // note: initialize Token Manager
+    outputChannel.appendLine("Initializing Token Manager...");
+    tokenManager = TokenManager.getInstance();
+
+    // note: initialize Prism CLI
+    outputChannel.appendLine("Initializing Prism CLI...");
+    prismCLI = PrismCLI.getInstance();
+
+    try {
+      if (!(await prismCLI.isLoggedIn())) {
+        const loginAction = "Login to Prismatic";
+        const response = await vscode.window.showInformationMessage(
+          "You need to login to Prismatic to continue.",
+          { modal: true },
+          loginAction
+        );
+
+        if (response !== loginAction) {
+          throw new Error("Login required to continue");
+        }
+
+        outputChannel.appendLine("Starting Prismatic login process...");
+        await prismCLI.login();
+        outputChannel.appendLine("Login successful!");
+      }
+
+      outputChannel.appendLine("Initializing Prismatic tokens...");
+      await tokenManager.initializeTokens();
+      outputChannel.appendLine("Successfully initialized Prismatic tokens!");
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      outputChannel.appendLine(
+        `Failed to initialize Prismatic: ${errorMessage}`
+      );
+
+      if (errorMessage.includes("not properly installed")) {
+        vscode.window.showErrorMessage(
+          "Prismatic CLI is not properly installed. Please ensure @prismatic-io/prism is installed in your project dependencies."
+        );
+      }
+
+      if (errorMessage.includes("Login required")) {
+        vscode.window.showErrorMessage(
+          "Login to Prismatic is required to use this extension."
+        );
+      }
+    }
+
+    // note: register views
     outputChannel.appendLine("Registering views...");
-    prismaticViewProvider = createPrismaticViewProvider(context);
-    executionResultsViewProvider = createExecutionResultsViewProvider(context);
-    configWizardPanel = createConfigWizardPanel(context);
 
-    outputChannel.appendLine("Adding to subscriptions...");
-    context.subscriptions.push(outputChannel);
-    context.subscriptions.push(prismaticViewProvider);
+    settingsViewProvider = createSettingsViewProvider(context);
+    context.subscriptions.push(settingsViewProvider);
+
+    executionResultsViewProvider = createExecutionResultsViewProvider(context);
     context.subscriptions.push(executionResultsViewProvider);
+
+    configWizardPanel = createConfigWizardPanel(context);
     context.subscriptions.push(configWizardPanel);
 
-    const testCommand = vscode.commands.registerCommand(
-      "prismatic.test",
-      () => {
-        vscode.window.showInformationMessage("Prismatic extension is active!");
-        outputChannel.appendLine("Test command executed");
+    // command: prism me
+    const prismMeCommand = vscode.commands.registerCommand(
+      "prismatic.me",
+      async () => {
+        try {
+          const user = await prismCLI.me();
+
+          vscode.window.showInformationMessage(user);
+          outputChannel.appendLine(`\n${user}`);
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+
+          vscode.window.showErrorMessage(errorMessage);
+          outputChannel.appendLine(errorMessage);
+        }
       }
     );
+    context.subscriptions.push(prismMeCommand);
 
-    context.subscriptions.push(testCommand);
+    // command: prism login
+    const prismLoginCommand = vscode.commands.registerCommand(
+      "prismatic.login",
+      async () => {
+        try {
+          const result = await prismCLI.login();
+          await tokenManager.initializeTokens();
+
+          vscode.window.showInformationMessage(result);
+          outputChannel.appendLine(result);
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+
+          vscode.window.showErrorMessage(errorMessage);
+          outputChannel.appendLine(errorMessage);
+        }
+      }
+    );
+    context.subscriptions.push(prismLoginCommand);
+
+    // command: prism logout
+    const prismLogoutCommand = vscode.commands.registerCommand(
+      "prismatic.logout",
+      async () => {
+        try {
+          const result = await prismCLI.logout();
+          await tokenManager.clearTokens();
+
+          vscode.window.showInformationMessage(result);
+          outputChannel.appendLine(result);
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+
+          vscode.window.showErrorMessage(errorMessage);
+          outputChannel.appendLine(errorMessage);
+        }
+      }
+    );
+    context.subscriptions.push(prismLogoutCommand);
+
+    // command: prism me token
+    const prismMeTokenCommand = vscode.commands.registerCommand(
+      "prismatic.me:token",
+      async () => {
+        try {
+          await tokenManager.refreshAccessToken();
+
+          vscode.window.showInformationMessage(
+            "Successfully refreshed Prismatic token!"
+          );
+          outputChannel.appendLine("Successfully refreshed Prismatic token!");
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+
+          vscode.window.showErrorMessage(errorMessage);
+          outputChannel.appendLine(errorMessage);
+        }
+      }
+    );
+    context.subscriptions.push(prismMeTokenCommand);
 
     outputChannel.appendLine("Extension initialization complete!");
   } catch (error) {
@@ -58,21 +191,32 @@ export function activate(context: vscode.ExtensionContext) {
       outputChannel.appendLine(`ERROR during activation: ${error}`);
     }
 
-    // re-throw to make sure VS Code sees the error
+    // note: re-throw to make sure VS Code sees the error
     throw error;
   }
 }
 
-export function deactivate() {
+export async function deactivate() {
   try {
     outputChannel?.appendLine(
       `Extension deactivated at: ${new Date().toISOString()}`
     );
 
-    prismaticViewProvider?.dispose();
+    // note: dispose of token manager
+    await tokenManager.dispose();
+
+    // note: dispose of state manager
+    await stateManager.dispose();
+
+    // note: dispose of prism CLI
+    prismCLI.dispose();
+
+    // note: dispose of views
+    settingsViewProvider?.dispose();
     executionResultsViewProvider?.dispose();
     configWizardPanel?.dispose();
-    StateManager.dispose();
+
+    // note: dispose of output channel
     outputChannel?.dispose();
   } catch (error) {
     console.error("Deactivation error:", error);
