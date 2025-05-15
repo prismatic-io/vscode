@@ -5,6 +5,7 @@ import { createExecutionResultsViewProvider } from "@/views/executionResults/Vie
 import { createConfigWizardPanel } from "@/views/configWizard/ViewProvider";
 import { PrismCLI } from "@/lib/PrismCLI";
 import { TokenManager } from "@/lib/TokenManager";
+import { executeProjectNpmScript } from "@/lib/executeProjectNpmScript";
 
 // disposables
 let settingsViewProvider: vscode.Disposable | undefined;
@@ -182,6 +183,51 @@ export async function activate(context: vscode.ExtensionContext) {
       }
     );
     context.subscriptions.push(prismMeTokenCommand);
+
+    // command: prism integration import
+    const prismIntegrationImportCommand = vscode.commands.registerCommand(
+      "prismatic.integration.import",
+      async () => {
+        outputChannel.appendLine("Starting integration import process...");
+
+        try {
+          // note: build the project
+          const { stdout: buildStdout, stderr: buildStderr } =
+            await executeProjectNpmScript("build");
+
+          if (buildStderr) {
+            outputChannel.appendLine(`Build warnings/errors: ${buildStderr}`);
+          }
+
+          // note: log the build output
+          outputChannel.appendLine("Project build completed successfully!");
+          outputChannel.appendLine(buildStdout);
+
+          // note: import the integration
+          const integrationId = await prismCLI.integrationImport();
+
+          stateManager.updateWorkspaceState("settings", { integrationId });
+
+          // note: show the result
+          vscode.window.showInformationMessage(
+            `Integration imported successfully! ID: ${integrationId}`
+          );
+          outputChannel.appendLine(
+            `Integration imported successfully! ID: ${integrationId}`
+          );
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          outputChannel.appendLine(
+            `Error during integration import: ${errorMessage}`
+          );
+          vscode.window.showErrorMessage(
+            `Failed to import integration: ${errorMessage}`
+          );
+        }
+      }
+    );
+    context.subscriptions.push(prismIntegrationImportCommand);
 
     outputChannel.appendLine("Extension initialization complete!");
   } catch (error) {

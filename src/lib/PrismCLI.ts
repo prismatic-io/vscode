@@ -44,11 +44,13 @@ export class PrismCLI {
   /**
    * Executes a Prismatic CLI command.
    * @param {string} command - The command to execute
+   * @param {boolean} fromWorkspace - Whether to execute the command from the workspace
    * @returns {Promise<{stdout: string, stderr: string}>} A promise that resolves to an object containing stdout and stderr
    * @throws {Error} If CLI is not installed or command execution fails
    */
   public async executeCommand(
-    command: string
+    command: string,
+    fromWorkspace = false
   ): Promise<{ stdout: string; stderr: string }> {
     const isInstalled = await this.checkCLIInstallation();
 
@@ -58,9 +60,14 @@ export class PrismCLI {
       );
     }
 
+    const cwd = fromWorkspace
+      ? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
+      : undefined;
+
     try {
       const { stdout, stderr } = await execAsync(
-        `node "${this.prismPath}" ${command}`
+        `node "${this.prismPath}" ${command}`,
+        { cwd }
       );
 
       return { stdout, stderr };
@@ -180,6 +187,16 @@ export class PrismCLI {
    */
   public async version(): Promise<string> {
     const { stdout } = await this.executeCommand("--version");
+
+    return stdout.trim();
+  }
+
+  /**
+   * Imports an integration into Prismatic from the current project.
+   * @returns {Promise<string>} A promise that resolves to the integration ID
+   */
+  public async integrationImport(): Promise<string> {
+    const { stdout } = await this.executeCommand("integrations:import", true);
 
     return stdout.trim();
   }
