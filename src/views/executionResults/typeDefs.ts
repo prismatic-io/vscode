@@ -1,5 +1,12 @@
-export interface ExecutionResultsDummyMessage {
-  type: "executionResults.dummy";
+export interface ExecutionResultsState {
+  dummy: string;
+  filters: {
+    type: string;
+  };
+}
+
+export interface ExecutionResultsExampleMessage {
+  type: "executionResults.example";
   payload: string;
 }
 
@@ -12,5 +19,5 @@ export interface ExecutionResultsErrorMessage {
 }
 
 export type ExecutionResultsMessage =
-  | ExecutionResultsDummyMessage
+  | ExecutionResultsExampleMessage
   | ExecutionResultsErrorMessage;

@@ -6,46 +6,39 @@ import {
   Message,
   LastMessage,
   Button,
-} from "@/views/prismatic/styles";
+} from "@/views/settings/styles";
 import { ThemeProvider } from "@/theme/ThemeProvider";
-import type { PrismaticDummyMessage } from "@/views/prismatic/types";
+import type { SettingsExampleMessage } from "@/views/settings/typeDefs";
 import { useVSCodeState } from "@/hooks/useVSCodeState";
+import { useEffect } from "react";
 
 const App: React.FC = () => {
   const { state, updateState } = useVSCodeState({
-    key: "mySetting",
+    key: "accessToken",
     scope: "global",
-    initialValue: "default",
   });
 
-  const {
-    state: message,
-    postMessage,
-    lastReceived,
-    hasReceivedMessages,
-  } = useWebviewMessage<PrismaticDummyMessage>(
-    "prismatic.dummy",
-    "This is to configure prismatic settings."
-  );
-
-  const handleSendMessage = () => {
-    postMessage("Hello from React!");
-  };
+  const { message, postMessage, lastReceived, hasReceivedMessages } =
+    useWebviewMessage("settings.example");
 
   return (
     <ThemeProvider>
       <Container>
-        <Title>Welcome to Prismatic</Title>
+        <Title>Settings</Title>
         <Message>{message}</Message>
         <LastMessage>
           {hasReceivedMessages && (
             <p>Last message received: {lastReceived?.toLocaleTimeString()}</p>
           )}
         </LastMessage>
-        <Button onClick={handleSendMessage}>Send Message to VS Code</Button>
-        <p>Current value: {state}</p>
-        <button onClick={() => updateState("new value")} type="button">
-          Update State
+        <Button
+          onClick={() => postMessage("Post an example message successfully")}
+        >
+          Send Example Message to VS Code
+        </Button>
+        <p>Token: {state}</p>
+        <button onClick={() => updateState("example value")} type="button">
+          Update Token
         </button>
       </Container>
     </ThemeProvider>

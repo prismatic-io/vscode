@@ -1,5 +1,9 @@
-export interface ConfigWizardDummyMessage {
-  type: "configWizard.dummy";
+export interface ConfigWizardState {
+  dummy: string;
+}
+
+export interface ConfigWizardExampleMessage {
+  type: "configWizard.example";
   payload: string;
 }
 
@@ -11,15 +15,6 @@ export interface ConfigWizardErrorMessage {
   };
 }
 
-export interface ConfigWizardCompleteMessage {
-  type: "configWizard.complete";
-  payload: {
-    success: boolean;
-    message?: string;
-  };
-}
-
 export type ConfigWizardMessage =
-  | ConfigWizardDummyMessage
-  | ConfigWizardErrorMessage
-  | ConfigWizardCompleteMessage;
+  | ConfigWizardExampleMessage
+  | ConfigWizardErrorMessage;

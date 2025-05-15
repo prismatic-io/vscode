@@ -1,32 +1,65 @@
 import { useCallback, useState, useEffect } from "react";
-import type { WebviewMessage, StateChangeMessage } from "@typeDefs/messages";
-import { MessageHandler } from "@utils/messageHandler";
+import type { StateChangeMessage, MessageType } from "@typeDefs/messages";
+import type { GlobalState, WorkspaceState } from "@typeDefs/state";
+import { MessageHandler } from "@/lib/MessageHandler";
 
 const messageHandler = new MessageHandler();
 
-export function useVSCodeState<T>(options: {
-  key: string;
-  scope: "global" | "workspace";
-  initialValue?: T;
-}) {
-  const [state, setState] = useState<T | undefined>(options.initialValue);
+type StateValue<T> = T extends "global"
+  ? GlobalState[keyof GlobalState]
+  : WorkspaceState[keyof WorkspaceState];
+
+interface StateOptions<T extends "global" | "workspace"> {
+  key: T extends "global" ? keyof GlobalState : keyof WorkspaceState;
+  scope: T;
+  initialValue?: StateValue<T>;
+}
+
+export function useVSCodeState<T extends "global" | "workspace">(
+  options: StateOptions<T>
+) {
+  const [state, setState] = useState<StateValue<T> | undefined>(
+    options.initialValue
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Function to send state change message to VS Code
-  const updateState = useCallback(
-    (newValue: T) => {
-      const message: StateChangeMessage = {
-        type: "stateChange",
-        payload: {
-          scope: options.scope,
-          key: options.key,
-          value: newValue,
-        },
-      };
+  // note: get initial state
+  useEffect(() => {
+    messageHandler.postMessage({
+      type: "getState",
+      payload:
+        options.scope === "global"
+          ? {
+              scope: "global",
+              key: options.key as keyof GlobalState,
+            }
+          : {
+              scope: "workspace",
+              key: options.key as keyof WorkspaceState,
+            },
+    });
+  }, [options.key, options.scope]);
 
+  // note: update state
+  const updateState = useCallback(
+    (newValue: StateValue<T>) => {
       try {
-        messageHandler.postMessage(message);
+        messageHandler.postMessage({
+          type: "stateChange",
+          payload:
+            options.scope === "global"
+              ? {
+                  scope: "global",
+                  key: options.key as keyof GlobalState,
+                  value: newValue as GlobalState[keyof GlobalState],
+                }
+              : {
+                  scope: "workspace",
+                  key: options.key as keyof WorkspaceState,
+                  value: newValue as WorkspaceState[keyof WorkspaceState],
+                },
+        });
         setState(newValue);
         setError(null);
       } catch (err) {
@@ -39,24 +72,29 @@ export function useVSCodeState<T>(options: {
     [options.key, options.scope]
   );
 
-  // Listen for state changes from VS Code
   useEffect(() => {
-    const handleMessage = (message: WebviewMessage) => {
-      if (
-        message.type === "stateChange" &&
-        (message as StateChangeMessage).payload.scope === options.scope &&
-        (message as StateChangeMessage).payload.key === options.key
-      ) {
-        const newValue = (message as StateChangeMessage).payload.value as T;
+    const handleMessage = (message: MessageType) => {
+      if (message.type === "stateChange" || message.type === "getState") {
+        if (
+          message.payload.scope === options.scope &&
+          message.payload.key === options.key
+        ) {
+          const newValue = message.payload.value as StateValue<T>;
 
-        setState(newValue);
-        setIsLoading(false);
-        setError(null);
+          setState(newValue);
+          setIsLoading(false);
+          setError(null);
+        }
       }
     };
 
     messageHandler.on("stateChange", handleMessage);
-    return () => messageHandler.off("stateChange", handleMessage);
+    messageHandler.on("getState", handleMessage);
+
+    return () => {
+      messageHandler.off("stateChange", handleMessage);
+      messageHandler.off("getState", handleMessage);
+    };
   }, [options.key, options.scope]);
 
   return {
@@ -64,5 +102,5 @@ export function useVSCodeState<T>(options: {
     updateState,
     isLoading,
     error,
-  };
+  } as const;
 }

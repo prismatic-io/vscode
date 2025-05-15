@@ -1,27 +1,51 @@
-import type { PrismaticMessage } from "@/views/prismatic/types";
-import type { ExecutionResultsMessage } from "@/views/executionResults/types";
+import type { WorkspaceState, GlobalState } from "@/typeDefs/state";
 import type { ConfigWizardMessage } from "@/views/configWizard/types";
+import type { ExecutionResultsMessage } from "@/views/executionResults/typeDefs";
+import type { SettingsMessage } from "@/views/settings/typeDefs";
 
-// Base message interface for all communication between webview and VS Code
-export interface WebviewMessage {
-  type: string;
-  payload: unknown;
-}
+export type MessageHandler = (message: MessageType) => void;
 
-// Message type for state changes between webview and VS Code
-export interface StateChangeMessage extends WebviewMessage {
+export interface StateChangeMessage {
   type: "stateChange";
-  payload: {
-    scope: "global" | "workspace";
-    key: string;
-    value: unknown;
-  };
+  payload:
+    | {
+        scope: "global";
+        key: keyof GlobalState;
+        value: GlobalState[keyof GlobalState];
+        error?: string;
+      }
+    | {
+        scope: "workspace";
+        key: keyof WorkspaceState;
+        value: WorkspaceState[keyof WorkspaceState];
+        error?: string;
+      };
 }
 
-// Type for message handler functions
-export type MessageHandler = (message: WebviewMessage) => void;
+export interface GetStateMessage {
+  type: "getState";
+  payload:
+    | {
+        scope: "global";
+        key: keyof GlobalState;
+        value?: GlobalState[keyof GlobalState];
+        error?: string;
+      }
+    | {
+        scope: "workspace";
+        key: keyof WorkspaceState;
+        value?: WorkspaceState[keyof WorkspaceState];
+        error?: string;
+      };
+}
 
-// Interface for VS Code's webview communication API
+export type MessageType =
+  | StateChangeMessage
+  | GetStateMessage
+  | ExecutionResultsMessage
+  | SettingsMessage
+  | ConfigWizardMessage;
+
 export interface WebviewApi {
-  postMessage(message: WebviewMessage): void;
+  postMessage(message: MessageType): void;
 }

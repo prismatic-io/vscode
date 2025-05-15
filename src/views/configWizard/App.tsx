@@ -8,22 +8,11 @@ import {
   Button,
 } from "@/views/configWizard/styles";
 import { ThemeProvider } from "@/theme/ThemeProvider";
-import type { ConfigWizardDummyMessage } from "@/views/configWizard/types";
+import type { ConfigWizardExampleMessage } from "@/views/configWizard/types";
 
 const App: React.FC = () => {
-  const {
-    state: message,
-    postMessage,
-    lastReceived,
-    hasReceivedMessages,
-  } = useWebviewMessage<ConfigWizardDummyMessage>(
-    "configWizard.dummy",
-    "Welcome to the Configuration Wizard"
-  );
-
-  const handleComplete = () => {
-    postMessage("Configuration completed successfully");
-  };
+  const { message, postMessage, lastReceived, hasReceivedMessages } =
+    useWebviewMessage("configWizard.example");
 
   return (
     <ThemeProvider>
@@ -35,7 +24,11 @@ const App: React.FC = () => {
             <p>Last message received: {lastReceived?.toLocaleTimeString()}</p>
           )}
         </LastMessage>
-        <Button onClick={handleComplete}>Complete Configuration</Button>
+        <Button
+          onClick={() => postMessage("Post an example message successfully")}
+        >
+          Send Example Message to VS Code
+        </Button>
       </Container>
     </ThemeProvider>
   );

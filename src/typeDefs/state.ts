@@ -1,26 +1,33 @@
-export interface ConfigWizardState {
-  isComplete: boolean;
-  lastConfig?: {
-    success: boolean;
-    message?: string;
-  };
+import type { ConfigWizardState } from "@/views/configWizard/types";
+import type { ExecutionResultsState } from "@/views/executionResults/typeDefs";
+import type { SettingsState } from "@/views/settings/typeDefs";
+
+export interface GlobalState {
+  accessToken: string | undefined;
+  refreshToken: string | undefined;
 }
 
-export interface ExecutionResultsState {
-  lastExecution?: {
-    timestamp: number;
-    results: string;
-  };
-}
-
-export interface PrismaticSettings {
-  [key: string]: string | number | boolean;
-}
-
-export interface ExtensionState {
+export interface WorkspaceState {
   configWizard: ConfigWizardState;
   executionResults: ExecutionResultsState;
-  prismatic: {
-    settings: PrismaticSettings;
-  };
+  settings: SettingsState;
 }
+
+export const isGlobalState = (value: unknown): value is GlobalState => {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "accessToken" in value &&
+    "refreshToken" in value
+  );
+};
+
+export const isWorkspaceState = (value: unknown): value is WorkspaceState => {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "configWizard" in value &&
+    "executionResults" in value &&
+    "settings" in value
+  );
+};

@@ -1,7 +1,8 @@
 import * as vscode from "vscode";
-import type { WebviewMessage } from "@typeDefs/messages";
+import type { MessageType } from "@typeDefs/messages";
+import { StateManager } from "@/lib/StateManager";
 
-export interface PanelConfig<T extends WebviewMessage> {
+export interface PanelConfig<T extends MessageType> {
   viewType: string;
   title: string;
   scriptPath: string;
@@ -9,15 +10,37 @@ export interface PanelConfig<T extends WebviewMessage> {
   getHtml?: (webview: vscode.Webview, scriptPath: string) => string;
 }
 
-export class PanelProvider<T extends WebviewMessage> {
+export class PanelProvider<T extends MessageType> {
   private _panel?: vscode.WebviewPanel;
   private _disposables: vscode.Disposable[] = [];
 
+  /**
+   * Creates a new PanelProvider instance.
+   * @param _context - The extension context
+   * @param _config - Configuration object for the panel
+   */
   constructor(
     private readonly _context: vscode.ExtensionContext,
     private readonly _config: PanelConfig<T>
   ) {}
 
+  /**
+   * Sends a message to the webview panel.
+   * @param message - The message to send to the panel
+   */
+  private postMessage(message: T) {
+    if (!this._panel) {
+      return;
+    }
+
+    this._panel.webview.postMessage(message);
+  }
+
+  /**
+   * Creates and reveals a new webview panel.
+   * If a panel already exists, it will be revealed in the specified view column.
+   * @param viewColumn - The view column where the panel should be shown. Defaults to ViewColumn.One
+   */
   public createPanel(viewColumn: vscode.ViewColumn = vscode.ViewColumn.One) {
     if (this._panel) {
       this._panel.reveal(viewColumn);
@@ -34,6 +57,9 @@ export class PanelProvider<T extends WebviewMessage> {
         localResourceRoots: [this._context.extensionUri],
       }
     );
+
+    const stateManager = StateManager.getInstance();
+    stateManager.registerWebview(this._panel.webview);
 
     const scriptPath = this._panel.webview.asWebviewUri(
       vscode.Uri.joinPath(this._context.extensionUri, this._config.scriptPath)
@@ -60,22 +86,13 @@ export class PanelProvider<T extends WebviewMessage> {
     );
   }
 
-  public dispose() {
-    for (const disposable of this._disposables) {
-      disposable.dispose();
-    }
-
-    this._disposables = [];
-  }
-
-  private postMessage(message: T) {
-    if (!this._panel) {
-      return;
-    }
-
-    this._panel.webview.postMessage(message);
-  }
-
+  /**
+   * Generates the HTML content for the webview panel.
+   * Uses custom HTML if provided in config, otherwise returns a default template.
+   * @param webview - The webview instance
+   * @param scriptPath - The URI of the script to be loaded
+   * @returns The HTML content for the webview
+   */
   private _getHtmlForWebview(webview: vscode.Webview, scriptPath: vscode.Uri) {
     if (this._config.getHtml) {
       return this._config.getHtml(webview, scriptPath.toString());
@@ -93,5 +110,23 @@ export class PanelProvider<T extends WebviewMessage> {
           <script src="${scriptPath}"></script>
       </body>
       </html>`;
+  }
+
+  /**
+   * Disposes of the panel and cleans up all registered disposables.
+   * Un-registers the webview from the state manager and disposes of all event listeners.
+   */
+  public dispose() {
+    if (this._panel) {
+      const stateManager = StateManager.getInstance();
+
+      stateManager.unregisterWebview(this._panel.webview);
+    }
+
+    for (const disposable of this._disposables) {
+      disposable.dispose();
+    }
+
+    this._disposables = [];
   }
 }
