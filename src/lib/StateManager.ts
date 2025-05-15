@@ -1,6 +1,7 @@
 import type * as vscode from "vscode";
 import type { GlobalState, WorkspaceState } from "@typeDefs/state";
 import type { MessageType } from "@typeDefs/messages";
+import { produce } from "immer";
 
 const DEFAULT_GLOBAL_STATE: GlobalState = {
   accessToken: undefined,
@@ -9,19 +10,20 @@ const DEFAULT_GLOBAL_STATE: GlobalState = {
 
 const DEFAULT_WORKSPACE_STATE: WorkspaceState = {
   configWizard: {
-    dummy: "",
+    dummy: undefined,
   },
   executionResults: {
-    dummy: "",
+    dummy: undefined,
     filters: {
-      type: "",
+      type: undefined,
     },
   },
   settings: {
-    dummy: "",
-    debugMode: false,
-    headers: {},
-    payload: "",
+    dummy: undefined,
+    debugMode: undefined,
+    headers: undefined,
+    payload: undefined,
+    integrationId: undefined,
   },
 };
 
@@ -105,7 +107,7 @@ export class StateManager {
    * Registers a webview to receive state change notifications.
    * @param webview - The webview to register
    */
-  registerWebview(webview: vscode.Webview) {
+  public registerWebview(webview: vscode.Webview) {
     this.webviews.add(webview);
   }
 
@@ -113,7 +115,7 @@ export class StateManager {
    * Un-registers a webview from receiving state change notifications.
    * @param webview - The webview to unregister
    */
-  unregisterWebview(webview: vscode.Webview) {
+  public unregisterWebview(webview: vscode.Webview) {
     this.webviews.delete(webview);
   }
 
@@ -128,22 +130,49 @@ export class StateManager {
   }
 
   /**
+   * Creates a new state by merging the current state with the new value.
+   * @param currentState - The current state value
+   * @param value - The new value to merge with the current state
+   * @returns The new state
+   */
+  private createNewState<T>(currentState: T, value: Partial<T> | T): T {
+    if (
+      typeof value === "object" &&
+      value !== null &&
+      typeof currentState === "object" &&
+      currentState !== null
+    ) {
+      return produce(currentState, (draft) => {
+        for (const [key, val] of Object.entries(value)) {
+          (draft as Record<string, unknown>)[key] = val;
+        }
+      });
+    }
+
+    return value as T;
+  }
+
+  /**
    * Updates a value in the global state and notifies all webviews.
    * @param key - The key to update in the global state
    * @param value - The new value to set
    */
-  async updateGlobalState<K extends keyof GlobalState>(
+  public async updateGlobalState<K extends keyof GlobalState>(
     key: K,
     value: GlobalState[K]
   ): Promise<void> {
-    await this.globalState.update(key, value);
+    const currentState =
+      (await this.getGlobalState(key)) ?? DEFAULT_GLOBAL_STATE[key];
+    const newState = this.createNewState(currentState, value);
+
+    await this.globalState.update(key, newState);
 
     this.notifyWebviews({
       type: "stateChange",
       payload: {
         scope: "global",
         key,
-        value,
+        value: newState,
       },
     });
   }
@@ -153,18 +182,22 @@ export class StateManager {
    * @param key - The key to update in the workspace state
    * @param value - The new value to set
    */
-  async updateWorkspaceState<K extends keyof WorkspaceState>(
+  public async updateWorkspaceState<K extends keyof WorkspaceState>(
     key: K,
-    value: WorkspaceState[K]
+    value: Partial<WorkspaceState[K]>
   ): Promise<void> {
-    await this.workspaceState.update(key, value);
+    const currentState =
+      (await this.getWorkspaceState(key)) ?? DEFAULT_WORKSPACE_STATE[key];
+    const newState = this.createNewState(currentState, value);
+
+    await this.workspaceState.update(key, newState);
 
     this.notifyWebviews({
       type: "stateChange",
       payload: {
         scope: "workspace",
         key,
-        value,
+        value: newState,
       },
     });
   }
@@ -172,10 +205,9 @@ export class StateManager {
   /**
    * Retrieves a value from the global state.
    * @param key - The key to retrieve from the global state
-   * @template K - The type of the key in GlobalState
    * @returns The value associated with the key, or undefined if not found
    */
-  async getGlobalState<K extends keyof GlobalState>(
+  public async getGlobalState<K extends keyof GlobalState>(
     key: K
   ): Promise<GlobalState[K] | undefined> {
     return this.globalState.get<GlobalState[K]>(key);
@@ -184,7 +216,6 @@ export class StateManager {
   /**
    * Retrieves a value from the workspace state.
    * @param key - The key to retrieve from the workspace state
-   * @template K - The type of the key in WorkspaceState
    * @returns The value associated with the key, or undefined if not found
    */
   async getWorkspaceState<K extends keyof WorkspaceState>(
@@ -209,7 +240,7 @@ export class StateManager {
   /**
    * Disposes of the StateManager singleton instance and clears all state.
    */
-  async dispose(): Promise<void> {
+  public async dispose(): Promise<void> {
     await this.clearAllState();
     StateManager.instance = null;
   }

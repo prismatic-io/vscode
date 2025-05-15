@@ -22,28 +22,28 @@ export async function activate(context: vscode.ExtensionContext) {
     outputChannel = vscode.window.createOutputChannel("Prismatic Debug");
     context.subscriptions.push(outputChannel);
 
-    // note: force show the output channel, bring to the front with internal info
-    outputChannel.show(true);
-    outputChannel.appendLine("Starting extension activation...");
-    outputChannel.appendLine(
-      `Extension activated at: ${new Date().toISOString()}`
-    );
-    outputChannel.appendLine(`Extension context:
+    // note: start extension activation
+    log("INFO", "Starting extension activation...");
+    log("SUCCESS", `Extension activated at: ${new Date().toISOString()}`);
+    log(
+      "INFO",
+      `Extension context:
     - extensionPath: ${context.extensionPath}
     - globalStorageUri: ${context.globalStorageUri}
     - logUri: ${context.logUri}
-    `);
+    `
+    );
 
     // note: initialize state manager
-    outputChannel.appendLine("Initializing State Manager...");
+    log("INFO", "Initializing State Manager...");
     stateManager = await StateManager.initialize(context);
 
     // note: initialize Token Manager
-    outputChannel.appendLine("Initializing Token Manager...");
+    log("INFO", "Initializing Token Manager...");
     tokenManager = TokenManager.getInstance();
 
     // note: initialize Prism CLI
-    outputChannel.appendLine("Initializing Prism CLI...");
+    log("INFO", "Initializing Prism CLI...");
     prismCLI = PrismCLI.getInstance();
 
     try {
@@ -59,21 +59,21 @@ export async function activate(context: vscode.ExtensionContext) {
           throw new Error("Login required to continue");
         }
 
-        outputChannel.appendLine("Starting Prismatic login process...");
+        log("INFO", "Logging in...");
         await prismCLI.login();
-        outputChannel.appendLine("Login successful!");
+        log("SUCCESS", "Successfully logged in!");
       }
 
-      outputChannel.appendLine("Initializing Prismatic tokens...");
-      await tokenManager.initializeTokens();
-      outputChannel.appendLine("Successfully initialized Prismatic tokens!");
+      if (!(await tokenManager.hasTokens())) {
+        log("INFO", "Initializing tokens...");
+        await tokenManager.initializeTokens();
+        log("SUCCESS", "Successfully initialized tokens!");
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
 
-      outputChannel.appendLine(
-        `Failed to initialize Prismatic: ${errorMessage}`
-      );
+      log("ERROR", `Failed to initialize Prismatic: ${errorMessage}`);
 
       if (errorMessage.includes("not properly installed")) {
         vscode.window.showErrorMessage(
@@ -89,7 +89,7 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     // note: register views
-    outputChannel.appendLine("Registering views...");
+    log("INFO", "Registering views...");
 
     settingsViewProvider = createSettingsViewProvider(context);
     context.subscriptions.push(settingsViewProvider);
@@ -108,13 +108,13 @@ export async function activate(context: vscode.ExtensionContext) {
           const user = await prismCLI.me();
 
           vscode.window.showInformationMessage(user);
-          outputChannel.appendLine(`\n${user}`);
+          log("INFO", `\n${user}`);
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
 
           vscode.window.showErrorMessage(errorMessage);
-          outputChannel.appendLine(errorMessage);
+          log("ERROR", errorMessage);
         }
       }
     );
@@ -129,13 +129,13 @@ export async function activate(context: vscode.ExtensionContext) {
           await tokenManager.initializeTokens();
 
           vscode.window.showInformationMessage(result);
-          outputChannel.appendLine(result);
+          log("SUCCESS", result);
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
 
           vscode.window.showErrorMessage(errorMessage);
-          outputChannel.appendLine(errorMessage);
+          log("ERROR", errorMessage);
         }
       }
     );
@@ -150,13 +150,13 @@ export async function activate(context: vscode.ExtensionContext) {
           await tokenManager.clearTokens();
 
           vscode.window.showInformationMessage(result);
-          outputChannel.appendLine(result);
+          log("SUCCESS", result);
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
 
           vscode.window.showErrorMessage(errorMessage);
-          outputChannel.appendLine(errorMessage);
+          log("ERROR", errorMessage);
         }
       }
     );
@@ -170,15 +170,15 @@ export async function activate(context: vscode.ExtensionContext) {
           await tokenManager.refreshAccessToken();
 
           vscode.window.showInformationMessage(
-            "Successfully refreshed Prismatic token!"
+            "Successfully refreshed tokens!"
           );
-          outputChannel.appendLine("Successfully refreshed Prismatic token!");
+          log("SUCCESS", "Successfully refreshed tokens!");
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
 
           vscode.window.showErrorMessage(errorMessage);
-          outputChannel.appendLine(errorMessage);
+          log("ERROR", errorMessage);
         }
       }
     );
@@ -188,7 +188,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const prismIntegrationImportCommand = vscode.commands.registerCommand(
       "prismatic.integration.import",
       async () => {
-        outputChannel.appendLine("Starting integration import process...");
+        log("INFO", "Starting integration import process...");
 
         try {
           // note: build the project
@@ -196,12 +196,12 @@ export async function activate(context: vscode.ExtensionContext) {
             await executeProjectNpmScript("build");
 
           if (buildStderr) {
-            outputChannel.appendLine(`Build warnings/errors: ${buildStderr}`);
+            log("WARN", `Build warnings/errors: ${buildStderr}`);
           }
 
           // note: log the build output
-          outputChannel.appendLine("Project build completed successfully!");
-          outputChannel.appendLine(buildStdout);
+          log("INFO", buildStdout);
+          log("SUCCESS", "Project build completed successfully!");
 
           // note: import the integration
           const integrationId = await prismCLI.integrationImport();
@@ -212,15 +212,14 @@ export async function activate(context: vscode.ExtensionContext) {
           vscode.window.showInformationMessage(
             `Integration imported successfully! ID: ${integrationId}`
           );
-          outputChannel.appendLine(
+          log(
+            "SUCCESS",
             `Integration imported successfully! ID: ${integrationId}`
           );
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : String(error);
-          outputChannel.appendLine(
-            `Error during integration import: ${errorMessage}`
-          );
+          log("ERROR", `Error during integration import: ${errorMessage}`);
           vscode.window.showErrorMessage(
             `Failed to import integration: ${errorMessage}`
           );
@@ -229,12 +228,12 @@ export async function activate(context: vscode.ExtensionContext) {
     );
     context.subscriptions.push(prismIntegrationImportCommand);
 
-    outputChannel.appendLine("Extension initialization complete!");
+    log("SUCCESS", "Extension initialization complete!");
   } catch (error) {
     console.error("Activation error:", error);
 
     if (outputChannel) {
-      outputChannel.appendLine(`ERROR during activation: ${error}`);
+      log("ERROR", `ERROR during activation: ${error}`);
     }
 
     // note: re-throw to make sure VS Code sees the error
@@ -244,9 +243,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 export async function deactivate() {
   try {
-    outputChannel?.appendLine(
-      `Extension deactivated at: ${new Date().toISOString()}`
-    );
+    log("INFO", `Extension deactivated at: ${new Date().toISOString()}`);
 
     // note: dispose of token manager
     await tokenManager.dispose();
@@ -268,3 +265,19 @@ export async function deactivate() {
     console.error("Deactivation error:", error);
   }
 }
+
+const log = (level: "SUCCESS" | "WARN" | "ERROR" | "INFO", message: string) => {
+  const timestamp = new Date().toISOString();
+  const emoji =
+    level === "SUCCESS"
+      ? "✅"
+      : level === "WARN"
+      ? "⚠️"
+      : level === "ERROR"
+      ? "❌"
+      : level === "INFO"
+      ? "ℹ️"
+      : "";
+
+  outputChannel.appendLine(`[${timestamp}] ${emoji} [${level}] ${message}`);
+};

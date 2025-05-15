@@ -1,5 +1,5 @@
 export interface ConfigWizardState {
-  dummy: string;
+  dummy: string | undefined;
 }
 
 export interface ConfigWizardExampleMessage {

@@ -5,20 +5,25 @@ import { MessageHandler } from "@/lib/MessageHandler";
 
 const messageHandler = new MessageHandler();
 
-type StateValue<T> = T extends "global"
-  ? GlobalState[keyof GlobalState]
-  : WorkspaceState[keyof WorkspaceState];
+type StateValue<T, K> = T extends "global"
+  ? K extends keyof GlobalState
+    ? Partial<GlobalState[K]>
+    : never
+  : K extends keyof WorkspaceState
+  ? Partial<WorkspaceState[K]>
+  : never;
 
-interface StateOptions<T extends "global" | "workspace"> {
-  key: T extends "global" ? keyof GlobalState : keyof WorkspaceState;
+interface StateOptions<T extends "global" | "workspace", K> {
+  key: K;
   scope: T;
-  initialValue?: StateValue<T>;
+  initialValue?: StateValue<T, K>;
 }
 
-export function useVSCodeState<T extends "global" | "workspace">(
-  options: StateOptions<T>
-) {
-  const [state, setState] = useState<StateValue<T> | undefined>(
+export function useVSCodeState<
+  T extends "global" | "workspace",
+  K extends T extends "global" ? keyof GlobalState : keyof WorkspaceState
+>(options: StateOptions<T, K>) {
+  const [state, setState] = useState<StateValue<T, K> | undefined>(
     options.initialValue
   );
   const [isLoading, setIsLoading] = useState(true);
@@ -43,7 +48,7 @@ export function useVSCodeState<T extends "global" | "workspace">(
 
   // note: update state
   const updateState = useCallback(
-    (newValue: StateValue<T>) => {
+    (newValue: StateValue<T, K>) => {
       try {
         messageHandler.postMessage({
           type: "stateChange",
@@ -79,7 +84,7 @@ export function useVSCodeState<T extends "global" | "workspace">(
           message.payload.scope === options.scope &&
           message.payload.key === options.key
         ) {
-          const newValue = message.payload.value as StateValue<T>;
+          const newValue = message.payload.value as StateValue<T, K>;
 
           setState(newValue);
           setIsLoading(false);

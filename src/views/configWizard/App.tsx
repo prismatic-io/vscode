@@ -8,9 +8,8 @@ import {
   Button,
 } from "@/views/configWizard/styles";
 import { ThemeProvider } from "@/theme/ThemeProvider";
-import type { ConfigWizardExampleMessage } from "@/views/configWizard/types";
 
-const App: React.FC = () => {
+export const App: React.FC = () => {
   const { message, postMessage, lastReceived, hasReceivedMessages } =
     useWebviewMessage("configWizard.example");
 
@@ -33,5 +32,3 @@ const App: React.FC = () => {
     </ThemeProvider>
   );
 };
-
-export default App;

@@ -8,15 +8,19 @@ import {
   Button,
 } from "@/views/settings/styles";
 import { ThemeProvider } from "@/theme/ThemeProvider";
-import type { SettingsExampleMessage } from "@/views/settings/typeDefs";
 import { useVSCodeState } from "@/hooks/useVSCodeState";
-import { useEffect } from "react";
 
-const App: React.FC = () => {
+export const App: React.FC = () => {
   const { state, updateState } = useVSCodeState({
     key: "accessToken",
     scope: "global",
   });
+
+  const { state: workspaceState, updateState: updateWorkspaceState } =
+    useVSCodeState({
+      key: "settings",
+      scope: "workspace",
+    });
 
   const { message, postMessage, lastReceived, hasReceivedMessages } =
     useWebviewMessage("settings.example");
@@ -40,9 +44,14 @@ const App: React.FC = () => {
         <button onClick={() => updateState("example value")} type="button">
           Update Token
         </button>
+        <p>Integration Id: {workspaceState?.integrationId}</p>
+        <button
+          onClick={() => updateWorkspaceState({ integrationId: "123" })}
+          type="button"
+        >
+          Update Workspace State
+        </button>
       </Container>
     </ThemeProvider>
   );
 };
-
-export default App;
