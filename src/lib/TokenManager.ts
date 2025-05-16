@@ -24,27 +24,25 @@ export class TokenManager {
     return TokenManager.instance;
   }
 
+  public async hasTokens(): Promise<boolean> {
+    const accessToken = await this.stateManager.getGlobalState("accessToken");
+    const refreshToken = await this.stateManager.getGlobalState("refreshToken");
+
+    return !!accessToken && !!refreshToken;
+  }
+
   /**
    * Initializes both access and refresh tokens by fetching them from the Prismatic CLI
    * and storing them in the global state.
    * @throws {Error} If token initialization fails
    */
-  async initializeTokens(): Promise<void> {
+  public async initializeTokens(): Promise<void> {
     try {
-      const existingAccessToken = await this.stateManager.getGlobalState(
-        "accessToken"
-      );
-      const existingRefreshToken = await this.stateManager.getGlobalState(
-        "refreshToken"
-      );
+      const accessToken = await this.prismCLI.meToken("access");
+      await this.stateManager.updateGlobalState("accessToken", accessToken);
 
-      if (!existingAccessToken || !existingRefreshToken) {
-        const accessToken = await this.prismCLI.meToken("access");
-        await this.stateManager.updateGlobalState("accessToken", accessToken);
-
-        const refreshToken = await this.prismCLI.meToken("refresh");
-        await this.stateManager.updateGlobalState("refreshToken", refreshToken);
-      }
+      const refreshToken = await this.prismCLI.meToken("refresh");
+      await this.stateManager.updateGlobalState("refreshToken", refreshToken);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -59,7 +57,7 @@ export class TokenManager {
    * @returns {Promise<string>} The new access token
    * @throws {Error} If refresh token is not found or token refresh fails
    */
-  async refreshAccessToken(): Promise<string> {
+  public async refreshAccessToken(): Promise<string> {
     try {
       const refreshToken = await this.stateManager.getGlobalState(
         "refreshToken"
@@ -88,7 +86,7 @@ export class TokenManager {
    * @returns {Promise<string>} The current access token
    * @throws {Error} If no access token is found
    */
-  async getAccessToken(): Promise<string> {
+  public async getAccessToken(): Promise<string> {
     const accessToken = await this.stateManager.getGlobalState("accessToken");
 
     if (!accessToken) {
@@ -103,7 +101,7 @@ export class TokenManager {
    * @returns {Promise<string>} The current refresh token
    * @throws {Error} If no refresh token is found
    */
-  async getRefreshToken(): Promise<string> {
+  public async getRefreshToken(): Promise<string> {
     const refreshToken = await this.stateManager.getGlobalState("refreshToken");
 
     if (!refreshToken) {
@@ -117,7 +115,7 @@ export class TokenManager {
    * Clears both access and refresh tokens from the global state.
    * @returns {Promise<void>}
    */
-  async clearTokens(): Promise<void> {
+  public async clearTokens(): Promise<void> {
     await this.stateManager.updateGlobalState("accessToken", undefined);
     await this.stateManager.updateGlobalState("refreshToken", undefined);
   }
@@ -125,7 +123,7 @@ export class TokenManager {
   /**
    * Disposes of the TokenManager instance and clears all tokens.
    */
-  async dispose(): Promise<void> {
+  public async dispose(): Promise<void> {
     await this.clearTokens();
     TokenManager.instance = null;
   }

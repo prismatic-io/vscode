@@ -10,7 +10,7 @@ import {
 import { ThemeProvider } from "@/theme/ThemeProvider";
 import type { ExecutionResultsExampleMessage } from "@/views/executionResults/typeDefs";
 
-const App: React.FC = () => {
+export const App: React.FC = () => {
   const { message, postMessage, lastReceived, hasReceivedMessages } =
     useWebviewMessage("executionResults.example");
 
@@ -33,5 +33,3 @@ const App: React.FC = () => {
     </ThemeProvider>
   );
 };
-
-export default App;

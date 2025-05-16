@@ -1,7 +1,7 @@
 export interface ExecutionResultsState {
-  dummy: string;
+  dummy: string | undefined;
   filters: {
-    type: string;
+    type: string | undefined;
   };
 }
 

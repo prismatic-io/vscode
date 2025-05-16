@@ -1,8 +1,9 @@
 export interface SettingsState {
-  dummy: string;
-  debugMode: boolean;
-  headers: Record<string, string>;
-  payload: string;
+  integrationId: string | undefined;
+  dummy: string | undefined;
+  debugMode: boolean | undefined;
+  headers: Record<string, string> | undefined;
+  payload: string | undefined;
 }
 export interface SettingsExampleMessage {
   type: "settings.example";

@@ -12,6 +12,9 @@
     "Other"
   ],
   "main": "extension/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "contributes": {
     "commands": [
       {
@@ -37,6 +40,11 @@
       {
         "command": "prismatic.logout",
         "title": "Logout",
+        "category": "Prismatic"
+      },
+      {
+        "command": "prismatic.integration.import",
+        "title": "Import Integration",
         "category": "Prismatic"
       }
     ],
@@ -71,6 +79,14 @@
           "icon": "resources/prismatic.svg"
         }
       ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "prismatic.integration.import",
+          "when": "view == settings.webview || view == executionResults.webview"
+        }
+      ]
     }
   },
   "scripts": {
@@ -86,10 +102,11 @@
     "dev": "npm run build && npm run watch"
   },
   "dependencies": {
+    "@prismatic-io/prism": "7.5.0",
+    "immer": "^10.1.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "styled-components": "^6.1.17",
-    "@prismatic-io/prism": "7.5.0"
+    "styled-components": "^6.1.17"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.4.2",
