@@ -55,8 +55,8 @@ src/
   ├── hooks/            # Custom React hooks
   │   └── useWebviewMessage.ts
   ├── providers/        # VS Code providers
-  │   ├── PanelProvider.ts
-  │   └── WebviewProvider.ts
+  │   ├── WebviewPanelManager.ts
+  │   └── WebviewViewManager.ts
   ├── theme/           # Theme configuration
   │   ├── ThemeProvider.tsx
   │   ├── GlobalStyle.ts

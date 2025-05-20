@@ -9,7 +9,9 @@ export interface WebviewConfig {
 
 interface Config {
   webviews: Record<string, WebviewConfig>;
+  prismaticUrl: string;
 }
 
 declare const CONFIG: Config;
+
 export { CONFIG };

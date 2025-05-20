@@ -9,6 +9,7 @@ yarn.lock
 # Build output
 out/
 extension/
+!/src/extension
 dist/
 build/
 *.vsix
