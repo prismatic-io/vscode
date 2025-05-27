@@ -18,13 +18,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@components/*": ["src/components/*"],
-      "@hooks/*": ["src/hooks/*"],
-      "@providers/*": ["src/providers/*"],
-      "@theme/*": ["src/theme/*"],
-      "@typeDefs/*": ["src/typeDefs/*"],
-      "@utils/*": ["src/utils/*"],
-      "@views/*": ["src/views/*"]
+      "@type/*": ["src/types/*"],
+      "@extension/*": ["src/extension/*"],
+      "@webview/*": ["src/webview/*"]
     }
   },
   "include": ["src/**/*"],

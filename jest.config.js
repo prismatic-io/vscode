@@ -3,11 +3,9 @@ module.exports = {
   testEnvironment: "jsdom",
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
-    "^@components/(.*)$": "<rootDir>/src/components/$1",
-    "^@hooks/(.*)$": "<rootDir>/src/hooks/$1",
-    "^@theme/(.*)$": "<rootDir>/src/theme/$1",
     "^@types/(.*)$": "<rootDir>/src/types/$1",
-    "^@utils/(.*)$": "<rootDir>/src/utils/$1",
+    "^@extension/(.*)$": "<rootDir>/src/extension/$1",
+    "^@webview/(.*)$": "<rootDir>/src/webview/$1",
   },
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   testMatch: ["**/*.test.ts", "**/*.test.tsx"],

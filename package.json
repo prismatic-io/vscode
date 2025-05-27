@@ -46,6 +46,11 @@
         "command": "prismatic.integration.import",
         "title": "Import Integration",
         "category": "Prismatic"
+      },
+      {
+        "command": "prismatic.prismaticUrl",
+        "title": "Prismatic URL",
+        "category": "Prismatic"
       }
     ],
     "views": {
@@ -103,10 +108,12 @@
   },
   "dependencies": {
     "@prismatic-io/prism": "7.5.0",
+    "@xstate/react": "^5.0.4",
     "immer": "^10.1.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "styled-components": "^6.1.17"
+    "styled-components": "^6.1.17",
+    "xstate": "^5.19.3"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.4.2",
