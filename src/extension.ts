@@ -189,7 +189,9 @@ export async function activate(context: vscode.ExtensionContext) {
     const prismIntegrationImportCommand = vscode.commands.registerCommand(
       "prismatic.integration.import",
       async () => {
-        log("INFO", "Starting integration import process...");
+        outputChannel.show(true);
+
+        log("INFO", "Starting integration build and import process...");
 
         try {
           // note: build the project
@@ -201,8 +203,10 @@ export async function activate(context: vscode.ExtensionContext) {
           }
 
           // note: log the build output
+          log("INFO", "Starting project build...");
           log("INFO", buildStdout);
           log("SUCCESS", "Project build completed successfully!");
+          log("INFO", "Starting integration import...");
 
           // note: import the integration
           const integrationId = await prismCLIManager.integrationImport();

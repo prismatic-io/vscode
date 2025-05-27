@@ -1,0 +1,163 @@
+import type { ReactNode } from "react";
+import { subHours, addHours, formatISO } from "date-fns";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+} from "react";
+import { useActorRef, useSelector } from "@xstate/react";
+import { useAuthContext } from "@/webview/providers/AuthProvider";
+import { useIntegrationContext } from "@/webview/providers/IntegrationProvider";
+import { executionResultsMachine } from "@/webview/views/executionResults/machines/executionResults/executionResults.machine";
+import type {
+  ExecutionResult,
+  ExecutionResults,
+  StepResult,
+} from "@webview/views/executionResults/types";
+import type { StepOutputsActorRef } from "@/webview/views/executionResults/machines/stepOutputs/stepOutputs.machine";
+
+const DEFAULT_LIMIT = 5;
+
+const ExecutionResultsContext = createContext<{
+  executionResults: ExecutionResults;
+  executionResult: ExecutionResult | null;
+  stepResult: StepResult | null;
+  stepResultActorRef: StepOutputsActorRef | null;
+  refetch: () => void;
+  isLoading: boolean;
+  hasLoaded: boolean;
+  setExecutionResult: (executionResultId: string) => void;
+  setStepResult: (stepResultId: string) => void;
+}>({
+  executionResults: [],
+  executionResult: null,
+  stepResult: null,
+  stepResultActorRef: null,
+  refetch: () => {},
+  isLoading: false,
+  hasLoaded: false,
+  setExecutionResult: () => {},
+  setStepResult: () => {},
+});
+
+export const ExecutionResultsProvider = ({
+  children,
+}: {
+  children: ReactNode;
+}) => {
+  const { accessToken, prismaticUrl } = useAuthContext();
+
+  const { flowId } = useIntegrationContext();
+
+  const { startDate, endDate } = useMemo(() => {
+    const now = new Date();
+
+    return {
+      startDate: addHours(now, -24).toISOString(),
+      endDate: addHours(now, 1).toISOString(),
+    };
+  }, []);
+
+  const actorRef = useActorRef(executionResultsMachine, {
+    input: {
+      limit: DEFAULT_LIMIT,
+      accessToken,
+      prismaticUrl,
+      startDate,
+      endDate,
+    },
+  });
+
+  useEffect(() => {
+    if (flowId) {
+      actorRef.send({
+        type: "SET_FLOW_ID",
+        flowId,
+      });
+    }
+  }, [flowId, actorRef]);
+
+  const executionResults = useSelector(
+    actorRef,
+    (state) => state.context.executionResults
+  );
+
+  const executionResult = useSelector(
+    actorRef,
+    (state) => state.context.executionResult
+  );
+
+  const setExecutionResult = useCallback(
+    (executionResultId: string) => {
+      actorRef.send({ type: "SET_EXECUTION_RESULT", executionResultId });
+    },
+    [actorRef]
+  );
+
+  const stepResult = useSelector(actorRef, (state) => state.context.stepResult);
+
+  const setStepResult = useCallback(
+    (stepResultId: string) => {
+      actorRef.send({ type: "SET_STEP_RESULT", stepResultId });
+    },
+    [actorRef]
+  );
+
+  const stepResultActorRef = useSelector(
+    actorRef,
+    (state) => state.context.stepResultActorRef
+  );
+
+  const refetch = useCallback(() => {
+    actorRef.send({ type: "FETCH" });
+  }, [actorRef]);
+
+  const isLoading = useSelector(actorRef, (state) => state.hasTag("loading"));
+
+  const hasLoaded = useSelector(actorRef, (state) => state.context.hasLoaded);
+
+  const value = useMemo(
+    () => ({
+      executionResults,
+      executionResult,
+      stepResult,
+      stepResultActorRef,
+      refetch,
+      isLoading,
+      hasLoaded,
+      setExecutionResult,
+      setStepResult,
+    }),
+    [
+      executionResults,
+      executionResult,
+      stepResult,
+      refetch,
+      isLoading,
+      hasLoaded,
+      setExecutionResult,
+      setStepResult,
+      stepResultActorRef,
+    ]
+  );
+
+  return (
+    <ExecutionResultsContext.Provider value={value}>
+      {children}
+    </ExecutionResultsContext.Provider>
+  );
+};
+
+export const useExecutionResultsContext = () => {
+  const context = useContext(ExecutionResultsContext);
+
+  if (!context) {
+    throw new Error(
+      "useExecutionResultsContext must be used within ExecutionResultsProvider"
+    );
+  }
+
+  return context;
+};

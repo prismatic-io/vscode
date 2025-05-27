@@ -7,7 +7,14 @@ export const GlobalStyle = createGlobalStyle`
     background-color: var(--vscode-editor-background);
     color: var(--vscode-editor-foreground);
   }
+  
   #root {
-    // height: 100vh;
+    height: 100vh;
+  }
+
+  hr {
+    border: 1px solid ${({ theme }) => theme.colors.sidebarBorder};
+    margin: ${({ theme }) => theme.spacing.small} 0;
+    width: 100%;
   }
 `;

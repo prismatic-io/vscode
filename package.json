@@ -58,7 +58,8 @@
         {
           "type": "webview",
           "id": "settings.webview",
-          "name": "Prismatic"
+          "name": "Prismatic",
+          "when": "false"
         }
       ],
       "executionResults": [
@@ -80,7 +81,7 @@
       "panel": [
         {
           "id": "executionResults",
-          "title": "Execution Results",
+          "title": "Prismatic",
           "icon": "resources/prismatic.svg"
         }
       ]
@@ -107,8 +108,11 @@
     "dev": "npm run build && npm run watch"
   },
   "dependencies": {
+    "@iconscout/react-unicons": "^2.2.4",
+    "@msgpack/msgpack": "^3.1.2",
     "@prismatic-io/prism": "7.5.0",
     "@xstate/react": "^5.0.4",
+    "date-fns": "^4.1.0",
     "immer": "^10.1.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

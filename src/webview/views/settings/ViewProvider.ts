@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { WebviewViewManager } from "@extension/WebviewViewManager";
+import type { SettingsMessage } from "@/webview/views/settings/types";
 import { CONFIG } from "../../../../config";
-import type { SettingsMessage } from "./types";
 
 const WEBVIEW_CONFIG = CONFIG.webviews.settings;
 

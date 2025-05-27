@@ -1,5 +1,10 @@
 import { assign, setup } from "xstate";
-import { getIntegration } from "@/webview/lib/getIntegration";
+import { getIntegration } from "@/webview/machines/integration/getIntegration";
+
+export interface IntegrationFlow {
+  id: string;
+  name: string;
+}
 
 interface IntegrationInput {
   accessToken: string;
@@ -10,10 +15,7 @@ interface IntegrationContext {
   integrationId: string | null;
   systemInstanceId: string;
   flowId: string;
-  flows: {
-    id: string;
-    name: string;
-  }[];
+  flows: IntegrationFlow[];
   "@input": IntegrationInput;
 }
 
@@ -49,13 +51,11 @@ export const integrationMachine = setup({
         };
       }
     ),
-    updateFlows: assign(
-      (_, params: { flows: { id: string; name: string }[] }) => {
-        return {
-          flows: params.flows,
-        };
-      }
-    ),
+    updateFlows: assign((_, params: { flows: IntegrationFlow[] }) => {
+      return {
+        flows: params.flows,
+      };
+    }),
   },
   actors: {
     getIntegration,
@@ -91,7 +91,6 @@ export const integrationMachine = setup({
               params: ({ event }) => ({ flowId: event.flowId }),
             },
           ],
-          target: "INITIALIZING",
         },
         SET_INTEGRATION_ID: {
           actions: [
