@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { WebviewViewManager } from "@extension/WebviewViewManager";
+import type { ExecutionResultsMessage } from "@/webview/views/executionResults/types";
 import { CONFIG } from "../../../../config";
-import type { ExecutionResultsMessage } from "./types";
 
 const WEBVIEW_CONFIG = CONFIG.webviews.executionResults;
 

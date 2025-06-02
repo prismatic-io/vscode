@@ -4,7 +4,8 @@ import {
   useMemo,
   type PropsWithChildren,
 } from "react";
-import { useVSCodeState } from "@/webview/lib/useVSCodeState";
+import { useVSCodeState } from "@/webview/hooks/useVSCodeState";
+import { NotLoggedIn } from "@/webview/components/NotLoggedIn";
 
 const AuthContext = createContext<{
   accessToken: string;
@@ -34,7 +35,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
   }, [accessToken, prismaticUrl]);
 
   if (!value) {
-    return null;
+    return <NotLoggedIn />;
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

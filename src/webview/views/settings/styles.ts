@@ -4,8 +4,8 @@ import {
   TitleBase,
   TextBase,
   ButtonBase,
-} from "@webview/lib/theme/base";
-import { THEME } from "@webview/lib/theme/theme";
+} from "@/webview/providers/theme/base";
+import { THEME } from "@/webview/providers/theme/theme";
 
 export const Container = styled(ContainerBase)`
   background-color: ${THEME.colors.sidebarBackground};

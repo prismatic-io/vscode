@@ -1,7 +1,7 @@
 import { useCallback, useState, useEffect } from "react";
+import { MessageHandlerManager } from "@extension/MessageHandlerManager";
 import type { MessageType } from "@type/messages";
 import type { GlobalState, WorkspaceState } from "@type/state";
-import { MessageHandlerManager } from "@extension/MessageHandlerManager";
 
 const messageHandlerManager = new MessageHandlerManager();
 

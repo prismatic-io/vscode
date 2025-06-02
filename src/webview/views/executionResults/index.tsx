@@ -1,10 +1,10 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { AuthProvider } from "@webview/lib/AuthProvider";
-import { IntegrationProvider } from "@webview/lib/IntegrationProvider";
-import { ThemeProvider } from "@webview/lib/theme/ThemeProvider";
-import { App } from "./App";
-import { ExecutionResultsProvider } from "./ExecutionResultsProvider";
+import { AuthProvider } from "@/webview/providers/AuthProvider";
+import { IntegrationProvider } from "@/webview/providers/IntegrationProvider";
+import { ThemeProvider } from "@/webview/providers/theme/ThemeProvider";
+import { ExecutionResultsProvider } from "@/webview/views/executionResults/providers/ExecutionResultsProvider";
+import { App } from "@/webview/views/executionResults/App";
 
 const rootElement = document.getElementById("root");
 
@@ -16,14 +16,14 @@ const root = createRoot(rootElement);
 
 root.render(
   <React.StrictMode>
-    <AuthProvider>
-      <ThemeProvider>
+    <ThemeProvider>
+      <AuthProvider>
         <IntegrationProvider>
           <ExecutionResultsProvider>
             <App />
           </ExecutionResultsProvider>
         </IntegrationProvider>
-      </ThemeProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </React.StrictMode>
 );

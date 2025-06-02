@@ -8,18 +8,24 @@ declare module "styled-components" {
       primary: string;
       primaryHover: string;
       secondary: string;
-      sidebarSectionHeader: string;
-      sidebarSectionHeaderBackground: string;
-      sidebarSectionHeaderBorder: string;
       sidebarBackground: string;
+      sidebarForeground: string;
       sidebarBorder: string;
-      sidebar: string;
+      sidebarSectionHeaderBackground: string;
+      sidebarSectionHeaderForeground: string;
+      sidebarSectionHeaderBorder: string;
       sidebarTitle: string;
       sidebarTitleBackground: string;
       sidebarTitleBorder: string;
       text: string;
       title: string;
+      icon: string;
+      error: string;
+      info: string;
+      success: string;
+      warning: string;
     };
+    borderRadius: string;
     spacing: {
       small: string;
       medium: string;
@@ -27,7 +33,9 @@ declare module "styled-components" {
     };
     typography: {
       fontFamily: string;
-      fontSize: string;
+      baseSize: string;
+      headingSize: string;
+      monospace: string;
     };
     transitions: {
       default: string;

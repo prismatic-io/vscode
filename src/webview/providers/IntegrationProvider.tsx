@@ -7,22 +7,27 @@ import {
   useMemo,
 } from "react";
 import { useActorRef, useSelector } from "@xstate/react";
-import { useAuthContext } from "@/webview/lib/AuthProvider";
-import { useVSCodeState } from "@/webview/lib/useVSCodeState";
-import { integrationMachine } from "@/webview/lib/integration.machine";
+import { useAuthContext } from "@/webview/providers/AuthProvider";
+import { useVSCodeState } from "@/webview/hooks/useVSCodeState";
+import {
+  type IntegrationFlow,
+  integrationMachine,
+} from "@/webview/machines/integration/integration.machine";
 
 const IntegrationContext = createContext<{
   flowId: string;
-  flows: { id: string; name: string }[];
+  flows: IntegrationFlow[];
   isLoading: boolean;
   refetch: () => void;
   systemInstanceId: string;
+  setFlowId: (flowId: string) => void;
 }>({
   flowId: "",
   flows: [],
   isLoading: false,
   refetch: () => {},
   systemInstanceId: "",
+  setFlowId: () => {},
 });
 
 export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
@@ -55,6 +60,13 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
 
   const flowId = useSelector(actorRef, (state) => state.context.flowId);
 
+  const setFlowId = useCallback(
+    (flowId: string) => {
+      actorRef.send({ type: "SET_FLOW_ID", flowId });
+    },
+    [actorRef]
+  );
+
   const refetch = useCallback(() => {
     actorRef.send({ type: "FETCH" });
   }, [actorRef]);
@@ -62,8 +74,8 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
   const isLoading = useSelector(actorRef, (state) => state.hasTag("loading"));
 
   const value = useMemo(
-    () => ({ systemInstanceId, flows, flowId, refetch, isLoading }),
-    [systemInstanceId, flows, flowId, refetch, isLoading]
+    () => ({ systemInstanceId, flows, flowId, refetch, isLoading, setFlowId }),
+    [systemInstanceId, flows, flowId, refetch, isLoading, setFlowId]
   );
 
   return (

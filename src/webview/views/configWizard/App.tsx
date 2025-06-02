@@ -1,5 +1,5 @@
 import type React from "react";
-import { useWebviewMessage } from "@/webview/lib/useWebviewMessage";
+import { useWebviewMessage } from "@/webview/hooks/useWebviewMessage";
 import {
   Container,
   Title,
@@ -7,7 +7,7 @@ import {
   LastMessage,
   Button,
 } from "@/webview/views/configWizard/styles";
-import { ThemeProvider } from "@/webview/lib/theme/ThemeProvider";
+import { ThemeProvider } from "@/webview/providers/theme/ThemeProvider";
 
 export const App: React.FC = () => {
   const { message, postMessage, lastReceived, hasReceivedMessages } =

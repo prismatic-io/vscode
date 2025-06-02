@@ -1,12 +1,12 @@
 import styled from "styled-components";
-import { THEME } from "./theme";
+import { THEME } from "@/webview/providers/theme/theme";
 
 export const ContainerBase = styled.div`
   padding: ${THEME.spacing.medium};
-  color: ${THEME.colors.text};
-  background-color: ${THEME.colors.background};
+  color: ${THEME.colors.sidebarForeground};
+  background-color: ${THEME.colors.sidebarBackground};
   font-family: ${THEME.typography.fontFamily};
-  font-size: ${THEME.typography.fontSize};
+  font-size: ${THEME.typography.baseSize};
 `;
 
 export const TitleBase = styled.h1`
@@ -26,7 +26,7 @@ export const ButtonBase = styled.button`
   border: none;
   border-radius: 2px;
   cursor: pointer;
-  font-size: ${THEME.typography.fontSize};
+  font-size: ${THEME.typography.baseSize};
   font-family: ${THEME.typography.fontFamily};
   transition: background-color ${THEME.transitions.default};
   &:hover {

@@ -1,8 +1,14 @@
 import type React from "react";
-import { useWebviewMessage } from "@webview/lib/useWebviewMessage";
-import { ThemeProvider } from "@webview/lib/theme/ThemeProvider";
-import { useVSCodeState } from "@webview/lib/useVSCodeState";
-import { Container, Title, Message, LastMessage, Button } from "./styles";
+import { useWebviewMessage } from "@/webview/hooks/useWebviewMessage";
+import { ThemeProvider } from "@/webview/providers/theme/ThemeProvider";
+import { useVSCodeState } from "@/webview/hooks/useVSCodeState";
+import {
+  Container,
+  Title,
+  Message,
+  LastMessage,
+  Button,
+} from "@/webview/views/settings/styles";
 
 export const App: React.FC = () => {
   const { state, updateState } = useVSCodeState({
