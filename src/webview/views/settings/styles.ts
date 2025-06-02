@@ -11,7 +11,7 @@ export const Container = styled(ContainerBase)`
   background-color: ${THEME.colors.sidebarBackground};
   border-right: 1px solid ${THEME.colors.sidebarBorder};
   border-top: 1px solid ${THEME.colors.sidebarSectionHeaderBorder};
-  color: ${THEME.colors.sidebar};
+  color: ${THEME.colors.sidebarForeground};
   height: 100vh;
   margin: 0;
   max-width: 100vw;

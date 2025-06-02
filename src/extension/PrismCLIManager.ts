@@ -3,6 +3,8 @@ import { exec, spawn } from "node:child_process";
 import { promisify } from "node:util";
 import * as path from "node:path";
 import { StateManager } from "@extension/StateManager";
+import { existsSync } from "fs";
+import { execSync } from "child_process";
 
 const execAsync = promisify(exec);
 
@@ -10,12 +12,10 @@ export class PrismCLIManager {
   private static instance: PrismCLIManager | null = null;
   private prismPath: string;
   private stateManager: StateManager;
+  private useLocalPrism: boolean = false;
 
   private constructor() {
-    const extensionPath =
-      vscode.extensions.getExtension("prismatic.prismatic-extension")
-        ?.extensionPath || "";
-    this.prismPath = path.join(extensionPath, "node_modules", ".bin", "prism");
+    this.prismPath = this.findPrismPath();
     this.stateManager = StateManager.getInstance();
   }
 
@@ -37,10 +37,47 @@ export class PrismCLIManager {
    */
   private async checkCLIInstallation(): Promise<boolean> {
     try {
-      await execAsync(`node "${this.prismPath}" --version`);
+      await execAsync(`"${this.prismPath}" --version`);
       return true;
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Finds the path to the Prismatic CLI.
+   * @returns {string} The path to the Prismatic CLI
+   */
+  private findPrismPath(): string {
+    // for local development, use the local prism binary
+    if (this.useLocalPrism) {
+      const localBin = path.join(
+        __dirname,
+        "..",
+        "..",
+        "node_modules",
+        ".bin",
+        "prism"
+      );
+
+      if (existsSync(localBin)) {
+        return localBin;
+      }
+    }
+
+    // for production, use the system PATH
+    try {
+      const prismFromPath = execSync("which prism").toString().trim();
+
+      if (prismFromPath && existsSync(prismFromPath)) {
+        return prismFromPath;
+      }
+
+      throw new Error("Prismatic CLI not found in PATH");
+    } catch {
+      throw new Error(
+        "Prismatic CLI is not properly installed. Please ensure @prismatic-io/prism is installed on your system. Run 'npm install -g @prismatic-io/prism' to install it."
+      );
     }
   }
 
@@ -60,7 +97,7 @@ export class PrismCLIManager {
 
     if (!isInstalled) {
       throw new Error(
-        "Prismatic CLI is not properly installed. Please ensure @prismatic-io/prism is installed in your project dependencies."
+        "Prismatic CLI is not properly installed. Please ensure @prismatic-io/prism is installed on your system. Run 'npm install -g @prismatic-io/prism' to install it."
       );
     }
 
@@ -76,7 +113,7 @@ export class PrismCLIManager {
 
     try {
       const { stdout, stderr } = await execAsync(
-        `node "${this.prismPath}" ${command}`,
+        `"${this.prismPath}" ${command}`,
         {
           cwd,
           env: {
@@ -120,7 +157,7 @@ export class PrismCLIManager {
     const prismaticUrl = await this.stateManager.getGlobalState("prismaticUrl");
 
     return new Promise((resolve, reject) => {
-      const loginProcess = spawn("node", [this.prismPath, "login"], {
+      const loginProcess = spawn(this.prismPath, ["login"], {
         stdio: ["pipe", "pipe", "pipe"],
         env: {
           ...process.env,
@@ -158,14 +195,32 @@ export class PrismCLIManager {
 
       loginProcess.on("close", (code) => {
         if (!loginComplete) {
-          code === 0
-            ? resolve(lastMessage)
-            : reject(new Error(`Login process exited with code ${code}`));
+          if (code === 126) {
+            reject(
+              new Error(
+                "Prismatic CLI was found but could not be executed (exit code 126). Please check that it is installed correctly and is executable."
+              )
+            );
+          } else if (code === 127) {
+            reject(
+              new Error(
+                "Prismatic CLI was not found (exit code 127). Please ensure @prismatic-io/prism is installed and in your PATH."
+              )
+            );
+          } else {
+            code === 0
+              ? resolve(lastMessage)
+              : reject(new Error(`Login process exited with code ${code}`));
+          }
         }
       });
 
       loginProcess.on("error", (error) => {
-        reject(new Error(`Failed to start login process: ${error.message}`));
+        reject(
+          new Error(
+            `Failed to start login process: ${error.message}\nPlease ensure @prismatic-io/prism is installed and executable.`
+          )
+        );
       });
     });
   }

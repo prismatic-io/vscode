@@ -1,0 +1,48 @@
+# Source files
+src/
+*.ts
+*.tsx
+*.js.map
+*.d.ts
+!extension/**/*.d.ts
+
+# Development files
+.gitignore
+jest.config.js
+jest.setup.js
+eslint.config.mjs
+vsc-extension-quickstart.md
+esbuild.js
+tsconfig.json
+
+# Development directories
+__tests__/
+node_modules/
+.vscode-test/
+.vscode/
+
+# Build output that shouldn't be included
+*.vsix
+
+# IDE and editor files
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Testing and coverage
+coverage/
+.nyc_output/
+
+# Logs and debug
+logs/
+*.log
+.debug/
+
+# Temporary files
+*.tmp
+*.temp
+.temp/
+tmp/
+temp/

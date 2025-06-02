@@ -3,10 +3,14 @@
   "displayName": "Prismatic",
   "publisher": "prismatic",
   "description": "This VS Code extension improves the developer experience around Code Native Integrations (CNI) by enabling test execution, integration imports, instance configuration (including config variables, debug mode, and trigger payloads), and inspection of execution results—all directly within the IDE. Developers can view detailed step-by-step outputs and logs for both onTrigger and onExecution stages, streamlining the build, test, and debug workflow without leaving VS Code.",
-  "version": "0.0.1",
+  "version": "0.0.13",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/prismatic-io/vscode"
+  },
   "icon": "resources/prismatic-icon.png",
   "engines": {
-    "vscode": "^1.99.0"
+    "vscode": "^1.96.0"
   },
   "categories": [
     "Other"
@@ -96,21 +100,16 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run package",
-    "build": "node esbuild.js",
+    "check-types": "tsc --noEmit",
+    "build:dev": "node esbuild.js",
+    "build:prod": "npm run check-types && NODE_ENV=production node esbuild.js",
+    "vscode:prepublish": "npm run build:prod",
     "watch": "node esbuild.js --watch",
-    "package": "npm run build && vsce package",
-    "compile-tests": "tsc -p . --outDir extension",
-    "watch-tests": "tsc -p . -w --outDir extension",
-    "pretest": "npm run compile-tests && npm run build && npm run lint",
-    "lint": "eslint src --ext ts",
-    "test": "node ./extension/test/runTest.js",
-    "dev": "npm run build && npm run watch"
+    "package": "vsce package"
   },
   "dependencies": {
     "@iconscout/react-unicons": "^2.2.4",
     "@msgpack/msgpack": "^3.1.2",
-    "@prismatic-io/prism": "7.5.0",
     "@xstate/react": "^5.0.4",
     "date-fns": "^4.1.0",
     "immer": "^10.1.1",
@@ -124,7 +123,7 @@
     "@testing-library/react": "^14.1.2",
     "@types/jest": "^29.5.12",
     "@types/node": "20.x",
-    "@types/vscode": "^1.99.0",
+    "@types/vscode": "1.96.2",
     "@typescript-eslint/eslint-plugin": "^8.28.0",
     "@typescript-eslint/parser": "^8.28.0",
     "@vscode/test-cli": "^0.0.10",
