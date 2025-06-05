@@ -9,22 +9,31 @@ A VS Code extension that improves the developer experience around Code Native In
 - **React Integration**: Modern UI components using React and styled-components
 - **VS Code Theming**: Seamless integration with VS Code's theme system
 - **State Management**: Persistent state across extension sessions
-- **Message Passing**: Bidirectional communication between webviews and extension
+- **Message Passing**: Bi-directional communication between webviews and extension
+- **Authentication**: Secure login and token management
+- **Integration Import**: Direct import of integrations from Prismatic
 
 ## Getting Started
 
-1. Install the extension
-2. Open the Prismatic view in the Activity Bar
-3. Use the Configuration Wizard to set up your integration
-4. View execution results in the panel
+1. Install the extension from the VS Code Marketplace
+2. Install the Prismatic CLI globally:
+   ```bash
+   npm install -g @prismatic-io/prism
+   ```
+   Note: The extension will also work with a local installation of the CLI, but a global installation is recommended for the best experience.
+3. Open the Prismatic view in the Activity Bar
+4. Log in to your Prismatic instance
+5. Use the Configuration Wizard to set up your integration
+6. View execution results in the panel
 
 ## Development
 
 ### Prerequisites
 
 - Node.js
-- VS Code
+- VS Code (version 1.99.0 or higher)
 - npm or yarn
+- Prismatic CLI (installed globally)
 
 ### Installation
 
@@ -38,54 +47,42 @@ npm install
 3. Build the extension:
 
 ```bash
-npm run build
+npm run build:prod
 ```
 
 4. Run in development mode:
 
 ```bash
-npm run dev
+npm run watch
 ```
 
 ### Project Structure
 
 ```
 src/
-  ├── components/        # Shared React components
-  ├── hooks/            # Custom React hooks
-  │   └── useWebviewMessage.ts
-  ├── providers/        # VS Code providers
-  │   ├── WebviewPanelManager.ts
-  │   └── WebviewViewManager.ts
-  ├── theme/           # Theme configuration
-  │   ├── ThemeProvider.tsx
-  │   ├── GlobalStyle.ts
-  │   └── theme.ts
-  ├── typeDefs/        # TypeScript type definitions
-  │   ├── messages.ts
-  │   └── state.ts
-  ├── utils/           # Utility functions
-  │   └── stateManager.ts
-  ├── views/           # View-specific components
-  │   ├── configWizard/
-  │   ├── executionResults/
-  │   └── prismatic/
-  └── extension.ts     # Extension entry point
+  ├── extension/      # VS Code extension code
+  ├── webview/        # React webview components
+  ├── types/          # TypeScript type definitions
+  └── extension.ts    # Extension entry point
 ```
 
 ### Available Commands
 
 - `prismatic.configWizard`: Open the Configuration Wizard
-- `prismatic.executionResults`: View execution results
-- `prismatic.settings`: Open Prismatic settings
+- `prismatic.me`: View your user profile
+- `prismatic.me:token`: Refresh your authentication token
+- `prismatic.login`: Log in to Prismatic
+- `prismatic.logout`: Log out of Prismatic
+- `prismatic.integration.import`: Import an integration
+- `prismatic.prismaticUrl`: Set your Prismatic instance URL
 
 ### Building
 
 The project uses esbuild for bundling:
 
-- Extension code is bundled to `dist/extension.js`
-- Webview components are bundled to their respective `dist/*View` directories
-- Styles are handled by styled-components
+- Extension code is bundled to `extension/extension.js`
+- Webview components are bundled to their respective directories
+- Styles are handled by styled-components and use the VS Code theme
 
 ## Usage
 
@@ -94,6 +91,28 @@ The extension provides a webview panel that can be accessed through the VS Code 
 1. Press `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Linux)
 2. Type "Prismatic" to see available commands
 3. Select "Show Prismatic Panel" to open the webview
+
+## Installing the Extension (.vsix) for Development
+
+To install the extension locally in Visual Studio Code:
+
+1. Build or obtain the `.vsix` file for the extension.
+2. Open Visual Studio Code.
+3. Open the Command Palette (`Cmd+Shift+P` on Mac).
+4. Type and select: **Extensions: Install from VSIX...**
+5. Browse to your `.vsix` file and select it.
+6. Reload VS Code if prompted.
+
+This will install the extension for your local VS Code instance for testing and development.
+
+## Troubleshooting
+
+If you encounter issues with the Prismatic CLI:
+
+1. Ensure the CLI is installed globally: `npm install -g @prismatic-io/prism`
+2. Verify the installation: `prism --version`
+3. Check your PATH environment variable includes the npm global bin directory
+4. Try reinstalling the extension
 
 ## Contributing
 

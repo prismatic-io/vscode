@@ -29,7 +29,6 @@ export const Grid = styled.div`
   .column__header {
     background-color: ${({ theme }) =>
       theme.colors.sidebarSectionHeaderBackground};
-    border-bottom: 1px solid ${({ theme }) => theme.colors.sidebarBorder};
     color: ${({ theme }) => theme.colors.sidebarSectionHeaderForeground};
     font-family: ${({ theme }) => theme.typography.fontFamily};
     font-size: ${({ theme }) => theme.typography.headingSize};

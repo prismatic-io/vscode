@@ -13,6 +13,7 @@ import {
   type IntegrationFlow,
   integrationMachine,
 } from "@/webview/machines/integration/integration.machine";
+import { NoIntegration } from "@/webview/components/NoIntegration";
 
 const IntegrationContext = createContext<{
   flowId: string;
@@ -77,6 +78,10 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
     () => ({ systemInstanceId, flows, flowId, refetch, isLoading, setFlowId }),
     [systemInstanceId, flows, flowId, refetch, isLoading, setFlowId]
   );
+
+  if (!settingsState?.integrationId) {
+    return <NoIntegration />;
+  }
 
   return (
     <IntegrationContext.Provider value={value}>
