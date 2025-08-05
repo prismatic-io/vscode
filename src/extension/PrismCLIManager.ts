@@ -1,10 +1,8 @@
-import * as vscode from "vscode";
-import { exec, spawn } from "node:child_process";
 import { promisify } from "node:util";
-import * as path from "node:path";
+import { exec, spawn } from "node:child_process";
+import * as vscode from "vscode";
+import { findPrismPath } from "@/extension/findPrismPath";
 import { StateManager } from "@extension/StateManager";
-import { existsSync } from "fs";
-import { execSync } from "child_process";
 
 const execAsync = promisify(exec);
 
@@ -12,73 +10,39 @@ export class PrismCLIManager {
   private static instance: PrismCLIManager | null = null;
   private prismPath: string;
   private stateManager: StateManager;
-  private useLocalPrism: boolean = false;
 
-  private constructor() {
-    this.prismPath = this.findPrismPath();
+  private constructor(prismPath: string) {
+    this.prismPath = prismPath;
     this.stateManager = StateManager.getInstance();
   }
 
   /**
    * Gets the singleton instance of PrismCLIManager.
-   * @returns {PrismCLIManager} The singleton instance of PrismCLIManager
+   * @returns {Promise<PrismCLIManager>} A promise that resolves to the singleton instance of PrismCLIManager
    */
-  public static getInstance(): PrismCLIManager {
+  public static async getInstance(): Promise<PrismCLIManager> {
     if (!PrismCLIManager.instance) {
-      PrismCLIManager.instance = new PrismCLIManager();
+      const prismPath = await PrismCLIManager.initializePrismPath();
+      PrismCLIManager.instance = new PrismCLIManager(prismPath);
     }
 
     return PrismCLIManager.instance;
   }
 
   /**
-   * Checks if the Prismatic CLI is properly installed.
-   * @returns {Promise<boolean>} A promise that resolves to true if CLI is installed, false otherwise
+   * Initializes the Prismatic CLI path.
+   * @returns {Promise<string>} A promise that resolves to the Prismatic CLI path
    */
-  private async checkCLIInstallation(): Promise<boolean> {
-    try {
-      await execAsync(`"${this.prismPath}" --version`);
-      return true;
-    } catch {
-      return false;
-    }
-  }
+  static async initializePrismPath(): Promise<string> {
+    const prismPath = await findPrismPath();
 
-  /**
-   * Finds the path to the Prismatic CLI.
-   * @returns {string} The path to the Prismatic CLI
-   */
-  private findPrismPath(): string {
-    // for local development, use the local prism binary
-    if (this.useLocalPrism) {
-      const localBin = path.join(
-        __dirname,
-        "..",
-        "..",
-        "node_modules",
-        ".bin",
-        "prism"
-      );
-
-      if (existsSync(localBin)) {
-        return localBin;
-      }
-    }
-
-    // for production, use the system PATH
-    try {
-      const prismFromPath = execSync("which prism").toString().trim();
-
-      if (prismFromPath && existsSync(prismFromPath)) {
-        return prismFromPath;
-      }
-
-      throw new Error("Prismatic CLI not found in PATH");
-    } catch {
+    if (!prismPath) {
       throw new Error(
         "Prismatic CLI is not properly installed. Please ensure @prismatic-io/prism is installed on your system. Run 'npm install -g @prismatic-io/prism' to install it."
       );
     }
+
+    return prismPath;
   }
 
   /**
@@ -92,13 +56,6 @@ export class PrismCLIManager {
     command: string,
     fromWorkspace = false
   ): Promise<{ stdout: string; stderr: string }> {
-    const isInstalled = await this.checkCLIInstallation();
-
-    if (!isInstalled) {
-      throw new Error(
-        "Prismatic CLI is not properly installed. Please ensure @prismatic-io/prism is installed on your system. Run 'npm install -g @prismatic-io/prism' to install it."
-      );
-    }
     const globalState = await this.stateManager.getGlobalState();
 
     if (!globalState?.prismaticUrl) {

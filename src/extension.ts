@@ -49,13 +49,13 @@ export async function activate(context: vscode.ExtensionContext) {
      * initialize Token Manager
      */
     log("INFO", "Initializing Token Manager...");
-    tokenManager = TokenManager.getInstance();
+    tokenManager = await TokenManager.getInstance();
 
     /**
      * initialize Prism CLI
      */
     log("INFO", "Initializing Prism CLI...");
-    prismCLIManager = PrismCLIManager.getInstance();
+    prismCLIManager = await PrismCLIManager.getInstance();
 
     /**
      * check if user is logged in

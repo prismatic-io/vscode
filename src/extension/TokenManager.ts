@@ -6,19 +6,20 @@ export class TokenManager {
   private prismCLIManager: PrismCLIManager;
   private stateManager: StateManager;
 
-  private constructor() {
-    this.prismCLIManager = PrismCLIManager.getInstance();
+  private constructor(prismCLIManager: PrismCLIManager) {
+    this.prismCLIManager = prismCLIManager;
     this.stateManager = StateManager.getInstance();
   }
 
   /**
    * Gets the singleton instance of TokenManager.
    * Creates a new instance if one doesn't exist.
-   * @returns {TokenManager} The singleton instance of TokenManager
+   * @returns {Promise<TokenManager>} A promise that resolves to the singleton instance of TokenManager
    */
-  static getInstance(): TokenManager {
+  static async getInstance(): Promise<TokenManager> {
     if (!TokenManager.instance) {
-      TokenManager.instance = new TokenManager();
+      const prismCLIManager = await PrismCLIManager.getInstance();
+      TokenManager.instance = new TokenManager(prismCLIManager);
     }
 
     return TokenManager.instance;
