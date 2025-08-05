@@ -195,4 +195,10 @@ export class WebviewPanelManager<T extends MessageType> {
 
     this._disposables = [];
   }
+
+  public close() {
+    if (this._panel) {
+      this._panel.dispose();
+    }
+  }
 }

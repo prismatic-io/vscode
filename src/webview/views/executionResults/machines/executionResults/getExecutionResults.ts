@@ -1,11 +1,12 @@
 import { fromPromise } from "xstate";
-import { fetcher, type GraphQLVariables } from "@/webview/utils/fetcher";
+import { fetcher } from "@/lib/fetcher";
 import type {
   ExecutionResults,
   InstanceExecutionResultInvokeType,
   InstanceExecutionResultResultType,
   StepResult,
 } from "@/webview/views/executionResults/types";
+import { GraphQLVariables } from "@/types/graphql";
 
 type GetExecutionResultsQuery = {
   executionResults: {

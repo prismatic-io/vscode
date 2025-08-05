@@ -1,6 +1,6 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { App } from "@/webview/views/settings/App";
+import { App } from "@/webview/views/_example/App";
 
 const rootElement = document.getElementById("root");
 

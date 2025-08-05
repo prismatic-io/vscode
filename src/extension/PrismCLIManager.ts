@@ -264,20 +264,10 @@ export class PrismCLIManager {
   }
 
   /**
-   * Retrieves the version of the installed Prism CLI.
-   * @returns {Promise<string>} A promise that resolves to the CLI version
-   */
-  public async version(): Promise<string> {
-    const { stdout } = await this.executeCommand("--version");
-
-    return stdout.trim();
-  }
-
-  /**
    * Imports an integration into Prismatic from the current project.
    * @returns {Promise<string>} A promise that resolves to the integration ID
    */
-  public async integrationImport(): Promise<string> {
+  public async integrationsImport(): Promise<string> {
     const { stdout } = await this.executeCommand("integrations:import", true);
 
     return stdout.trim();

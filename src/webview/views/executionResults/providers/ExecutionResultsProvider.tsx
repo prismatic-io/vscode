@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, PropsWithChildren } from "react";
 import { subHours, addHours, formatISO } from "date-fns";
 import {
   createContext,
@@ -44,9 +44,7 @@ const ExecutionResultsContext = createContext<{
 
 export const ExecutionResultsProvider = ({
   children,
-}: {
-  children: ReactNode;
-}) => {
+}: PropsWithChildren<{}>) => {
   const { accessToken, prismaticUrl } = useAuthContext();
 
   const { flowId } = useIntegrationContext();
@@ -60,7 +58,7 @@ export const ExecutionResultsProvider = ({
     };
   }, []);
 
-  const actorRef = useActorRef(executionResultsMachine, {
+  const executionResultsMachineActorRef = useActorRef(executionResultsMachine, {
     input: {
       limit: DEFAULT_LIMIT,
       accessToken,
@@ -72,51 +70,65 @@ export const ExecutionResultsProvider = ({
 
   useEffect(() => {
     if (flowId) {
-      actorRef.send({
+      executionResultsMachineActorRef.send({
         type: "SET_FLOW_ID",
         flowId,
       });
     }
-  }, [flowId, actorRef]);
+  }, [flowId, executionResultsMachineActorRef]);
 
   const executionResults = useSelector(
-    actorRef,
+    executionResultsMachineActorRef,
     (state) => state.context.executionResults
   );
 
   const executionResult = useSelector(
-    actorRef,
+    executionResultsMachineActorRef,
     (state) => state.context.executionResult
   );
 
   const setExecutionResult = useCallback(
     (executionResultId: string) => {
-      actorRef.send({ type: "SET_EXECUTION_RESULT", executionResultId });
+      executionResultsMachineActorRef.send({
+        type: "SET_EXECUTION_RESULT",
+        executionResultId,
+      });
     },
-    [actorRef]
+    [executionResultsMachineActorRef]
   );
 
-  const stepResult = useSelector(actorRef, (state) => state.context.stepResult);
+  const stepResult = useSelector(
+    executionResultsMachineActorRef,
+    (state) => state.context.stepResult
+  );
 
   const setStepResult = useCallback(
     (stepResultId: string) => {
-      actorRef.send({ type: "SET_STEP_RESULT", stepResultId });
+      executionResultsMachineActorRef.send({
+        type: "SET_STEP_RESULT",
+        stepResultId,
+      });
     },
-    [actorRef]
+    [executionResultsMachineActorRef]
   );
 
   const stepResultActorRef = useSelector(
-    actorRef,
+    executionResultsMachineActorRef,
     (state) => state.context.stepResultActorRef
   );
 
   const refetch = useCallback(() => {
-    actorRef.send({ type: "FETCH" });
-  }, [actorRef]);
+    executionResultsMachineActorRef.send({ type: "FETCH" });
+  }, [executionResultsMachineActorRef]);
 
-  const isLoading = useSelector(actorRef, (state) => state.hasTag("loading"));
+  const isLoading = useSelector(executionResultsMachineActorRef, (state) =>
+    state.hasTag("loading")
+  );
 
-  const hasLoaded = useSelector(actorRef, (state) => state.context.hasLoaded);
+  const hasLoaded = useSelector(
+    executionResultsMachineActorRef,
+    (state) => state.context.hasLoaded
+  );
 
   const value = useMemo(
     () => ({

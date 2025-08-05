@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { StateManager } from "@extension/StateManager";
-import { createSettingsViewProvider } from "@webview/views/settings/ViewProvider";
+import { createExampleViewProvider } from "@webview/views/_example/ViewProvider";
 import { createExecutionResultsViewProvider } from "@webview/views/executionResults/ViewProvider";
 import { createConfigWizardPanel } from "@webview/views/configWizard/ViewProvider";
 import { PrismCLIManager } from "@extension/PrismCLIManager";
@@ -9,7 +9,7 @@ import { executeProjectNpmScript } from "@extension/executeProjectNpmScript";
 import { CONFIG } from "config";
 
 // disposables
-let settingsViewProvider: vscode.Disposable | undefined;
+let exampleViewProvider: vscode.Disposable | undefined;
 let executionResultsViewProvider: vscode.Disposable | undefined;
 let configWizardPanel: vscode.Disposable | undefined;
 let outputChannel: vscode.OutputChannel;
@@ -99,8 +99,8 @@ export async function activate(context: vscode.ExtensionContext) {
      */
     log("INFO", "Registering views...");
 
-    settingsViewProvider = createSettingsViewProvider(context);
-    context.subscriptions.push(settingsViewProvider);
+    exampleViewProvider = createExampleViewProvider(context);
+    context.subscriptions.push(exampleViewProvider);
 
     executionResultsViewProvider = createExecutionResultsViewProvider(context);
     context.subscriptions.push(executionResultsViewProvider);
@@ -115,12 +115,14 @@ export async function activate(context: vscode.ExtensionContext) {
     const prismMeCommand = vscode.commands.registerCommand(
       "prismatic.me",
       async () => {
+        outputChannel.show(true);
+
         try {
           const user = await prismCLIManager.me();
 
-          log("INFO", `\n${user}`, true);
+          log("INFO", `\n${user}`);
         } catch (error) {
-          log("ERROR", String(error), true);
+          log("ERROR", String(error));
         }
       }
     );
@@ -183,11 +185,11 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(prismMeTokenCommand);
 
     /**
-     * command: prism integration:import
+     * command: prism integrations:import
      * This command is used to import the integration into Prismatic.
      */
-    const prismIntegrationImportCommand = vscode.commands.registerCommand(
-      "prismatic.integration.import",
+    const prismIntegrationsImportCommand = vscode.commands.registerCommand(
+      "prismatic.integrations.import",
       async () => {
         outputChannel.show(true);
 
@@ -209,7 +211,7 @@ export async function activate(context: vscode.ExtensionContext) {
           log("INFO", "Starting integration import...");
 
           // note: import the integration
-          const integrationId = await prismCLIManager.integrationImport();
+          const integrationId = await prismCLIManager.integrationsImport();
 
           stateManager.updateWorkspaceState({ integrationId });
 
@@ -228,7 +230,7 @@ export async function activate(context: vscode.ExtensionContext) {
         }
       }
     );
-    context.subscriptions.push(prismIntegrationImportCommand);
+    context.subscriptions.push(prismIntegrationsImportCommand);
 
     /**
      * command: env prismatic url
@@ -309,7 +311,7 @@ export async function deactivate() {
     prismCLIManager.dispose();
 
     // note: dispose of views
-    settingsViewProvider?.dispose();
+    exampleViewProvider?.dispose();
     executionResultsViewProvider?.dispose();
     configWizardPanel?.dispose();
 
@@ -320,7 +322,7 @@ export async function deactivate() {
   }
 }
 
-const log = (
+export const log = (
   level: "SUCCESS" | "WARN" | "ERROR" | "INFO",
   message: string,
   showMessage = false

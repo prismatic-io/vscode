@@ -28,6 +28,6 @@ export const isWorkspaceState = (value: unknown): value is WorkspaceState => {
     value !== null &&
     "configWizard" in value &&
     "executionResults" in value &&
-    "settings" in value
+    "example" in value
   );
 };

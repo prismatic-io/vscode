@@ -1,9 +1,10 @@
 import { fromPromise } from "xstate";
-import { fetcher, type GraphQLVariables } from "@/webview/utils/fetcher";
+import { fetcher } from "@/lib/fetcher";
 import type {
   ExecutionLogs,
   LogSeverityLevel,
 } from "@/webview/views/executionResults/types";
+import type { GraphQLVariables } from "@/types/graphql";
 
 type GetExecutionLogsQuery = {
   logs: {

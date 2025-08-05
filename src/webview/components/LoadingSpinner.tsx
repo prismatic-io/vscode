@@ -2,12 +2,16 @@ import styled, { keyframes } from "styled-components";
 
 interface LoadingSpinnerProps {
   className?: string;
+  size?: number;
 }
 
-export const LoadingSpinner = ({ className }: LoadingSpinnerProps) => {
+export const LoadingSpinner = ({
+  className,
+  size = 30,
+}: LoadingSpinnerProps) => {
   return (
     <SpinnerContainer className={className}>
-      <Spinner role="status" aria-label="Loading" />
+      <Spinner role="status" aria-label="Loading" size={size} />
     </SpinnerContainer>
   );
 };
@@ -28,11 +32,11 @@ const SpinnerContainer = styled.div`
   justify-content: center;
 `;
 
-const Spinner = styled.div`
+const Spinner = styled.div<{ size: number }>`
   animation: ${spin} 1s linear infinite;
   border-radius: 50%;
-  border: 2px solid ${({ theme }) => theme.colors.border};
-  border-top: 2px solid ${({ theme }) => theme.colors.primary};
-  height: 20px;
-  width: 20px;
+  border: 3px solid ${({ theme }) => theme.colors.border};
+  border-top: 3px solid ${({ theme }) => theme.colors.primary};
+  height: ${({ size }) => size}px;
+  width: ${({ size }) => size}px;
 `;

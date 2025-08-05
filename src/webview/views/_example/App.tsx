@@ -8,7 +8,7 @@ import {
   Message,
   LastMessage,
   Button,
-} from "@/webview/views/settings/styles";
+} from "@/webview/views/_example/styles";
 
 export const App: React.FC = () => {
   const { state: globalState, updateState } = useVSCodeState({
@@ -21,12 +21,12 @@ export const App: React.FC = () => {
     });
 
   const { message, postMessage, lastReceived, hasReceivedMessages } =
-    useWebviewMessage("settings.example");
+    useWebviewMessage("example.payload");
 
   return (
     <ThemeProvider>
       <Container>
-        <Title>Settings</Title>
+        <Title>Example</Title>
         <Message>{message}</Message>
         <LastMessage>
           {hasReceivedMessages && (

@@ -1,12 +1,12 @@
 const CONFIG = {
   webviews: {
-    settings: {
-      command: "prismatic.settings",
-      entryPoint: "src/webview/views/settings/index.tsx",
-      outdir: "dist/settingsView",
-      scriptPath: "dist/settingsView/index.js",
-      title: "Settings",
-      viewType: "settings.webview",
+    example: {
+      command: "prismatic.example",
+      entryPoint: "src/webview/views/_example/index.tsx",
+      outdir: "dist/exampleView",
+      scriptPath: "dist/exampleView/index.js",
+      title: "Example",
+      viewType: "example.webview",
     },
     executionResults: {
       command: "prismatic.executionResults",
