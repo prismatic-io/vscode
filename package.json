@@ -24,7 +24,7 @@
     "commands": [
       {
         "command": "prismatic.configWizard",
-        "title": "Configuration Wizard",
+        "title": "Config Wizard",
         "category": "Prismatic"
       },
       {

@@ -21,7 +21,7 @@ const CONFIG = {
       entryPoint: "src/webview/views/configWizard/index.tsx",
       outdir: "dist/configWizardView",
       scriptPath: "dist/configWizardView/index.js",
-      title: "Configuration Wizard",
+      title: "Config Wizard",
       viewType: "configWizard.webview",
     },
   },
