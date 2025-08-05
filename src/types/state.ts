@@ -1,7 +1,3 @@
-import type { ConfigWizardState } from "@webview/views/configWizard/types";
-import type { ExecutionResultsState } from "@webview/views/executionResults/types";
-import type { SettingsState } from "@webview/views/settings/types";
-
 export interface GlobalState {
   accessToken: string | undefined;
   refreshToken: string | undefined;
@@ -9,9 +5,12 @@ export interface GlobalState {
 }
 
 export interface WorkspaceState {
-  configWizard: ConfigWizardState;
-  executionResults: ExecutionResultsState;
-  settings: SettingsState;
+  integrationId: string | undefined;
+  systemInstanceId: string | undefined;
+  flowId: string | undefined;
+  debugMode: boolean | undefined;
+  headers: Record<string, string> | undefined;
+  payload: string | undefined;
 }
 
 export const isGlobalState = (value: unknown): value is GlobalState => {

@@ -14,6 +14,7 @@ import {
   integrationMachine,
 } from "@/webview/machines/integration/integration.machine";
 import { NoIntegration } from "@/webview/components/NoIntegration";
+import { LoadingSpinner } from "@/webview/components/LoadingSpinner";
 
 const IntegrationContext = createContext<{
   flowId: string;
@@ -34,52 +35,89 @@ const IntegrationContext = createContext<{
 export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
   const { accessToken, prismaticUrl } = useAuthContext();
 
-  const actorRef = useActorRef(integrationMachine, {
+  const integrationMachineActorRef = useActorRef(integrationMachine, {
     input: { accessToken, prismaticUrl },
   });
 
-  const { state: settingsState } = useVSCodeState({
-    key: "settings",
+  const {
+    state: workspaceState,
+    updateState: updateWorkspaceState,
+    hasLoaded: hasLoadedWorkspaceState,
+  } = useVSCodeState({
     scope: "workspace",
   });
 
-  useEffect(() => {
-    if (settingsState?.integrationId) {
-      actorRef.send({
-        type: "SET_INTEGRATION_ID",
-        integrationId: settingsState.integrationId,
-      });
-    }
-  }, [settingsState, actorRef]);
-
   const systemInstanceId = useSelector(
-    actorRef,
+    integrationMachineActorRef,
     (state) => state.context.systemInstanceId
   );
 
-  const flows = useSelector(actorRef, (state) => state.context.flows);
-
-  const flowId = useSelector(actorRef, (state) => state.context.flowId);
+  const flows = useSelector(
+    integrationMachineActorRef,
+    (state) => state.context.flows
+  );
 
   const setFlowId = useCallback(
     (flowId: string) => {
-      actorRef.send({ type: "SET_FLOW_ID", flowId });
+      updateWorkspaceState({ flowId });
     },
-    [actorRef]
+    [updateWorkspaceState]
   );
 
   const refetch = useCallback(() => {
-    actorRef.send({ type: "FETCH" });
-  }, [actorRef]);
+    integrationMachineActorRef.send({ type: "FETCH" });
+  }, [integrationMachineActorRef]);
 
-  const isLoading = useSelector(actorRef, (state) => state.hasTag("loading"));
-
-  const value = useMemo(
-    () => ({ systemInstanceId, flows, flowId, refetch, isLoading, setFlowId }),
-    [systemInstanceId, flows, flowId, refetch, isLoading, setFlowId]
+  const isLoading = useSelector(integrationMachineActorRef, (state) =>
+    state.hasTag("loading")
   );
 
-  if (!settingsState?.integrationId) {
+  useEffect(() => {
+    if (workspaceState?.integrationId) {
+      integrationMachineActorRef.send({
+        type: "SET_INTEGRATION_ID",
+        integrationId: workspaceState.integrationId,
+      });
+    }
+  }, [workspaceState?.integrationId, integrationMachineActorRef]);
+
+  useEffect(() => {
+    if (flows.length === 0) {
+      return;
+    }
+
+    if (
+      !workspaceState?.flowId ||
+      !flows.some((flow) => flow.id === workspaceState?.flowId)
+    ) {
+      updateWorkspaceState({ flowId: flows[0].id });
+    }
+  }, [workspaceState?.flowId, flows, updateWorkspaceState]);
+
+  const value = useMemo(
+    () => ({
+      systemInstanceId,
+      flows,
+      flowId: workspaceState?.flowId || "",
+      refetch,
+      isLoading,
+      setFlowId,
+    }),
+    [
+      systemInstanceId,
+      flows,
+      workspaceState?.flowId,
+      refetch,
+      isLoading,
+      setFlowId,
+    ]
+  );
+
+  if (isLoading || !hasLoadedWorkspaceState) {
+    return <LoadingSpinner size={40} />;
+  }
+
+  if (!workspaceState?.integrationId) {
     return <NoIntegration />;
   }
 

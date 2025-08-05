@@ -11,14 +11,12 @@ import {
 } from "@/webview/views/settings/styles";
 
 export const App: React.FC = () => {
-  const { state, updateState } = useVSCodeState({
-    key: "accessToken",
+  const { state: globalState, updateState } = useVSCodeState({
     scope: "global",
   });
 
   const { state: workspaceState, updateState: updateWorkspaceState } =
     useVSCodeState({
-      key: "settings",
       scope: "workspace",
     });
 
@@ -40,8 +38,11 @@ export const App: React.FC = () => {
         >
           Send Example Message to VS Code
         </Button>
-        <p>Token: {state}</p>
-        <button onClick={() => updateState("example value")} type="button">
+        <p>Token: {globalState?.accessToken}</p>
+        <button
+          onClick={() => updateState({ accessToken: "example value" })}
+          type="button"
+        >
           Update Token
         </button>
         <p>Integration Id: {workspaceState?.integrationId}</p>

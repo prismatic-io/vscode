@@ -100,5 +100,6 @@ const getWebviewApi = (): WebviewApi => {
   if (!webviewApi) {
     webviewApi = window.acquireVsCodeApi();
   }
+
   return webviewApi;
 };

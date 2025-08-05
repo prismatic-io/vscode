@@ -93,15 +93,15 @@ export class PrismCLIManager {
     fromWorkspace = false
   ): Promise<{ stdout: string; stderr: string }> {
     const isInstalled = await this.checkCLIInstallation();
-    const prismaticUrl = await this.stateManager.getGlobalState("prismaticUrl");
 
     if (!isInstalled) {
       throw new Error(
         "Prismatic CLI is not properly installed. Please ensure @prismatic-io/prism is installed on your system. Run 'npm install -g @prismatic-io/prism' to install it."
       );
     }
+    const globalState = await this.stateManager.getGlobalState();
 
-    if (!prismaticUrl) {
+    if (!globalState?.prismaticUrl) {
       throw new Error(
         "Prismatic URL is not set. Please set it using the 'Prismatic URL' command."
       );
@@ -118,7 +118,7 @@ export class PrismCLIManager {
           cwd,
           env: {
             ...process.env,
-            PRISMATIC_URL: prismaticUrl,
+            PRISMATIC_URL: globalState.prismaticUrl,
           },
         }
       );
@@ -154,14 +154,14 @@ export class PrismCLIManager {
    * @throws {Error} If the login process fails
    */
   public async login(): Promise<string> {
-    const prismaticUrl = await this.stateManager.getGlobalState("prismaticUrl");
+    const globalState = await this.stateManager.getGlobalState();
 
     return new Promise((resolve, reject) => {
       const loginProcess = spawn(this.prismPath, ["login"], {
         stdio: ["pipe", "pipe", "pipe"],
         env: {
           ...process.env,
-          PRISMATIC_URL: prismaticUrl,
+          PRISMATIC_URL: globalState?.prismaticUrl,
         },
       });
 
@@ -231,6 +231,11 @@ export class PrismCLIManager {
    */
   public async logout(): Promise<string> {
     const { stdout } = await this.executeCommand("logout");
+
+    await this.stateManager.updateGlobalState({
+      accessToken: undefined,
+      refreshToken: undefined,
+    });
 
     return stdout.trim();
   }

@@ -211,7 +211,7 @@ export async function activate(context: vscode.ExtensionContext) {
           // note: import the integration
           const integrationId = await prismCLIManager.integrationImport();
 
-          stateManager.updateWorkspaceState("settings", { integrationId });
+          stateManager.updateWorkspaceState({ integrationId });
 
           // note: show the result
           log(
@@ -237,15 +237,13 @@ export async function activate(context: vscode.ExtensionContext) {
     const prismPrismaticUrlCommand = vscode.commands.registerCommand(
       "prismatic.prismaticUrl",
       async () => {
-        const existingPrismaticUrl = await stateManager.getGlobalState(
-          "prismaticUrl"
-        );
+        const globalState = await stateManager.getGlobalState();
 
         // note: show the input box
         const updatedPrismaticUrl = await vscode.window.showInputBox({
           prompt: "Enter Prismatic URL",
-          placeHolder: existingPrismaticUrl || CONFIG.prismaticUrl,
-          value: existingPrismaticUrl || CONFIG.prismaticUrl,
+          placeHolder: globalState?.prismaticUrl || CONFIG.prismaticUrl,
+          value: globalState?.prismaticUrl || CONFIG.prismaticUrl,
           validateInput: (value) => {
             try {
               new URL(value);
@@ -258,16 +256,15 @@ export async function activate(context: vscode.ExtensionContext) {
 
         if (
           !updatedPrismaticUrl ||
-          updatedPrismaticUrl === existingPrismaticUrl
+          updatedPrismaticUrl === globalState?.prismaticUrl
         ) {
           return;
         }
 
         // note: update the URL in state
-        await stateManager.updateGlobalState(
-          "prismaticUrl",
-          updatedPrismaticUrl
-        );
+        await stateManager.updateGlobalState({
+          prismaticUrl: updatedPrismaticUrl,
+        });
 
         // note: show the result
         log("SUCCESS", "Prismatic URL updated successfully!", true);

@@ -6,6 +6,7 @@ import {
 } from "react";
 import { useVSCodeState } from "@/webview/hooks/useVSCodeState";
 import { NotLoggedIn } from "@/webview/components/NotLoggedIn";
+import { LoadingSpinner } from "@/webview/components/LoadingSpinner";
 
 const AuthContext = createContext<{
   accessToken: string;
@@ -13,26 +14,24 @@ const AuthContext = createContext<{
 } | null>(null);
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
-  const { state: accessToken } = useVSCodeState({
-    key: "accessToken",
-    scope: "global",
-  });
-
-  const { state: prismaticUrl } = useVSCodeState({
-    key: "prismaticUrl",
+  const { state: globalState, hasLoaded } = useVSCodeState({
     scope: "global",
   });
 
   const value = useMemo(() => {
-    if (!accessToken || !prismaticUrl) {
+    if (!globalState?.accessToken || !globalState?.prismaticUrl) {
       return null;
     }
 
     return {
-      accessToken,
-      prismaticUrl,
+      accessToken: globalState.accessToken,
+      prismaticUrl: globalState.prismaticUrl,
     };
-  }, [accessToken, prismaticUrl]);
+  }, [globalState]);
+
+  if (!hasLoaded) {
+    return <LoadingSpinner size={40} />;
+  }
 
   if (!value) {
     return <NotLoggedIn />;

@@ -72,9 +72,75 @@ export class WebviewPanelManager<T extends MessageType> {
 
     if (this._config.onMessage) {
       this._disposables.push(
-        this._panel.webview.onDidReceiveMessage((message: T) => {
-          this._config.onMessage?.(message, this.postMessage.bind(this));
-        })
+        this._panel.webview.onDidReceiveMessage(
+          async (message: MessageType) => {
+            const stateManager = StateManager.getInstance();
+
+            switch (message.type) {
+              case "stateChange": {
+                const { scope, value } = message.payload;
+
+                try {
+                  if (scope === "global") {
+                    await stateManager.updateGlobalState(value);
+                  } else {
+                    await stateManager.updateWorkspaceState(value);
+                  }
+                } catch (error) {
+                  this.postMessage({
+                    type: "stateChange",
+                    payload: {
+                      scope,
+                      value:
+                        scope === "global"
+                          ? await stateManager.getGlobalState()
+                          : await stateManager.getWorkspaceState(),
+                      error:
+                        error instanceof Error
+                          ? error.message
+                          : "Unknown error",
+                    },
+                  } as T);
+                }
+                break;
+              }
+              case "getState": {
+                const { scope } = message.payload;
+
+                try {
+                  const value =
+                    scope === "global"
+                      ? await stateManager.getGlobalState()
+                      : await stateManager.getWorkspaceState();
+
+                  this.postMessage({
+                    type: "getState",
+                    payload: { scope, value },
+                  } as T);
+                } catch (error) {
+                  this.postMessage({
+                    type: "getState",
+                    payload: {
+                      scope,
+                      error:
+                        error instanceof Error
+                          ? error.message
+                          : "Unknown error",
+                    },
+                  } as T);
+                }
+                break;
+              }
+              // note: send other postMessage to the webview
+              default: {
+                this._config.onMessage?.(
+                  message as T,
+                  this.postMessage.bind(this)
+                );
+              }
+            }
+          }
+        )
       );
     }
 

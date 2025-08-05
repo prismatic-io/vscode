@@ -1,7 +1,3 @@
-export interface ConfigWizardState {
-  dummy: string | undefined;
-}
-
 export interface ConfigWizardExampleMessage {
   type: "configWizard.example";
   payload: string;

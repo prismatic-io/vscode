@@ -1,10 +1,3 @@
-export interface SettingsState {
-  integrationId: string | undefined;
-  dummy: string | undefined;
-  debugMode: boolean | undefined;
-  headers: Record<string, string> | undefined;
-  payload: string | undefined;
-}
 export interface SettingsExampleMessage {
   type: "settings.example";
   payload: string;

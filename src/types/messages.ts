@@ -10,14 +10,12 @@ export interface StateChangeMessage {
   payload:
     | {
         scope: "global";
-        key: keyof GlobalState;
-        value: GlobalState[keyof GlobalState];
+        value: Partial<GlobalState>;
         error?: string;
       }
     | {
         scope: "workspace";
-        key: keyof WorkspaceState;
-        value: WorkspaceState[keyof WorkspaceState];
+        value: Partial<WorkspaceState>;
         error?: string;
       };
 }
@@ -27,14 +25,12 @@ export interface GetStateMessage {
   payload:
     | {
         scope: "global";
-        key: keyof GlobalState;
-        value?: GlobalState[keyof GlobalState];
+        value?: GlobalState;
         error?: string;
       }
     | {
         scope: "workspace";
-        key: keyof WorkspaceState;
-        value?: WorkspaceState[keyof WorkspaceState];
+        value?: WorkspaceState;
         error?: string;
       };
 }
