@@ -7,6 +7,11 @@ import { PrismCLIManager } from "@extension/PrismCLIManager";
 import { TokenManager } from "@extension/TokenManager";
 import { executeProjectNpmScript } from "@extension/executeProjectNpmScript";
 import { CONFIG } from "config";
+import { createActor } from "xstate";
+import {
+  testIntegrationFlowMachine,
+  type TestIntegrationFlowMachineActorRef,
+} from "./lib/integrationsFlowsTest/testIntegrationFlow.machine";
 
 // disposables
 let exampleViewProvider: vscode.Disposable | undefined;
@@ -16,6 +21,7 @@ let outputChannel: vscode.OutputChannel;
 let tokenManager: TokenManager;
 let stateManager: StateManager;
 let prismCLIManager: PrismCLIManager;
+let testIntegrationFlowActor: TestIntegrationFlowMachineActorRef | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
   try {
@@ -233,6 +239,71 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(prismIntegrationsImportCommand);
 
     /**
+     * Initialize test integration flow actor
+     */
+    if (!testIntegrationFlowActor) {
+      testIntegrationFlowActor = createActor(testIntegrationFlowMachine, {
+        input: {},
+      });
+
+      // note: subscribe to state changes for managing running state
+      testIntegrationFlowActor.subscribe((snapshot) => {
+        vscode.commands.executeCommand(
+          "setContext",
+          "prismatic.testCommandEnabled",
+          snapshot.hasTag("idle")
+        );
+      });
+
+      // note: start the machine
+      testIntegrationFlowActor.start();
+    }
+
+    /**
+     * This command is used to run a test for the integration.
+     */
+    const integrationFlowTestCommand = vscode.commands.registerCommand(
+      "prismatic.integrations.test",
+      async () => {
+        outputChannel.show(true);
+
+        log("INFO", "Starting integration test...");
+
+        try {
+          const accessToken = await tokenManager.getAccessToken();
+          const workspaceState = await stateManager.getWorkspaceState();
+          const globalState = await stateManager.getGlobalState();
+
+          if (!accessToken) {
+            throw new Error("No access token available. Please login first.");
+          }
+
+          if (!workspaceState?.integrationId) {
+            throw new Error(
+              "No integration ID found. Please import an integration first."
+            );
+          }
+
+          if (!testIntegrationFlowActor) {
+            throw new Error("No test integration actor available.");
+          }
+
+          // note: send the test event with the integration ID
+          testIntegrationFlowActor.send({
+            type: "TEST_INTEGRATION",
+            integrationId: workspaceState.integrationId,
+            flowId: workspaceState.flowId,
+            accessToken,
+            prismaticUrl: globalState?.prismaticUrl ?? CONFIG.prismaticUrl,
+          });
+        } catch (error) {
+          log("ERROR", String(error), true);
+        }
+      }
+    );
+    context.subscriptions.push(integrationFlowTestCommand);
+
+    /**
      * command: env prismatic url
      * This command is used to update the Prismatic URL.
      */
@@ -309,6 +380,9 @@ export async function deactivate() {
 
     // note: dispose of prism CLI
     prismCLIManager.dispose();
+
+    // note: dispose of test integration flow actor
+    testIntegrationFlowActor?.stop();
 
     // note: dispose of views
     exampleViewProvider?.dispose();

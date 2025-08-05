@@ -53,6 +53,12 @@
         "category": "Prismatic"
       },
       {
+        "command": "prismatic.integrations.test",
+        "title": "Test Integration",
+        "category": "Prismatic",
+        "enablement": "prismatic.testCommandEnabled == true"
+      },
+      {
         "command": "prismatic.prismaticUrl",
         "title": "Prismatic URL",
         "category": "Prismatic"
@@ -95,11 +101,11 @@
       "view/title": [
         {
           "command": "prismatic.integrations.import",
-          "when": "view == executionResults.webview"
+          "when": "view == settings.webview || view == executionResults.webview"
         },
         {
           "command": "prismatic.integrations.test",
-          "when": "view == executionResults.webview && prismatic.testCommandEnabled == true"
+          "when": "(view == settings.webview || view == executionResults.webview) && prismatic.testCommandEnabled == true"
         }
       ]
     }

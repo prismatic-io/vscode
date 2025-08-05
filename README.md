@@ -75,7 +75,7 @@ src/
 - `prismatic.login`: Log in to Prismatic
 - `prismatic.logout`: Log out of Prismatic
 - `prismatic.integrations.import`: Import an integration
-- `prismatic.integration.test`: Test an integration
+- `prismatic.integrations.test`: Test the actively selected flow of an integration
 - `prismatic.prismaticUrl`: Set your Prismatic instance URL
 
 ### Building
