@@ -1,6 +1,5 @@
 import * as vscode from "vscode";
 import { StateManager } from "@extension/StateManager";
-import { createExampleViewProvider } from "@webview/views/_example/ViewProvider";
 import { createExecutionResultsViewProvider } from "@webview/views/executionResults/ViewProvider";
 import { createConfigWizardPanel } from "@webview/views/configWizard/ViewProvider";
 import { PrismCLIManager } from "@extension/PrismCLIManager";
@@ -14,7 +13,6 @@ import {
 } from "./lib/integrationsFlowsTest/testIntegrationFlow.machine";
 
 // disposables
-let exampleViewProvider: vscode.Disposable | undefined;
 let executionResultsViewProvider: vscode.Disposable | undefined;
 let configWizardPanel: vscode.Disposable | undefined;
 let outputChannel: vscode.OutputChannel;
@@ -104,9 +102,6 @@ export async function activate(context: vscode.ExtensionContext) {
      *   - config wizard
      */
     log("INFO", "Registering views...");
-
-    exampleViewProvider = createExampleViewProvider(context);
-    context.subscriptions.push(exampleViewProvider);
 
     executionResultsViewProvider = createExecutionResultsViewProvider(context);
     context.subscriptions.push(executionResultsViewProvider);
@@ -385,7 +380,6 @@ export async function deactivate() {
     testIntegrationFlowActor?.stop();
 
     // note: dispose of views
-    exampleViewProvider?.dispose();
     executionResultsViewProvider?.dispose();
     configWizardPanel?.dispose();
 
