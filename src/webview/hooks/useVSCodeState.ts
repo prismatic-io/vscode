@@ -1,32 +1,24 @@
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MessageHandlerManager } from "@extension/MessageHandlerManager";
 import type { MessageType } from "@type/messages";
 import type { GlobalState, WorkspaceState } from "@type/state";
 
 const messageHandlerManager = new MessageHandlerManager();
 
-type StateValue<T, K> = T extends "global"
-  ? K extends keyof GlobalState
-    ? GlobalState[K]
-    : never
-  : K extends keyof WorkspaceState
-  ? WorkspaceState[K]
-  : never;
+type StateValue<T> = T extends "global" ? GlobalState : WorkspaceState;
 
-interface StateOptions<T extends "global" | "workspace", K> {
-  key: K;
+interface StateOptions<T extends "global" | "workspace"> {
   scope: T;
-  initialValue?: StateValue<T, K>;
+  initialValue?: StateValue<T>;
 }
 
-export function useVSCodeState<
-  T extends "global" | "workspace",
-  K extends T extends "global" ? keyof GlobalState : keyof WorkspaceState
->(options: StateOptions<T, K>) {
-  const [state, setState] = useState<StateValue<T, K> | undefined>(
+export function useVSCodeState<T extends "global" | "workspace">(
+  options: StateOptions<T>
+) {
+  const [state, setState] = useState<StateValue<T> | undefined>(
     options.initialValue
   );
-  const [isLoading, setIsLoading] = useState(true);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // note: get initial state
@@ -37,18 +29,16 @@ export function useVSCodeState<
         options.scope === "global"
           ? {
               scope: "global",
-              key: options.key as keyof GlobalState,
             }
           : {
               scope: "workspace",
-              key: options.key as keyof WorkspaceState,
             },
     });
-  }, [options.key, options.scope]);
+  }, [options.scope]);
 
   // note: update state
   const updateState = useCallback(
-    (newValue: Partial<StateValue<T, K>>) => {
+    (newValue: Partial<StateValue<T>>) => {
       try {
         messageHandlerManager.postMessage({
           type: "stateChange",
@@ -56,42 +46,45 @@ export function useVSCodeState<
             options.scope === "global"
               ? {
                   scope: "global",
-                  key: options.key as keyof GlobalState,
-                  value: newValue as unknown as GlobalState[keyof GlobalState],
+                  value: newValue,
                 }
               : {
                   scope: "workspace",
-                  key: options.key as keyof WorkspaceState,
-                  value:
-                    newValue as unknown as WorkspaceState[keyof WorkspaceState],
+                  value: newValue,
                 },
         });
-        setState(newValue as StateValue<T, K>);
+
         setError(null);
       } catch (err) {
         const error =
           err instanceof Error ? err.message : "Failed to update state";
+
         console.error("[useVSCodeState]", error);
         setError(error);
       }
     },
-    [options.key, options.scope]
+    [options.scope]
   );
 
   // note: listen for state changes from the extension
   useEffect(() => {
     const handleMessage = (message: MessageType) => {
-      if (message.type === "stateChange" || message.type === "getState") {
-        if (
-          message.payload.scope === options.scope &&
-          message.payload.key === options.key
-        ) {
-          const newValue = message.payload.value as StateValue<T, K>;
+      if (
+        message.type === "stateChange" &&
+        message.payload.scope === options.scope
+      ) {
+        const newValue = message.payload.value as StateValue<T>;
 
-          setState(newValue);
-          setIsLoading(false);
-          setError(null);
-        }
+        setState(newValue);
+        setError(null);
+      }
+
+      if (
+        message.type === "getState" &&
+        message.payload.scope === options.scope
+      ) {
+        setState(message.payload.value as StateValue<T>);
+        setHasLoaded(true);
       }
     };
 
@@ -102,12 +95,12 @@ export function useVSCodeState<
       messageHandlerManager.off("stateChange", handleMessage);
       messageHandlerManager.off("getState", handleMessage);
     };
-  }, [options.key, options.scope]);
+  }, [options.scope]);
 
   return {
     state,
     updateState,
-    isLoading,
+    hasLoaded,
     error,
   };
 }

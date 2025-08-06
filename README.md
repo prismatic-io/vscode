@@ -4,14 +4,14 @@ A VS Code extension that improves the developer experience around Code Native In
 
 ## Features
 
-- **Configuration Wizard**: Configure integration instances with a guided interface
+- **Authentication**: Secure login and token management through the Prismatic CLI
+- **Config Wizard**: Configure integration instances with a guided interface
 - **Execution Results**: View detailed step-by-step outputs and logs
-- **React Integration**: Modern UI components using React and styled-components
-- **VS Code Theming**: Seamless integration with VS Code's theme system
-- **State Management**: Persistent state across extension sessions
-- **Message Passing**: Bi-directional communication between webviews and extension
-- **Authentication**: Secure login and token management
 - **Integration Import**: Direct import of integrations from Prismatic
+- **Message Passing**: Bi-directional communication between webviews and extension
+- **React Integration**: Modern UI components using React and styled-components
+- **State Management**: Persistent state across extension sessions
+- **VSCode Theming**: Seamless integration with VS Code's theme system
 
 ## Getting Started
 
@@ -23,7 +23,7 @@ A VS Code extension that improves the developer experience around Code Native In
    Note: The extension will also work with a local installation of the CLI, but a global installation is recommended for the best experience.
 3. Open the Prismatic view in the Activity Bar
 4. Log in to your Prismatic instance
-5. Use the Configuration Wizard to set up your integration
+5. Use the Config Wizard to set up your integration
 6. View execution results in the panel
 
 ## Development
@@ -31,7 +31,7 @@ A VS Code extension that improves the developer experience around Code Native In
 ### Prerequisites
 
 - Node.js
-- VS Code (version 1.99.0 or higher)
+- VS Code (version 1.96.0 or higher)
 - npm or yarn
 - Prismatic CLI (installed globally)
 
@@ -61,6 +61,7 @@ npm run watch
 ```
 src/
   ├── extension/      # VS Code extension code
+  ├── lib/            # Utility functions and shared code
   ├── webview/        # React webview components
   ├── types/          # TypeScript type definitions
   └── extension.ts    # Extension entry point
@@ -68,12 +69,13 @@ src/
 
 ### Available Commands
 
-- `prismatic.configWizard`: Open the Configuration Wizard
+- `prismatic.configWizard`: Open the Config Wizard
 - `prismatic.me`: View your user profile
 - `prismatic.me:token`: Refresh your authentication token
 - `prismatic.login`: Log in to Prismatic
 - `prismatic.logout`: Log out of Prismatic
-- `prismatic.integration.import`: Import an integration
+- `prismatic.integrations.import`: Import an integration
+- `prismatic.integrations.test`: Test the actively selected flow of an integration
 - `prismatic.prismaticUrl`: Set your Prismatic instance URL
 
 ### Building
@@ -82,7 +84,7 @@ The project uses esbuild for bundling:
 
 - Extension code is bundled to `extension/extension.js`
 - Webview components are bundled to their respective directories
-- Styles are handled by styled-components and use the VS Code theme
+- Styles are handled by styled-components and use the VSCode theme
 
 ## Usage
 
@@ -90,7 +92,6 @@ The extension provides a webview panel that can be accessed through the VS Code 
 
 1. Press `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Linux)
 2. Type "Prismatic" to see available commands
-3. Select "Show Prismatic Panel" to open the webview
 
 ## Installing the Extension (.vsix) for Development
 

@@ -14,15 +14,8 @@ export function createConfigWizardPanel(context: vscode.ExtensionContext) {
       scriptPath: WEBVIEW_CONFIG.scriptPath,
       onMessage: async (message, postMessage) => {
         switch (message.type) {
-          case "configWizard.example": {
-            vscode.window.showInformationMessage(
-              `Received from config wizard: ${message.payload}`
-            );
-
-            postMessage({
-              type: "configWizard.example",
-              payload: `VS Code received your message at ${new Date().toLocaleTimeString()}`,
-            });
+          case "configWizard.closed": {
+            configWizardProvider.close();
             break;
           }
           case "configWizard.error": {

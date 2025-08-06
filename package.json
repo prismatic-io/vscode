@@ -1,9 +1,10 @@
 {
   "name": "prismatic-extension",
   "displayName": "Prismatic",
-  "publisher": "prismatic",
+  "publisher": "prismatic-dev",
+  "private": true,
   "description": "This VS Code extension improves the developer experience around Code Native Integrations (CNI) by enabling test execution, integration imports, instance configuration (including config variables, debug mode, and trigger payloads), and inspection of execution results—all directly within the IDE. Developers can view detailed step-by-step outputs and logs for both onTrigger and onExecution stages, streamlining the build, test, and debug workflow without leaving VS Code.",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "repository": {
     "type": "git",
     "url": "https://github.com/prismatic-io/vscode"
@@ -23,7 +24,7 @@
     "commands": [
       {
         "command": "prismatic.configWizard",
-        "title": "Configuration Wizard",
+        "title": "Config Wizard",
         "category": "Prismatic"
       },
       {
@@ -47,9 +48,15 @@
         "category": "Prismatic"
       },
       {
-        "command": "prismatic.integration.import",
+        "command": "prismatic.integrations.import",
         "title": "Import Integration",
         "category": "Prismatic"
+      },
+      {
+        "command": "prismatic.integrations.test",
+        "title": "Test Integration",
+        "category": "Prismatic",
+        "enablement": "prismatic.testCommandEnabled == true"
       },
       {
         "command": "prismatic.prismaticUrl",
@@ -58,14 +65,6 @@
       }
     ],
     "views": {
-      "prismatic": [
-        {
-          "type": "webview",
-          "id": "settings.webview",
-          "name": "Prismatic",
-          "when": "false"
-        }
-      ],
       "executionResults": [
         {
           "type": "webview",
@@ -75,13 +74,6 @@
       ]
     },
     "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "prismatic",
-          "title": "Prismatic",
-          "icon": "resources/prismatic.svg"
-        }
-      ],
       "panel": [
         {
           "id": "executionResults",
@@ -93,8 +85,12 @@
     "menus": {
       "view/title": [
         {
-          "command": "prismatic.integration.import",
-          "when": "view == settings.webview || view == executionResults.webview"
+          "command": "prismatic.integrations.import",
+          "when": "view == executionResults.webview"
+        },
+        {
+          "command": "prismatic.integrations.test",
+          "when": "view == executionResults.webview && prismatic.testCommandEnabled == true"
         }
       ]
     }
@@ -108,7 +104,7 @@
     "package": "vsce package"
   },
   "dependencies": {
-    "@iconscout/react-unicons": "^2.2.4",
+    "@iconscout/react-unicons": "^2.2.5",
     "@msgpack/msgpack": "^3.1.2",
     "@xstate/react": "^5.0.4",
     "date-fns": "^4.1.0",
@@ -123,11 +119,12 @@
     "@testing-library/react": "^14.1.2",
     "@types/jest": "^29.5.12",
     "@types/node": "20.x",
-    "@types/vscode": "1.96.2",
+    "@types/vscode": "1.96.0",
     "@typescript-eslint/eslint-plugin": "^8.28.0",
     "@typescript-eslint/parser": "^8.28.0",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.1",
+    "@vscode/vsce": "^3.6.0",
     "esbuild": "^0.25.3",
     "eslint": "^9.23.0",
     "jest": "^29.7.0",

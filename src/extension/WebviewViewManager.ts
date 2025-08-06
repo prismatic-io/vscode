@@ -79,23 +79,23 @@ export class WebviewViewManager<T extends MessageType>
 
             switch (message.type) {
               case "stateChange": {
-                const { scope, key, value } = message.payload;
+                const { scope, value } = message.payload;
 
                 try {
                   if (scope === "global") {
-                    await stateManager.updateGlobalState(key, value);
+                    await stateManager.updateGlobalState(value);
                   } else {
-                    await stateManager.updateWorkspaceState(key, value);
+                    await stateManager.updateWorkspaceState(value);
                   }
-
-                  this.postMessage(message as T);
                 } catch (error) {
                   this.postMessage({
                     type: "stateChange",
                     payload: {
                       scope,
-                      key,
-                      value,
+                      value:
+                        scope === "global"
+                          ? await stateManager.getGlobalState()
+                          : await stateManager.getWorkspaceState(),
                       error:
                         error instanceof Error
                           ? error.message
@@ -106,25 +106,23 @@ export class WebviewViewManager<T extends MessageType>
                 break;
               }
               case "getState": {
-                const { scope, key } = message.payload;
+                const { scope } = message.payload;
 
                 try {
                   const value =
                     scope === "global"
-                      ? await stateManager.getGlobalState(key)
-                      : await stateManager.getWorkspaceState(key);
+                      ? await stateManager.getGlobalState()
+                      : await stateManager.getWorkspaceState();
 
                   this.postMessage({
                     type: "getState",
-                    payload: { scope, key, value },
+                    payload: { scope, value },
                   } as T);
                 } catch (error) {
                   this.postMessage({
                     type: "getState",
                     payload: {
                       scope,
-                      key,
-                      value: undefined,
                       error:
                         error instanceof Error
                           ? error.message

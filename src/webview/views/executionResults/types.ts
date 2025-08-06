@@ -1,10 +1,3 @@
-export interface ExecutionResultsState {
-  dummy: string | undefined;
-  filters: {
-    type: string | undefined;
-  };
-}
-
 export interface ExecutionResultsExampleMessage {
   type: "executionResults.example";
   payload: string;

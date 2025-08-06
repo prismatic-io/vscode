@@ -1,21 +1,25 @@
 import * as vscode from "vscode";
 import { StateManager } from "@extension/StateManager";
-import { createSettingsViewProvider } from "@webview/views/settings/ViewProvider";
 import { createExecutionResultsViewProvider } from "@webview/views/executionResults/ViewProvider";
 import { createConfigWizardPanel } from "@webview/views/configWizard/ViewProvider";
 import { PrismCLIManager } from "@extension/PrismCLIManager";
 import { TokenManager } from "@extension/TokenManager";
 import { executeProjectNpmScript } from "@extension/executeProjectNpmScript";
 import { CONFIG } from "config";
+import { createActor } from "xstate";
+import {
+  testIntegrationFlowMachine,
+  type TestIntegrationFlowMachineActorRef,
+} from "./lib/integrationsFlowsTest/testIntegrationFlow.machine";
 
 // disposables
-let settingsViewProvider: vscode.Disposable | undefined;
 let executionResultsViewProvider: vscode.Disposable | undefined;
 let configWizardPanel: vscode.Disposable | undefined;
 let outputChannel: vscode.OutputChannel;
 let tokenManager: TokenManager;
 let stateManager: StateManager;
 let prismCLIManager: PrismCLIManager;
+let testIntegrationFlowActor: TestIntegrationFlowMachineActorRef | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
   try {
@@ -49,13 +53,13 @@ export async function activate(context: vscode.ExtensionContext) {
      * initialize Token Manager
      */
     log("INFO", "Initializing Token Manager...");
-    tokenManager = TokenManager.getInstance();
+    tokenManager = await TokenManager.getInstance();
 
     /**
      * initialize Prism CLI
      */
     log("INFO", "Initializing Prism CLI...");
-    prismCLIManager = PrismCLIManager.getInstance();
+    prismCLIManager = await PrismCLIManager.getInstance();
 
     /**
      * check if user is logged in
@@ -99,9 +103,6 @@ export async function activate(context: vscode.ExtensionContext) {
      */
     log("INFO", "Registering views...");
 
-    settingsViewProvider = createSettingsViewProvider(context);
-    context.subscriptions.push(settingsViewProvider);
-
     executionResultsViewProvider = createExecutionResultsViewProvider(context);
     context.subscriptions.push(executionResultsViewProvider);
 
@@ -115,12 +116,14 @@ export async function activate(context: vscode.ExtensionContext) {
     const prismMeCommand = vscode.commands.registerCommand(
       "prismatic.me",
       async () => {
+        outputChannel.show(true);
+
         try {
           const user = await prismCLIManager.me();
 
-          log("INFO", `\n${user}`, true);
+          log("INFO", `\n${user}`);
         } catch (error) {
-          log("ERROR", String(error), true);
+          log("ERROR", String(error));
         }
       }
     );
@@ -183,11 +186,11 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(prismMeTokenCommand);
 
     /**
-     * command: prism integration:import
+     * command: prism integrations:import
      * This command is used to import the integration into Prismatic.
      */
-    const prismIntegrationImportCommand = vscode.commands.registerCommand(
-      "prismatic.integration.import",
+    const prismIntegrationsImportCommand = vscode.commands.registerCommand(
+      "prismatic.integrations.import",
       async () => {
         outputChannel.show(true);
 
@@ -209,9 +212,9 @@ export async function activate(context: vscode.ExtensionContext) {
           log("INFO", "Starting integration import...");
 
           // note: import the integration
-          const integrationId = await prismCLIManager.integrationImport();
+          const integrationId = await prismCLIManager.integrationsImport();
 
-          stateManager.updateWorkspaceState("settings", { integrationId });
+          stateManager.updateWorkspaceState({ integrationId });
 
           // note: show the result
           log(
@@ -228,7 +231,72 @@ export async function activate(context: vscode.ExtensionContext) {
         }
       }
     );
-    context.subscriptions.push(prismIntegrationImportCommand);
+    context.subscriptions.push(prismIntegrationsImportCommand);
+
+    /**
+     * Initialize test integration flow actor
+     */
+    if (!testIntegrationFlowActor) {
+      testIntegrationFlowActor = createActor(testIntegrationFlowMachine, {
+        input: {},
+      });
+
+      // note: subscribe to state changes for managing running state
+      testIntegrationFlowActor.subscribe((snapshot) => {
+        vscode.commands.executeCommand(
+          "setContext",
+          "prismatic.testCommandEnabled",
+          snapshot.hasTag("idle")
+        );
+      });
+
+      // note: start the machine
+      testIntegrationFlowActor.start();
+    }
+
+    /**
+     * This command is used to run a test for the integration.
+     */
+    const integrationFlowTestCommand = vscode.commands.registerCommand(
+      "prismatic.integrations.test",
+      async () => {
+        outputChannel.show(true);
+
+        log("INFO", "Starting integration test...");
+
+        try {
+          const accessToken = await tokenManager.getAccessToken();
+          const workspaceState = await stateManager.getWorkspaceState();
+          const globalState = await stateManager.getGlobalState();
+
+          if (!accessToken) {
+            throw new Error("No access token available. Please login first.");
+          }
+
+          if (!workspaceState?.integrationId) {
+            throw new Error(
+              "No integration ID found. Please import an integration first."
+            );
+          }
+
+          if (!testIntegrationFlowActor) {
+            throw new Error("No test integration actor available.");
+          }
+
+          // note: send the test event with the integration ID
+          testIntegrationFlowActor.send({
+            type: "TEST_INTEGRATION",
+            integrationId: workspaceState.integrationId,
+            flowId: workspaceState.flowId,
+            accessToken,
+            prismaticUrl: globalState?.prismaticUrl ?? CONFIG.prismaticUrl,
+          });
+        } catch (error) {
+          log("ERROR", String(error), true);
+        }
+      }
+    );
+    context.subscriptions.push(integrationFlowTestCommand);
 
     /**
      * command: env prismatic url
@@ -237,15 +305,13 @@ export async function activate(context: vscode.ExtensionContext) {
     const prismPrismaticUrlCommand = vscode.commands.registerCommand(
       "prismatic.prismaticUrl",
       async () => {
-        const existingPrismaticUrl = await stateManager.getGlobalState(
-          "prismaticUrl"
-        );
+        const globalState = await stateManager.getGlobalState();
 
         // note: show the input box
         const updatedPrismaticUrl = await vscode.window.showInputBox({
           prompt: "Enter Prismatic URL",
-          placeHolder: existingPrismaticUrl || CONFIG.prismaticUrl,
-          value: existingPrismaticUrl || CONFIG.prismaticUrl,
+          placeHolder: globalState?.prismaticUrl || CONFIG.prismaticUrl,
+          value: globalState?.prismaticUrl || CONFIG.prismaticUrl,
           validateInput: (value) => {
             try {
               new URL(value);
@@ -258,16 +324,15 @@ export async function activate(context: vscode.ExtensionContext) {
 
         if (
           !updatedPrismaticUrl ||
-          updatedPrismaticUrl === existingPrismaticUrl
+          updatedPrismaticUrl === globalState?.prismaticUrl
         ) {
           return;
         }
 
         // note: update the URL in state
-        await stateManager.updateGlobalState(
-          "prismaticUrl",
-          updatedPrismaticUrl
-        );
+        await stateManager.updateGlobalState({
+          prismaticUrl: updatedPrismaticUrl,
+        });
 
         // note: show the result
         log("SUCCESS", "Prismatic URL updated successfully!", true);
@@ -311,8 +376,10 @@ export async function deactivate() {
     // note: dispose of prism CLI
     prismCLIManager.dispose();
 
+    // note: dispose of test integration flow actor
+    testIntegrationFlowActor?.stop();
+
     // note: dispose of views
-    settingsViewProvider?.dispose();
     executionResultsViewProvider?.dispose();
     configWizardPanel?.dispose();
 
@@ -323,7 +390,7 @@ export async function deactivate() {
   }
 }
 
-const log = (
+export const log = (
   level: "SUCCESS" | "WARN" | "ERROR" | "INFO",
   message: string,
   showMessage = false

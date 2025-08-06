@@ -4,29 +4,23 @@ import type { GlobalState, WorkspaceState } from "@type/state";
 import type { MessageType } from "@type/messages";
 import { CONFIG } from "../../config";
 
+const GLOBAL_STATE_KEY = "prismatic-global-state";
+
 const DEFAULT_GLOBAL_STATE: GlobalState = {
   accessToken: undefined,
   refreshToken: undefined,
   prismaticUrl: CONFIG.prismaticUrl,
 };
 
+const WORKSPACE_STATE_KEY = "prismatic-workspace-state";
+
 const DEFAULT_WORKSPACE_STATE: WorkspaceState = {
-  configWizard: {
-    dummy: undefined,
-  },
-  executionResults: {
-    dummy: undefined,
-    filters: {
-      type: undefined,
-    },
-  },
-  settings: {
-    dummy: undefined,
-    debugMode: undefined,
-    headers: undefined,
-    payload: undefined,
-    integrationId: undefined,
-  },
+  debugMode: undefined,
+  headers: undefined,
+  payload: undefined,
+  integrationId: undefined,
+  systemInstanceId: undefined,
+  flowId: undefined,
 };
 
 export class StateManager {
@@ -59,20 +53,12 @@ export class StateManager {
    * This ensures all required state fields have initial values.
    */
   private async initializeDefaultState(): Promise<void> {
-    for (const [keyBase, value] of Object.entries(DEFAULT_GLOBAL_STATE)) {
-      const key = keyBase as keyof GlobalState;
-
-      if ((await this.getGlobalState(key)) === undefined) {
-        await this.updateGlobalState(key, value);
-      }
+    if ((await this.getGlobalState()) === undefined) {
+      await this.updateGlobalState(DEFAULT_GLOBAL_STATE);
     }
 
-    for (const [keyBase, value] of Object.entries(DEFAULT_WORKSPACE_STATE)) {
-      const key = keyBase as keyof WorkspaceState;
-
-      if ((await this.getWorkspaceState(key)) === undefined) {
-        await this.updateWorkspaceState(key, value);
-      }
+    if ((await this.getWorkspaceState()) === undefined) {
+      await this.updateWorkspaceState(DEFAULT_WORKSPACE_STATE);
     }
   }
 
@@ -137,21 +123,21 @@ export class StateManager {
    * @param value - The new value to merge with the current state
    * @returns The new state
    */
-  private createNewState<T>(currentState: T, value: Partial<T> | T): T {
+  private createNewState<T>(currentState: T, incomingValue: Partial<T> | T): T {
     if (
-      typeof value === "object" &&
-      value !== null &&
+      typeof incomingValue === "object" &&
+      incomingValue !== null &&
       typeof currentState === "object" &&
       currentState !== null
     ) {
       return produce(currentState, (draft) => {
-        for (const [key, val] of Object.entries(value)) {
+        for (const [key, val] of Object.entries(incomingValue)) {
           (draft as Record<string, unknown>)[key] = val;
         }
       });
     }
 
-    return value as T;
+    return incomingValue as T;
   }
 
   /**
@@ -159,22 +145,19 @@ export class StateManager {
    * @param key - The key to update in the global state
    * @param value - The new value to set
    */
-  public async updateGlobalState<K extends keyof GlobalState>(
-    key: K,
-    value: GlobalState[K]
+  public async updateGlobalState(
+    incomingValue: Partial<GlobalState>
   ): Promise<void> {
-    const currentState =
-      (await this.getGlobalState(key)) ?? DEFAULT_GLOBAL_STATE[key];
-    const newState = this.createNewState(currentState, value);
+    const currentState = (await this.getGlobalState()) ?? DEFAULT_GLOBAL_STATE;
+    const updatedState = this.createNewState(currentState, incomingValue);
 
-    await this.globalState.update(key, newState);
+    await this.globalState.update(GLOBAL_STATE_KEY, updatedState);
 
     this.notifyWebviews({
       type: "stateChange",
       payload: {
         scope: "global",
-        key,
-        value: newState,
+        value: updatedState,
       },
     });
   }
@@ -184,59 +167,46 @@ export class StateManager {
    * @param key - The key to update in the workspace state
    * @param value - The new value to set
    */
-  public async updateWorkspaceState<K extends keyof WorkspaceState>(
-    key: K,
-    value: Partial<WorkspaceState[K]>
+  public async updateWorkspaceState(
+    incomingValue: Partial<WorkspaceState>
   ): Promise<void> {
     const currentState =
-      (await this.getWorkspaceState(key)) ?? DEFAULT_WORKSPACE_STATE[key];
-    const newState = this.createNewState(currentState, value);
+      (await this.getWorkspaceState()) ?? DEFAULT_WORKSPACE_STATE;
+    const updatedState = this.createNewState(currentState, incomingValue);
 
-    await this.workspaceState.update(key, newState);
+    await this.workspaceState.update(WORKSPACE_STATE_KEY, updatedState);
 
     this.notifyWebviews({
       type: "stateChange",
       payload: {
         scope: "workspace",
-        key,
-        value: newState,
+        value: updatedState,
       },
     });
   }
 
   /**
    * Retrieves a value from the global state.
-   * @param key - The key to retrieve from the global state
    * @returns The value associated with the key, or undefined if not found
    */
-  public async getGlobalState<K extends keyof GlobalState>(
-    key: K
-  ): Promise<GlobalState[K] | undefined> {
-    return this.globalState.get<GlobalState[K]>(key);
+  public async getGlobalState(): Promise<GlobalState | undefined> {
+    return this.globalState.get<GlobalState>(GLOBAL_STATE_KEY);
   }
 
   /**
    * Retrieves a value from the workspace state.
-   * @param key - The key to retrieve from the workspace state
    * @returns The value associated with the key, or undefined if not found
    */
-  async getWorkspaceState<K extends keyof WorkspaceState>(
-    key: K
-  ): Promise<WorkspaceState[K] | undefined> {
-    return this.workspaceState.get<WorkspaceState[K]>(key);
+  async getWorkspaceState(): Promise<WorkspaceState | undefined> {
+    return this.workspaceState.get<WorkspaceState>(WORKSPACE_STATE_KEY);
   }
 
   /**
    * Clears all state from both global and workspace storage.
    */
   private async clearAllState(): Promise<void> {
-    for (const key of Object.keys(DEFAULT_GLOBAL_STATE)) {
-      await this.globalState.update(key, undefined);
-    }
-
-    for (const key of Object.keys(DEFAULT_WORKSPACE_STATE)) {
-      await this.workspaceState.update(key, undefined);
-    }
+    await this.globalState.update(GLOBAL_STATE_KEY, undefined);
+    await this.workspaceState.update(WORKSPACE_STATE_KEY, undefined);
   }
 
   /**

@@ -3,10 +3,17 @@ import { fetcher } from "@/lib/fetcher";
 import { IntegrationFlow } from "@/webview/machines/integration/integration.machine";
 import { GraphQLVariables } from "@/types/graphql";
 
+export enum InstanceConfigState {
+  FULLY_CONFIGURED = "FULLY_CONFIGURED",
+  NEEDS_INSTANCE_CONFIGURATION = "NEEDS_INSTANCE_CONFIGURATION",
+  NEEDS_USER_LEVEL_CONFIGURATION = "NEEDS_USER_LEVEL_CONFIGURATION",
+}
+
 type GetIntegrationQuery = {
   integration: {
     systemInstance: {
       id: string;
+      configState: InstanceConfigState | null;
     };
     flows: {
       nodes: {
@@ -26,6 +33,7 @@ const GET_INTEGRATION = `
     integration(id: $integrationId) {
       systemInstance {
         id
+        configState
       }
       flows {
         nodes {
@@ -39,7 +47,11 @@ const GET_INTEGRATION = `
 
 export interface GetIntegrationOutput {
   systemInstanceId: string;
-  flows: IntegrationFlow[];
+  configState: InstanceConfigState | null;
+  initialFlow: {
+    id: string;
+    name: string;
+  } | null;
 }
 
 interface GetIntegrationInput {
@@ -73,21 +85,13 @@ export const getIntegration = fromPromise<
     throw new Error("Integration data not found in response");
   }
 
-  const flows =
-    integration.flows?.nodes?.reduce((acc, flow) => {
-      if (!flow) {
-        return acc;
-      }
-
-      acc.push({ id: flow.id, name: flow.name });
-
-      return acc;
-    }, [] as IntegrationFlow[]) ?? [];
-
-  const systemInstanceId = integration.systemInstance?.id;
+  const systemInstanceId = integration.systemInstance.id;
+  const configState = integration.systemInstance?.configState ?? null;
+  const initialFlow = integration.flows?.nodes?.[0] ?? null;
 
   return {
     systemInstanceId,
-    flows,
+    configState,
+    initialFlow,
   };
 });

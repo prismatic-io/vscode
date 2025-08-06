@@ -1,9 +1,5 @@
-export interface ConfigWizardState {
-  dummy: string | undefined;
-}
-
-export interface ConfigWizardExampleMessage {
-  type: "configWizard.example";
+export interface ConfigWizardCloseMessage {
+  type: "configWizard.closed";
   payload: string;
 }
 
@@ -16,5 +12,17 @@ export interface ConfigWizardErrorMessage {
 }
 
 export type ConfigWizardMessage =
-  | ConfigWizardExampleMessage
+  | ConfigWizardCloseMessage
   | ConfigWizardErrorMessage;
+
+export interface IframeMessage {
+  type: string;
+  data?: any;
+  timestamp: number;
+}
+
+export interface ConfigWizardContextValue {
+  iframeRef: React.RefObject<HTMLIFrameElement>;
+  iframeUrl: string;
+  hasLoaded: boolean;
+}

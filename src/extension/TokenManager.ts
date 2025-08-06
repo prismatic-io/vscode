@@ -6,29 +6,29 @@ export class TokenManager {
   private prismCLIManager: PrismCLIManager;
   private stateManager: StateManager;
 
-  private constructor() {
-    this.prismCLIManager = PrismCLIManager.getInstance();
+  private constructor(prismCLIManager: PrismCLIManager) {
+    this.prismCLIManager = prismCLIManager;
     this.stateManager = StateManager.getInstance();
   }
 
   /**
    * Gets the singleton instance of TokenManager.
    * Creates a new instance if one doesn't exist.
-   * @returns {TokenManager} The singleton instance of TokenManager
+   * @returns {Promise<TokenManager>} A promise that resolves to the singleton instance of TokenManager
    */
-  static getInstance(): TokenManager {
+  static async getInstance(): Promise<TokenManager> {
     if (!TokenManager.instance) {
-      TokenManager.instance = new TokenManager();
+      const prismCLIManager = await PrismCLIManager.getInstance();
+      TokenManager.instance = new TokenManager(prismCLIManager);
     }
 
     return TokenManager.instance;
   }
 
   public async hasTokens(): Promise<boolean> {
-    const accessToken = await this.stateManager.getGlobalState("accessToken");
-    const refreshToken = await this.stateManager.getGlobalState("refreshToken");
+    const globalState = await this.stateManager.getGlobalState();
 
-    return !!accessToken && !!refreshToken;
+    return !!globalState?.accessToken && !!globalState?.refreshToken;
   }
 
   /**
@@ -39,10 +39,14 @@ export class TokenManager {
   public async initializeTokens(): Promise<void> {
     try {
       const accessToken = await this.prismCLIManager.meToken("access");
-      await this.stateManager.updateGlobalState("accessToken", accessToken);
+      await this.stateManager.updateGlobalState({
+        accessToken,
+      });
 
       const refreshToken = await this.prismCLIManager.meToken("refresh");
-      await this.stateManager.updateGlobalState("refreshToken", refreshToken);
+      await this.stateManager.updateGlobalState({
+        refreshToken,
+      });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -59,18 +63,18 @@ export class TokenManager {
    */
   public async refreshAccessToken(): Promise<string> {
     try {
-      const refreshToken = await this.stateManager.getGlobalState(
-        "refreshToken"
-      );
+      const globalState = await this.stateManager.getGlobalState();
 
-      if (!refreshToken) {
+      if (!globalState?.refreshToken) {
         throw new Error("No refresh token found");
       }
 
-      process.env.PRISM_REFRESH_TOKEN = refreshToken;
+      process.env.PRISM_REFRESH_TOKEN = globalState.refreshToken;
       const accessToken = await this.prismCLIManager.meToken();
 
-      await this.stateManager.updateGlobalState("accessToken", accessToken);
+      await this.stateManager.updateGlobalState({
+        accessToken,
+      });
 
       return accessToken;
     } catch (error) {
@@ -87,13 +91,13 @@ export class TokenManager {
    * @throws {Error} If no access token is found
    */
   public async getAccessToken(): Promise<string> {
-    const accessToken = await this.stateManager.getGlobalState("accessToken");
+    const globalState = await this.stateManager.getGlobalState();
 
-    if (!accessToken) {
+    if (!globalState?.accessToken) {
       throw new Error("No access token found");
     }
 
-    return accessToken;
+    return globalState.accessToken;
   }
 
   /**
@@ -102,13 +106,13 @@ export class TokenManager {
    * @throws {Error} If no refresh token is found
    */
   public async getRefreshToken(): Promise<string> {
-    const refreshToken = await this.stateManager.getGlobalState("refreshToken");
+    const globalState = await this.stateManager.getGlobalState();
 
-    if (!refreshToken) {
+    if (!globalState?.refreshToken) {
       throw new Error("No refresh token found");
     }
 
-    return refreshToken;
+    return globalState.refreshToken;
   }
 
   /**
@@ -116,8 +120,10 @@ export class TokenManager {
    * @returns {Promise<void>}
    */
   public async clearTokens(): Promise<void> {
-    await this.stateManager.updateGlobalState("accessToken", undefined);
-    await this.stateManager.updateGlobalState("refreshToken", undefined);
+    await this.stateManager.updateGlobalState({
+      accessToken: undefined,
+      refreshToken: undefined,
+    });
   }
 
   /**

@@ -1,34 +1,21 @@
 import type React from "react";
-import { useWebviewMessage } from "@/webview/hooks/useWebviewMessage";
-import {
-  Container,
-  Title,
-  Message,
-  LastMessage,
-  Button,
-} from "@/webview/views/configWizard/styles";
-import { ThemeProvider } from "@/webview/providers/theme/ThemeProvider";
+import { Container, Iframe } from "@/webview/views/configWizard/styles";
+import { useConfigWizardContext } from "@/webview/views/configWizard/providers/ConfigWizardProvider";
+import { LoadingSpinner } from "@/webview/components/LoadingSpinner";
 
 export const App: React.FC = () => {
-  const { message, postMessage, lastReceived, hasReceivedMessages } =
-    useWebviewMessage("configWizard.example");
+  const { iframeRef, iframeUrl, hasLoaded } = useConfigWizardContext();
 
   return (
-    <ThemeProvider>
-      <Container>
-        <Title>Configuration Wizard</Title>
-        <Message>{message}</Message>
-        <LastMessage>
-          {hasReceivedMessages && (
-            <p>Last message received: {lastReceived?.toLocaleTimeString()}</p>
-          )}
-        </LastMessage>
-        <Button
-          onClick={() => postMessage("Post an example message successfully")}
-        >
-          Send Example Message to VS Code
-        </Button>
-      </Container>
-    </ThemeProvider>
+    <Container>
+      {!hasLoaded ? <LoadingSpinner size={40} /> : null}
+      <Iframe
+        className={hasLoaded ? "has-loaded" : ""}
+        ref={iframeRef}
+        src={iframeUrl}
+        title="Config Wizard"
+        sandbox="allow-scripts allow-same-origin allow-forms"
+      />
+    </Container>
   );
 };
