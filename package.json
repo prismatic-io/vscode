@@ -1,10 +1,10 @@
 {
   "name": "prismatic-extension",
   "displayName": "Prismatic",
-  "publisher": "prismatic-dev",
+  "publisher": "prismatic-experimental",
   "private": true,
-  "description": "This VS Code extension improves the developer experience around Code Native Integrations (CNI) by enabling test execution, integration imports, instance configuration (including config variables, debug mode, and trigger payloads), and inspection of execution results—all directly within the IDE. Developers can view detailed step-by-step outputs and logs for both onTrigger and onExecution stages, streamlining the build, test, and debug workflow without leaving VS Code.",
-  "version": "0.0.14",
+  "description": "This experimental extension improves the developer experience around Code Native Integrations (CNI) by enabling test execution, integration imports, instance configuration (including config variables, debug mode, and trigger payloads), and inspection of execution results - all directly within the IDE. Developers can view detailed step-by-step outputs and logs for both onTrigger and onExecution stages, streamlining the build, test, and debug workflow without leaving the IDE.",
+  "version": "0.0.21",
   "repository": {
     "type": "git",
     "url": "https://github.com/prismatic-io/vscode"
