@@ -1,9 +1,7 @@
 import { exec } from "node:child_process";
-import { existsSync } from "node:fs";
-import * as path from "node:path";
 import { promisify } from "node:util";
-import * as vscode from "vscode";
 import { findNpmPath } from "@/extension/findNpmPath";
+import { getWorkspaceJsonFile } from "@/extension/getWorkspaceJsonFile";
 
 type ExecError = Error & {
   stdout?: string;
@@ -15,21 +13,9 @@ const execAsync = promisify(exec);
 export const executeProjectNpmScript = async (
   scriptName: string
 ): Promise<{ stdout: string; stderr: string }> => {
-  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-
-  // 1. check if workspace folder exists
-  if (!workspaceFolder) {
-    throw new Error("No workspace folder found");
-  }
-
-  const packageJsonPath = path.join(workspaceFolder.uri.fsPath, "package.json");
-
-  // 2. check if package.json exists
-  if (!existsSync(packageJsonPath)) {
-    throw new Error(
-      `No package.json found in workspace. Please ensure you're in a Node.js project directory.`
-    );
-  }
+  const { workspaceFolderPath } = getWorkspaceJsonFile({
+    fileName: "package.json",
+  });
 
   const npmPath = await findNpmPath();
 
@@ -45,7 +31,7 @@ export const executeProjectNpmScript = async (
     const { stdout, stderr } = await execAsync(
       `"${npmPath}" run ${scriptName}`,
       {
-        cwd: workspaceFolder.uri.fsPath,
+        cwd: workspaceFolderPath,
       }
     );
 
