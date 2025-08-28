@@ -71,7 +71,7 @@ src/
 
 - `prismatic.configWizard`: Open the Config Wizard
 - `prismatic.me`: View your user profile
-- `prismatic.me:token`: Refresh your authentication token
+- `prismatic.refreshToken`: Refresh your authentication token
 - `prismatic.login`: Log in to Prismatic
 - `prismatic.logout`: Log out of Prismatic
 - `prismatic.integrations.import`: Import an integration
