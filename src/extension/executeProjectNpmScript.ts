@@ -5,6 +5,11 @@ import { promisify } from "node:util";
 import * as vscode from "vscode";
 import { findNpmPath } from "@/extension/findNpmPath";
 
+type ExecError = Error & {
+  stdout?: string;
+  stderr?: string;
+};
+
 const execAsync = promisify(exec);
 
 export const executeProjectNpmScript = async (
@@ -46,7 +51,9 @@ export const executeProjectNpmScript = async (
 
     return { stdout, stderr };
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
+    const execError = error as ExecError;
+    const errorMessage = execError.message || String(error);
+    const errorStdOut = (execError.stdout || "").replace(/^\n+/, "");
 
     if (
       errorMessage.includes("command not found") ||
@@ -58,7 +65,7 @@ export const executeProjectNpmScript = async (
     }
 
     throw new Error(
-      `Failed to execute npm script '${scriptName}': ${errorMessage}`
+      `Failed to execute npm script '${scriptName}': ${errorMessage} \n ${errorStdOut}`
     );
   }
 };
