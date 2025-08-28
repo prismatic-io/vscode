@@ -24,6 +24,16 @@ let testIntegrationFlowActor: TestIntegrationFlowMachineActorRef | undefined;
 export async function activate(context: vscode.ExtensionContext) {
   try {
     /**
+     * enable extension based on the workspace containing .spectral
+     * this includes showing commands & views.
+     */
+    await vscode.commands.executeCommand(
+      "setContext",
+      "prismatic.workspaceEnabled",
+      true
+    );
+
+    /**
      * create output channel
      */
     outputChannel = vscode.window.createOutputChannel("Prismatic Debug");
@@ -246,7 +256,7 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.commands.executeCommand(
           "setContext",
           "prismatic.testCommandEnabled",
-          snapshot.hasTag("idle")
+          !!snapshot.hasTag("idle")
         );
       });
 

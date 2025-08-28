@@ -18,50 +18,57 @@
   ],
   "main": "extension/extension.js",
   "activationEvents": [
-    "onStartupFinished"
+    "workspaceContains:**/.spectral/*"
   ],
   "contributes": {
     "commands": [
       {
         "command": "prismatic.configWizard",
         "title": "Config Wizard",
-        "category": "Prismatic"
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled"
       },
       {
         "command": "prismatic.me",
         "title": "Me",
-        "category": "Prismatic"
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled"
       },
       {
         "command": "prismatic.me:token",
         "title": "Refresh Token",
-        "category": "Prismatic"
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled"
       },
       {
         "command": "prismatic.login",
         "title": "Login",
-        "category": "Prismatic"
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled"
       },
       {
         "command": "prismatic.logout",
         "title": "Logout",
-        "category": "Prismatic"
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled"
       },
       {
         "command": "prismatic.integrations.import",
         "title": "Import Integration",
-        "category": "Prismatic"
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled"
       },
       {
         "command": "prismatic.integrations.test",
         "title": "Test Integration",
         "category": "Prismatic",
-        "enablement": "prismatic.testCommandEnabled == true"
+        "enablement": "prismatic.testCommandEnabled && prismatic.workspaceEnabled"
       },
       {
         "command": "prismatic.prismaticUrl",
         "title": "Prismatic URL",
-        "category": "Prismatic"
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled"
       }
     ],
     "views": {
@@ -69,7 +76,8 @@
         {
           "type": "webview",
           "id": "executionResults.webview",
-          "name": "Execution Results"
+          "name": "Execution Results",
+          "when": "prismatic.workspaceEnabled"
         }
       ]
     },
@@ -78,7 +86,8 @@
         {
           "id": "executionResults",
           "title": "Prismatic",
-          "icon": "resources/prismatic.svg"
+          "icon": "resources/prismatic.svg",
+          "when": "prismatic.workspaceEnabled"
         }
       ]
     },
@@ -86,11 +95,11 @@
       "view/title": [
         {
           "command": "prismatic.integrations.import",
-          "when": "view == executionResults.webview"
+          "when": "view == executionResults.webview && prismatic.workspaceEnabled"
         },
         {
           "command": "prismatic.integrations.test",
-          "when": "view == executionResults.webview && prismatic.testCommandEnabled == true"
+          "when": "view == executionResults.webview && prismatic.testCommandEnabled && prismatic.workspaceEnabled"
         }
       ]
     }
