@@ -88,23 +88,48 @@ The project uses esbuild for bundling:
 
 ## Usage
 
-The extension provides a webview panel that can be accessed through the VS Code command palette:
+The extension provides a commands and a webview panel that can be accessed through the VS Code command palette:
 
 1. Press `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Linux)
 2. Type "Prismatic" to see available commands
 
-## Installing the Extension (.vsix) for Development
+## Installing the extension (.vsix) for development
 
-To install the extension locally in Visual Studio Code:
+Please note that the extension is not yet published to the VS Code Marketplace, so you will need to install it manually. Please request access to the vsix file from the extension maintainers.
 
-1. Build or obtain the `.vsix` file for the extension.
-2. Open Visual Studio Code.
-3. Open the Command Palette (`Cmd+Shift+P` on Mac).
-4. Type and select: **Extensions: Install from VSIX...**
-5. Browse to your `.vsix` file and select it.
-6. Reload VS Code if prompted.
+### VSCode
 
-This will install the extension for your local VS Code instance for testing and development.
+How to install a VSIX extension in VS Code
+
+1. **Open Visual Studio Code.**
+2. **Go to the Extensions view:**
+   - Click the Extensions icon in the Activity Bar on the side (it looks like four squares).
+   - Or press Ctrl+Shift+X (Windows/Linux) or Cmd+Shift+X (Mac).
+3. **Open the Extension Menu:**
+   - Click the three-dot menu (⋮) in the top-right corner of the Extensions view.
+4. **Select "Install from VSIX..."**
+   - In the dropdown menu, click on **Install from VSIX...**.
+5. **Choose Your VSIX File:**
+   - In the file dialog, navigate to the location of your .vsix file.
+   - Select the file.
+   - Click **Open**.
+6. **Wait for Installation:**
+   - VS Code will install the extension.
+   - If prompted, click **Reload** or **Restart** VS Code to activate the extension.
+
+### Cursor
+
+How to install a VSIX extension in Cursor
+
+1. **Open Cursor.**
+2. **Open Command Palette** (`Ctrl/Cmd+Shift+P`)
+3. **Type** "Extensions: Install from VSIX..."
+4. **Select** **Your VSIX File:**
+   - In the file dialog, navigate to the location of your `.vsix` file.
+   - Select the file.
+   - Click **Open**.
+5. **Complete Installation:**
+   - Wait for Cursor to install the extension. You may need to reload or restart Cursor to activate it.
 
 ## Troubleshooting
 
