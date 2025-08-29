@@ -3,6 +3,7 @@ import { PrismCLIManager } from "@extension/PrismCLIManager";
 import { StateManager } from "@extension/StateManager";
 import { createConfigWizardPanel } from "@webview/views/configWizard/ViewProvider";
 import { createExecutionResultsViewProvider } from "@webview/views/executionResults/ViewProvider";
+import { startServer, stopServer, isServerRunning, getPort } from "@extension/honoServer";
 import { CONFIG } from "config";
 import * as vscode from "vscode";
 import { createActor } from "xstate";
@@ -25,6 +26,9 @@ let testIntegrationFlowActor: TestIntegrationFlowMachineActorRef | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
   try {
+    // Make extension context available globally for use in machines
+    (globalThis as any).extensionContext = context;
+    
     /**
      * Enable extension based on the workspace containing .spectral
      * this includes showing commands & views.
@@ -101,6 +105,13 @@ export async function activate(context: vscode.ExtensionContext) {
 
     configWizardPanel = createConfigWizardPanel(context);
     context.subscriptions.push(configWizardPanel);
+
+    /**
+     * start Hono server with port forwarding
+     */
+    log("INFO", "Starting Hono server...");
+    await startServer(context);
+    log("SUCCESS", "Hono server started successfully!");
 
     /**
      * command: prism me
@@ -347,6 +358,74 @@ export async function activate(context: vscode.ExtensionContext) {
     );
     context.subscriptions.push(prismPrismaticUrlCommand);
 
+    /**
+     * command: get server info
+     * This command shows information about the running Hono server.
+     */
+    const getServerInfoCommand = vscode.commands.registerCommand(
+      "prismatic.getServerInfo",
+      async () => {
+        if (isServerRunning()) {
+          const port = getPort();
+          const uri = context.workspaceState.get<string>("honoServerUri");
+          
+          const message = `Hono server is running on port ${port}\nURL: ${uri || 'N/A'}`;
+          
+          const selection = await vscode.window.showInformationMessage(
+            message,
+            "Open in Browser",
+            "Copy URL",
+            "Show Endpoints"
+          );
+
+          if (selection === "Open in Browser" && uri) {
+            vscode.env.openExternal(vscode.Uri.parse(uri));
+          } else if (selection === "Copy URL" && uri) {
+            vscode.env.clipboard.writeText(uri);
+            vscode.window.showInformationMessage("URL copied to clipboard!");
+          } else if (selection === "Show Endpoints" && uri) {
+            const endpoints = [
+              `GET  ${uri}/`,
+              `GET  ${uri}/health`,
+              `GET  ${uri}/api/workspace`,
+              `GET  ${uri}/api/editor`,
+              `POST ${uri}/api/command`,
+              `GET  ${uri}/api/prismatic/status`,
+              `POST ${uri}/api/prismatic/step-result`
+            ];
+            
+            vscode.window.showInformationMessage(
+              `Available endpoints:\n${endpoints.join('\n')}`,
+              { modal: true }
+            );
+          }
+        } else {
+          vscode.window.showWarningMessage("Hono server is not running");
+        }
+      }
+    );
+    context.subscriptions.push(getServerInfoCommand);
+
+    /**
+     * command: restart server
+     * This command restarts the Hono server.
+     */
+    const restartServerCommand = vscode.commands.registerCommand(
+      "prismatic.restartServer",
+      async () => {
+        log("INFO", "Restarting Hono server...");
+        await stopServer();
+        
+        // Wait a bit for cleanup
+        setTimeout(async () => {
+          await startServer(context);
+          log("SUCCESS", "Hono server restarted successfully!");
+          vscode.window.showInformationMessage("Server restarted");
+        }, 1000);
+      }
+    );
+    context.subscriptions.push(restartServerCommand);
+
     log("SUCCESS", "Extension initialization complete!");
   } catch (error) {
     console.error("Activation error:", error);
@@ -366,6 +445,9 @@ export async function deactivate() {
 
     // Dispose of auth manager
     await authManager.dispose();
+
+    // note: stop Hono server
+    await stopServer();
 
     // Dispose of state manager
     await stateManager.dispose();

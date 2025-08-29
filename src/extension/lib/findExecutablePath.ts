@@ -132,11 +132,10 @@ export async function findExecutablePath(
       const result = await approach();
 
       if (result) {
-        console.log(`${logPrefix}: Found ${executable} at:`, result);
         return result;
       }
     } catch (error) {
-      console.error(`${logPrefix}: Error checking ${executable} path:`, error);
+      // Continue to next approach
     }
   }
 

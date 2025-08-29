@@ -3,6 +3,8 @@ import { type ActorRefFrom, assign, setup } from "xstate";
 import { log } from "@/extension";
 import { getIntegration, InstanceConfigState } from "./getIntegration";
 import { testIntegrationFlow } from "./testIntegrationFlow";
+import { isServerRunning, getPort, getPublicUrl } from "@/extension/honoServer";
+import { FileSystemUtils } from "@/extension/fileSystemUtils";
 
 type TestIntegrationFlowInput = {};
 
@@ -13,6 +15,7 @@ interface TestIntegrationFlowContext {
   systemInstanceId: string | null;
   accessToken: string | null;
   prismaticUrl: string | null;
+  serverUrl: string | null;
   "@input": TestIntegrationFlowInput;
 }
 
@@ -41,6 +44,73 @@ export const testIntegrationFlowMachine = setup({
     configureInstance: async () => {
       await vscode.commands.executeCommand("prismatic.configWizard");
     },
+    prepareServerUrl: assign(({ context }) => {
+      if (isServerRunning()) {
+        // Just get the server URL - no session creation needed with global token approach
+        let serverUrl = `http://localhost:${getPort()}`;
+        
+        // Try to get the public tunnel URL
+        try {
+          const publicUrl = getPublicUrl();
+          if (publicUrl && !publicUrl.includes('localhost')) {
+            serverUrl = publicUrl;
+          }
+        } catch (error) {
+          // Fall back to localhost if public URL unavailable
+        }
+        
+        return {
+          serverUrl
+        };
+      }
+      return {
+        serverUrl: null
+      };
+    }),
+    saveStepResults: async ({ context, event }: any) => {
+      const executionId = event.output?.executionId;
+      
+      if (!executionId) {
+        return;
+      }
+
+      // With the new approach, step results are saved directly to filesystem when HTTP requests arrive
+      // We just need to wait a bit for the async execution to complete and send any step results
+      
+      // Wait 30 seconds for CNI calls to arrive and be saved directly to filesystem
+      await new Promise(resolve => setTimeout(resolve, 30000));
+      
+      try {
+        // Check if execution directory was created (indicates step results were received)
+        const { FileSystemUtils } = await import("@/extension/fileSystemUtils");
+        const executionDir = FileSystemUtils.getExecutionDir(executionId);
+        
+        const { existsSync, readdirSync } = await import('fs');
+        if (existsSync(executionDir)) {
+          // Discover step names from saved files and update types
+          try {
+            const files = readdirSync(executionDir);
+            const stepFiles = files.filter(file => file.startsWith('step-') && file.endsWith('.json'));
+            const stepNames = stepFiles.map(file => {
+              // Convert step-webhook-trigger.json back to webhook-trigger
+              return file.replace('step-', '').replace('.json', '').replace(/-/g, '-');
+            });
+            
+            if (stepNames.length > 0) {
+              await FileSystemUtils.updateTypesFile(executionId, stepNames);
+            }
+          } catch (error) {
+            console.error("Error updating types file:", error);
+            // Don't fail the whole process if types update fails
+          }
+          
+          log("SUCCESS", `Step results were saved directly for execution ${executionId}`);
+        }
+        
+      } catch (error) {
+        console.error("Error checking for step results:", error);
+      }
+    },
   },
   guards: {
     isFullyConfigured: ({ context }) =>
@@ -61,6 +131,7 @@ export const testIntegrationFlowMachine = setup({
       systemInstanceId: null,
       accessToken: null,
       prismaticUrl: null,
+      serverUrl: null,
       "@input": input,
     };
 
@@ -84,14 +155,6 @@ export const testIntegrationFlowMachine = setup({
       },
     },
     TESTING_INTEGRATION: {
-      exit: assign({
-        accessToken: null,
-        configState: null,
-        flowId: null,
-        integrationId: null,
-        prismaticUrl: null,
-        systemInstanceId: null,
-      }),
       tags: "testing",
       initial: "LOADING_INTEGRATION",
       states: {
@@ -118,8 +181,18 @@ export const testIntegrationFlowMachine = setup({
                 "#testIntegrationFlow.TESTING_INTEGRATION.CHECKING_CONFIGURATION",
             },
             onError: {
-              actions: ({ event }) =>
-                log("ERROR", `Error fetching integration. ${event.error}`),
+              actions: [
+                ({ event }) =>
+                  log("ERROR", `Error fetching integration. ${event.error}`),
+                assign({
+                  accessToken: null,
+                  configState: null,
+                  flowId: null,
+                  integrationId: null,
+                  prismaticUrl: null,
+                  systemInstanceId: null,
+                }),
+              ],
               target: "#testIntegrationFlow.WAITING_FOR_TEST",
             },
           },
@@ -147,11 +220,25 @@ export const testIntegrationFlowMachine = setup({
               ),
             "configureInstance",
           ],
-          always: [{ target: "#testIntegrationFlow.WAITING_FOR_TEST" }],
+          always: [
+            {
+              actions: assign({
+                accessToken: null,
+                configState: null,
+                flowId: null,
+                integrationId: null,
+                prismaticUrl: null,
+                systemInstanceId: null,
+              }),
+              target: "#testIntegrationFlow.WAITING_FOR_TEST",
+            },
+          ],
         },
         EXECUTING_TEST: {
-          entry: ({ context }) =>
-            log("INFO", `Running test for flow: ${context.flowId}`),
+          entry: [
+            ({ context }) => log("INFO", `Running test for flow: ${context.flowId}`),
+            "prepareServerUrl"
+          ],
           invoke: {
             id: "testIntegrationFlow",
             src: "testIntegrationFlow",
@@ -159,6 +246,7 @@ export const testIntegrationFlowMachine = setup({
               accessToken: context.accessToken!,
               prismaticUrl: context.prismaticUrl!,
               flowId: context.flowId!,
+              serverUrl: context.serverUrl || undefined,
             }),
             onDone: {
               actions: [
@@ -167,15 +255,36 @@ export const testIntegrationFlowMachine = setup({
                     "SUCCESS",
                     "Integration flow test completed successfully!",
                   ),
+                "saveStepResults",
+                assign({
+                  accessToken: null,
+                  configState: null,
+                  flowId: null,
+                  integrationId: null,
+                  prismaticUrl: null,
+                  systemInstanceId: null,
+                  serverUrl: null,
+                }),
               ],
               target: "#testIntegrationFlow.WAITING_FOR_TEST",
             },
             onError: {
-              actions: ({ event }) =>
-                log(
-                  "ERROR",
-                  `Error running integration flow test. ${event.error}`,
-                ),
+              actions: [
+                ({ event }) =>
+                  log(
+                    "ERROR",
+                    `Error running integration flow test. ${event.error}`
+                  ),
+                assign({
+                  accessToken: null,
+                  configState: null,
+                  flowId: null,
+                  integrationId: null,
+                  prismaticUrl: null,
+                  systemInstanceId: null,
+                  serverUrl: null,
+                }),
+              ],
               target: "#testIntegrationFlow.WAITING_FOR_TEST",
             },
           },
