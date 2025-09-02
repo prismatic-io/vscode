@@ -9,7 +9,7 @@ const GLOBAL_STATE_KEY = "prismatic-global-state";
 const DEFAULT_GLOBAL_STATE: GlobalState = {
   accessToken: undefined,
   refreshToken: undefined,
-  prismaticUrl: CONFIG.prismaticUrl,
+  prismaticUrl: process.env.PRISMATIC_URL || CONFIG.prismaticUrl,
 };
 
 const WORKSPACE_STATE_KEY = "prismatic-workspace-state";
