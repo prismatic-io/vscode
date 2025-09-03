@@ -12,8 +12,8 @@ export interface GetStepOutputsOutput {
 }
 
 interface GetStepOutputsInput {
-  resultsMetadataUrl: string;
-  resultsUrl: string;
+  resultsMetadataUrl?: string;
+  resultsUrl?: string;
   responseType?: "json" | "msgpack";
 }
 
@@ -21,6 +21,15 @@ export const getStepOutputs = fromPromise<
   GetStepOutputsOutput,
   GetStepOutputsInput
 >(async ({ input }) => {
+  if (!input.resultsMetadataUrl || !input.resultsUrl) {
+    return {
+      stepOutputs: {
+        data: "<Unable to load preview>",
+        message: "Step outputs metadata URL or results URL is required",
+      },
+    };
+  }
+
   const metaDataResults = await fetch(input.resultsMetadataUrl, {
     method: "HEAD",
   });

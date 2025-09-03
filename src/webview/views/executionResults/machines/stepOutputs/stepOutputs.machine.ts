@@ -1,10 +1,12 @@
-import { type ActorRefFrom, assign, setup } from "xstate";
+import { type ActorRefFrom, assign, log, setup } from "xstate";
 import { getExecutionLogs } from "@/webview/views/executionResults/machines/stepOutputs/getExecutionLogs";
 import { getStepOutputs } from "@/webview/views/executionResults/machines/stepOutputs/getStepOutputs";
 import type {
   ExecutionLogs,
   StepResult,
+  StepResultMeta,
 } from "@/webview/views/executionResults/types";
+import { getStepResultMeta } from "@/webview/views/executionResults/machines/stepOutputs/getStepResultMeta";
 
 interface StepOutputsInput {
   accessToken: string;
@@ -19,6 +21,7 @@ interface StepOutputsContext {
     data: unknown;
     message: string | null;
   };
+  stepResultMeta: StepResultMeta | null;
   logs: ExecutionLogs | null;
   hasLoaded: boolean;
   "@input": StepOutputsInput;
@@ -43,6 +46,13 @@ export const stepOutputsMachine = setup({
         hasLoaded: params.hasLoaded,
       };
     }),
+    updateStepResultMeta: assign(
+      (_, params: { stepResultMeta: StepResultMeta }) => {
+        return {
+          stepResultMeta: params.stepResultMeta,
+        };
+      }
+    ),
     updateStepOutput: assign(
       (
         _,
@@ -69,6 +79,7 @@ export const stepOutputsMachine = setup({
     }),
   },
   actors: {
+    getStepResultMeta,
     getStepOutputs,
     getExecutionLogs,
   },
@@ -85,6 +96,7 @@ export const stepOutputsMachine = setup({
         data: null,
         message: null,
       },
+      stepResultMeta: null,
       logs: null,
       hasLoaded: false,
       "@input": input,
@@ -108,16 +120,41 @@ export const stepOutputsMachine = setup({
       type: "parallel",
       states: {
         FETCHING_OUTPUTS: {
-          initial: "INVOKING",
+          initial: "GETTING_STEP_RESULT_META",
           states: {
-            INVOKING: {
+            GETTING_STEP_RESULT_META: {
+              tags: "loading",
+              invoke: {
+                src: "getStepResultMeta",
+                input: ({ context }) => ({
+                  id: context["@input"].stepResult.id,
+                  accessToken: context["@input"].accessToken,
+                  prismaticUrl: context["@input"].prismaticUrl,
+                }),
+                onDone: {
+                  actions: [
+                    {
+                      type: "updateStepResultMeta",
+                      params: ({ event }) => {
+                        return {
+                          stepResultMeta: event.output.stepResultMeta,
+                        };
+                      },
+                    },
+                  ],
+                  target: "GETTING_STEP_OUTPUTS",
+                },
+                onError: "IDLE",
+              },
+            },
+            GETTING_STEP_OUTPUTS: {
               tags: "loading",
               invoke: {
                 src: "getStepOutputs",
                 input: ({ context }) => ({
                   resultsMetadataUrl:
-                    context["@input"].stepResult.resultsMetadataUrl,
-                  resultsUrl: context["@input"].stepResult.resultsUrl,
+                    context.stepResultMeta?.resultsMetadataUrl,
+                  resultsUrl: context.stepResultMeta?.resultsUrl,
                 }),
                 onDone: {
                   actions: [
@@ -133,22 +170,20 @@ export const stepOutputsMachine = setup({
                       },
                     },
                   ],
-                  target: "FINISHED_INVOKING",
+                  target: "FINISHING_FETCHING_OUTPUTS",
                 },
-                onError: {
-                  target: "FINISHED_INVOKING",
-                },
+                onError: "IDLE",
               },
             },
-            FINISHED_INVOKING: {
+            FINISHING_FETCHING_OUTPUTS: {
               type: "final",
             },
           },
         },
         FETCHING_LOGS: {
-          initial: "INVOKING",
+          initial: "GETTING_EXECUTION_LOGS",
           states: {
-            INVOKING: {
+            GETTING_EXECUTION_LOGS: {
               tags: "loading",
               invoke: {
                 src: "getExecutionLogs",
@@ -170,14 +205,12 @@ export const stepOutputsMachine = setup({
                       },
                     },
                   ],
-                  target: "FINISHED_INVOKING",
+                  target: "FINISHED_GETTING_EXECUTION_LOGS",
                 },
-                onError: {
-                  target: "FINISHED_INVOKING",
-                },
+                onError: "IDLE",
               },
             },
-            FINISHED_INVOKING: {
+            FINISHED_GETTING_EXECUTION_LOGS: {
               type: "final",
             },
           },

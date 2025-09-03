@@ -25,8 +25,6 @@ type GetExecutionResultsQuery = {
           stepName: string | null;
           displayStepName: string | null;
           hasError: boolean;
-          resultsMetadataUrl: string;
-          resultsUrl: string;
         } | null)[];
       };
     } | null)[];
@@ -56,8 +54,6 @@ const GET_EXECUTION_RESULTS = `
             stepName
             displayStepName
             hasError
-            resultsMetadataUrl
-            resultsUrl
           }
         }
       }
