@@ -168,11 +168,11 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(prismLogoutCommand);
 
     /**
-     * command: prism me:token
+     * command: PRISM_REFRESH_TOKEN=${globalState.refreshToken} prism me:token
      * This command is used to refresh the access token.
      */
-    const prismMeTokenCommand = vscode.commands.registerCommand(
-      "prismatic.me:token",
+    const prismRefreshTokenCommand = vscode.commands.registerCommand(
+      "prismatic.refreshToken",
       async () => {
         try {
           await tokenManager.refreshAccessToken();
@@ -183,7 +183,7 @@ export async function activate(context: vscode.ExtensionContext) {
         }
       }
     );
-    context.subscriptions.push(prismMeTokenCommand);
+    context.subscriptions.push(prismRefreshTokenCommand);
 
     /**
      * command: prism integrations:import

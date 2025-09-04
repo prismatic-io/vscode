@@ -33,7 +33,7 @@
         "category": "Prismatic"
       },
       {
-        "command": "prismatic.me:token",
+        "command": "prismatic.refreshToken",
         "title": "Refresh Token",
         "category": "Prismatic"
       },
