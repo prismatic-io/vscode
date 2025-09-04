@@ -56,6 +56,11 @@ export interface StepResult {
   hasError: boolean;
 }
 
+export interface StepLogsAndOutputsCache {
+  output: { data: unknown; message: string | null } | null;
+  logs: ExecutionLogs | null;
+}
+
 export interface ExecutionResult {
   id: string;
   invokeType: InstanceExecutionResultInvokeType | null;

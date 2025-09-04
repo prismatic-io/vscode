@@ -1,4 +1,4 @@
-import { type ActorRefFrom, assign, log, setup } from "xstate";
+import { type ActorRefFrom, assign, log, setup, sendParent } from "xstate";
 import { getExecutionLogs } from "@/webview/views/executionResults/machines/stepOutputs/getExecutionLogs";
 import { getStepOutputs } from "@/webview/views/executionResults/machines/stepOutputs/getStepOutputs";
 import type {
@@ -14,6 +14,10 @@ interface StepOutputsInput {
   executionResultId: string;
   stepResult: StepResult;
   startDate: string;
+  cachedData?: {
+    output: { data: unknown; message: string | null } | null;
+    logs: ExecutionLogs | null;
+  };
 }
 
 interface StepOutputsContext {
@@ -86,19 +90,23 @@ export const stepOutputsMachine = setup({
   guards: {
     hasExecutionResultId: ({ context }) =>
       Boolean(context["@input"].executionResultId),
+    hasCachedData: ({ context }) => {
+      const cachedData = context["@input"].cachedData;
+      return Boolean(cachedData?.output && cachedData?.logs);
+    },
   },
 }).createMachine({
   id: "stepOutputs",
   initial: "INITIALIZING",
   context: ({ input }) => {
     const context: StepOutputsContext = {
-      output: {
+      output: input.cachedData?.output ?? {
         data: null,
         message: null,
       },
+      logs: input.cachedData?.logs || null,
+      hasLoaded: Boolean(input.cachedData?.output && input.cachedData?.logs),
       stepResultMeta: null,
-      logs: null,
-      hasLoaded: false,
       "@input": input,
     };
 
@@ -113,7 +121,10 @@ export const stepOutputsMachine = setup({
     },
     INITIALIZING: {
       tags: "loading",
-      always: [{ target: "FETCHING" }],
+      always: [
+        { target: "IDLE", guard: "hasCachedData" },
+        { target: "FETCHING" },
+      ],
     },
     FETCHING: {
       tags: "loading",
@@ -223,6 +234,14 @@ export const stepOutputsMachine = setup({
             type: "updateHasLoaded",
             params: { hasLoaded: true },
           },
+          sendParent(({ context }) => ({
+            type: "SET_STEP_LOGS_AND_OUTPUTS_CACHE",
+            stepId: context["@input"].stepResult.id,
+            cache: {
+              output: context.output,
+              logs: context.logs,
+            },
+          })),
         ],
       },
       onError: {
