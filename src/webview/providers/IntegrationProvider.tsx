@@ -71,8 +71,6 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
     state.hasTag("loading"),
   );
 
-  console.log({ integrationMachineActorRef, isLoading });
-
   useEffect(() => {
     if (workspaceState?.integrationId) {
       integrationMachineActorRef.send({

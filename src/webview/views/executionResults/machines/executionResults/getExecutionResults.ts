@@ -1,12 +1,12 @@
 import { fromPromise } from "xstate";
 import { fetcher } from "@/lib/fetcher";
+import { GraphQLVariables } from "@/types/graphql";
 import type {
   ExecutionResults,
   InstanceExecutionResultInvokeType,
   InstanceExecutionResultResultType,
   StepResult,
 } from "@/webview/views/executionResults/types";
-import { GraphQLVariables } from "@/types/graphql";
 
 type GetExecutionResultsQuery = {
   executionResults: {
@@ -25,6 +25,8 @@ type GetExecutionResultsQuery = {
           stepName: string | null;
           displayStepName: string | null;
           hasError: boolean;
+          resultsMetadataUrl: string;
+          resultsUrl: string;
         } | null)[];
       };
     } | null)[];
@@ -54,6 +56,8 @@ const GET_EXECUTION_RESULTS = `
             stepName
             displayStepName
             hasError
+            resultsMetadataUrl
+            resultsUrl
           }
         }
       }

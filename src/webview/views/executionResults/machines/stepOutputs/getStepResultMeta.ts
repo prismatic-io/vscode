@@ -1,26 +1,38 @@
-import type { StepResultMeta } from "@/webview/views/executionResults/types";
-import type { GraphQLVariables } from "@/types/graphql";
-import { fetcher } from "@/lib/fetcher";
 import { fromPromise } from "xstate";
+import { fetcher } from "@/lib/fetcher";
+import type { GraphQLVariables } from "@/types/graphql";
+import type { StepResultMeta } from "@/webview/views/executionResults/types";
 
 type GetStepResultMetaQuery = {
-  stepResult: {
-    id: string;
-    resultsMetadataUrl: string;
-    resultsUrl: string;
+  stepResults: {
+    nodes: ({
+      id: string;
+      resultsMetadataUrl: string;
+      resultsUrl: string;
+    } | null)[];
   };
 };
 
 interface GetStepResultMetaVariables {
-  id: string;
+  executionId: string;
+  startedAt: string;
+  endedAt: string | null;
 }
 
 const GET_STEP_RESULT_META = `
-  query GetStepResultMeta($id: ID!) {
-    stepResult(id: $id) {
-      id
-      resultsMetadataUrl
-      resultsUrl
+  query GetStepResultMeta($executionId: ID!, $startedAt: DateTime, $endedAt: DateTime) {
+    stepResults(
+      startedAt_Gte: $startedAt
+      endedAt_Gte: $endedAt
+      executionResult: $executionId
+    ) {
+      nodes {
+        id
+        endedAt
+        startedAt
+        resultsMetadataUrl
+        resultsUrl
+      }
     }
   }
 `;
@@ -30,7 +42,10 @@ export interface GetStepResultMetaOutput {
 }
 
 interface GetStepResultMetaInput {
+  executionId: string;
   id: string;
+  startedAt: string;
+  endedAt: string | null;
 }
 
 export const getStepResultMeta = fromPromise<
@@ -45,16 +60,22 @@ export const getStepResultMeta = fromPromise<
     GetStepResultMetaQuery,
     GraphQLVariables<GetStepResultMetaVariables>
   >(GET_STEP_RESULT_META, {
-    id: input.id,
+    executionId: input.executionId,
     accessToken: input.accessToken,
     prismaticUrl: input.prismaticUrl,
+    startedAt: input.startedAt,
+    endedAt: input.endedAt
   });
 
   if (response.errors) {
     throw new Error(response.errors[0].message);
   }
 
-  const { id, resultsMetadataUrl, resultsUrl } = response.data.stepResult;
+  const {
+    id,
+    resultsMetadataUrl,
+    resultsUrl,
+  } = response.data.stepResults.nodes.find((node) => node?.id === input.id)!;
 
   return {
     stepResultMeta: {

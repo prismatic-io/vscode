@@ -1,6 +1,6 @@
-import { fromPromise } from "xstate";
 import { decode } from "@msgpack/msgpack";
 import { isValid } from "date-fns";
+import { fromPromise } from "xstate";
 
 const MAX_PREVIEW_SIZE = 1048576;
 
@@ -33,6 +33,10 @@ export const getStepOutputs = fromPromise<
   const metaDataResults = await fetch(input.resultsMetadataUrl, {
     method: "HEAD",
   });
+
+  if (metaDataResults.status === 403) {
+    throw new Error("Access to step outputs is forbidden (403)");
+  }
 
   if (!metaDataResults.ok) {
     return {
@@ -67,6 +71,10 @@ export const getStepOutputs = fromPromise<
   const results = await fetch(input.resultsUrl, {
     method: "GET",
   });
+
+  if (results.status === 403) {
+    throw new Error("Access to step outputs is forbidden (403)");
+  }
 
   if (!results.ok) {
     return {

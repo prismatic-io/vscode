@@ -54,6 +54,8 @@ export interface StepResult {
   stepName: string | null;
   displayStepName: string | null;
   hasError: boolean;
+  resultsMetadataUrl: string;
+  resultsUrl: string;
 }
 
 export interface StepLogsAndOutputsCache {

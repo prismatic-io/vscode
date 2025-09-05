@@ -1,9 +1,11 @@
 import { type ActorRefFrom, assign, sendParent, setup } from "xstate";
+import { log } from "@/extension";
 import { getExecutionLogs } from "@/webview/views/executionResults/machines/stepOutputs/getExecutionLogs";
 import { getStepOutputs } from "@/webview/views/executionResults/machines/stepOutputs/getStepOutputs";
 import { getStepResultMeta } from "@/webview/views/executionResults/machines/stepOutputs/getStepResultMeta";
 import type {
   ExecutionLogs,
+  StepLogsAndOutputsCache,
   StepResult,
   StepResultMeta,
 } from "@/webview/views/executionResults/types";
@@ -12,12 +14,9 @@ interface StepOutputsInput {
   accessToken: string;
   prismaticUrl: string;
   executionResultId: string;
+  executionStartedAt: string;
   stepResult: StepResult;
-  startDate: string;
-  cachedData?: {
-    output: { data: unknown; message: string | null } | null;
-    logs: ExecutionLogs | null;
-  };
+  cachedData?: StepLogsAndOutputsCache;
 }
 
 interface StepOutputsContext {
@@ -106,7 +105,11 @@ export const stepOutputsMachine = setup({
       },
       logs: input.cachedData?.logs || null,
       hasLoaded: Boolean(input.cachedData?.output && input.cachedData?.logs),
-      stepResultMeta: null,
+      stepResultMeta: {
+        id: input.stepResult.id,
+        resultsMetadataUrl: input.stepResult.resultsMetadataUrl,
+        resultsUrl: input.stepResult.resultsUrl,
+      },
       "@input": input,
     };
 
@@ -131,14 +134,17 @@ export const stepOutputsMachine = setup({
       type: "parallel",
       states: {
         FETCHING_OUTPUTS: {
-          initial: "GETTING_STEP_RESULT_META",
+          initial: "GETTING_STEP_OUTPUTS",
           states: {
             GETTING_STEP_RESULT_META: {
               tags: "loading",
               invoke: {
                 src: "getStepResultMeta",
                 input: ({ context }) => ({
+                  executionId: context["@input"].executionResultId,
                   id: context["@input"].stepResult.id,
+                  startedAt: context["@input"].stepResult.startedAt,
+                  endedAt: context["@input"].stepResult.endedAt,
                   accessToken: context["@input"].accessToken,
                   prismaticUrl: context["@input"].prismaticUrl,
                 }),
@@ -183,7 +189,7 @@ export const stepOutputsMachine = setup({
                   ],
                   target: "FINISHING_FETCHING_OUTPUTS",
                 },
-                onError: "FINISHING_FETCHING_OUTPUTS",
+                onError: "GETTING_STEP_RESULT_META",
               },
             },
             FINISHING_FETCHING_OUTPUTS: {
@@ -203,7 +209,7 @@ export const stepOutputsMachine = setup({
                   accessToken: context["@input"].accessToken,
                   prismaticUrl: context["@input"].prismaticUrl,
                   executionId: context["@input"].executionResultId,
-                  startDate: context["@input"].startDate,
+                  startDate: context["@input"].executionStartedAt,
                 }),
                 onDone: {
                   actions: [

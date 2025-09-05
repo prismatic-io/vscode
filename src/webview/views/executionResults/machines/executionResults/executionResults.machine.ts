@@ -117,7 +117,7 @@ export const executionResultsMachine = setup({
             prismaticUrl: context["@input"].prismaticUrl,
             accessToken: context["@input"].accessToken,
             executionResultId: context.executionResult.id,
-            startDate: stepResult.startedAt,
+            executionStartedAt: context.executionResult.startedAt,
             stepResult,
             cachedData,
           },
