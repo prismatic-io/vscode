@@ -15,12 +15,6 @@ export type ConfigWizardMessage =
   | ConfigWizardCloseMessage
   | ConfigWizardErrorMessage;
 
-export interface IframeMessage {
-  type: string;
-  data?: any;
-  timestamp: number;
-}
-
 export interface ConfigWizardContextValue {
   iframeRef: React.RefObject<HTMLIFrameElement>;
   iframeUrl: string;

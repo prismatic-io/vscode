@@ -1,6 +1,6 @@
-import * as vscode from "vscode";
 import { StateManager } from "@extension/StateManager";
 import type { MessageType } from "@type/messages";
+import * as vscode from "vscode";
 
 export interface WebviewPanelManagerConfig<T extends MessageType> {
   viewType: string;
@@ -21,7 +21,7 @@ export class WebviewPanelManager<T extends MessageType> {
    */
   constructor(
     private readonly _context: vscode.ExtensionContext,
-    private readonly _config: WebviewPanelManagerConfig<T>
+    private readonly _config: WebviewPanelManagerConfig<T>,
   ) {}
 
   /**
@@ -55,19 +55,19 @@ export class WebviewPanelManager<T extends MessageType> {
       {
         enableScripts: true,
         localResourceRoots: [this._context.extensionUri],
-      }
+      },
     );
 
     const stateManager = StateManager.getInstance();
     stateManager.registerWebview(this._panel.webview);
 
     const scriptPath = this._panel.webview.asWebviewUri(
-      vscode.Uri.joinPath(this._context.extensionUri, this._config.scriptPath)
+      vscode.Uri.joinPath(this._context.extensionUri, this._config.scriptPath),
     );
 
     this._panel.webview.html = this._getHtmlForWebview(
       this._panel.webview,
-      scriptPath
+      scriptPath,
     );
 
     if (this._config.onMessage) {
@@ -135,12 +135,12 @@ export class WebviewPanelManager<T extends MessageType> {
               default: {
                 this._config.onMessage?.(
                   message as T,
-                  this.postMessage.bind(this)
+                  this.postMessage.bind(this),
                 );
               }
             }
-          }
-        )
+          },
+        ),
       );
     }
 
@@ -148,7 +148,7 @@ export class WebviewPanelManager<T extends MessageType> {
       this._panel.onDidDispose(() => {
         this._panel = undefined;
         this.dispose();
-      })
+      }),
     );
   }
 

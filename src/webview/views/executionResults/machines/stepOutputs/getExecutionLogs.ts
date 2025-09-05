@@ -1,10 +1,10 @@
 import { fromPromise } from "xstate";
 import { fetcher } from "@/lib/fetcher";
+import type { GraphQLVariables } from "@/types/graphql";
 import type {
   ExecutionLogs,
   LogSeverityLevel,
 } from "@/webview/views/executionResults/types";
-import type { GraphQLVariables } from "@/types/graphql";
 
 type GetExecutionLogsQuery = {
   logs: {
@@ -96,7 +96,7 @@ export const getExecutionLogs = fromPromise<
     }
 
     const logs: ExecutionLogs = response.data.logs.nodes.filter(
-      Boolean
+      Boolean,
     ) as ExecutionLogs;
 
     output.push(...logs);

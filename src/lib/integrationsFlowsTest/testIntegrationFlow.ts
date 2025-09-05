@@ -1,7 +1,6 @@
 import { fromPromise } from "xstate";
 import { fetcher } from "@/lib/fetcher";
-import { IntegrationFlow } from "@/webview/machines/integration/integration.machine";
-import { GraphQLVariables } from "@/types/graphql";
+import type { GraphQLVariables } from "@/types/graphql";
 
 type TestIntegrationFlowQuery = {
   testIntegrationFlow: {
@@ -65,7 +64,7 @@ const TEST_INTEGRATION_FLOW = `
   }
 `;
 
-export interface TestIntegrationFlowOutput {}
+export type TestIntegrationFlowOutput = {};
 
 interface TestIntegrationFlowInput {
   flowId: string;

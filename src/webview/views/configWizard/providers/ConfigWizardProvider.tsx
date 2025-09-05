@@ -4,18 +4,18 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
-  useMemo,
 } from "react";
+import { useWebviewMessage } from "@/webview/hooks/useWebviewMessage";
+import { useAuthContext } from "@/webview/providers/AuthProvider";
+import { useIntegrationContext } from "@/webview/providers/IntegrationProvider";
 import { CONFIGURE_INSTANCE_PARAMS } from "@/webview/views/configWizard/constants";
 import type { ConfigWizardContextValue } from "@/webview/views/configWizard/types";
-import { useIntegrationContext } from "@/webview/providers/IntegrationProvider";
-import { useAuthContext } from "@/webview/providers/AuthProvider";
-import { useWebviewMessage } from "@/webview/hooks/useWebviewMessage";
 
 const ConfigWizardContext = createContext<ConfigWizardContextValue | null>(
-  null
+  null,
 );
 
 const MESSAGE_EVENTS = {
@@ -63,7 +63,7 @@ export const ConfigWizardProvider = ({ children }: { children: ReactNode }) => {
           break;
       }
     },
-    [postMessage]
+    [postMessage],
   );
 
   useEffect(() => {
@@ -81,7 +81,7 @@ export const ConfigWizardProvider = ({ children }: { children: ReactNode }) => {
       iframeUrl,
       hasLoaded,
     }),
-    [iframeUrl, hasLoaded]
+    [iframeUrl, hasLoaded],
   );
 
   if (!iframeUrl) {
@@ -100,7 +100,7 @@ export const useConfigWizardContext = () => {
 
   if (!context) {
     throw new Error(
-      "useConfigWizardContext must be used within ConfigWizardProvider"
+      "useConfigWizardContext must be used within ConfigWizardProvider",
     );
   }
 

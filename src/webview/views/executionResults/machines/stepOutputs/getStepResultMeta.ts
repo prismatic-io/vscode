@@ -64,18 +64,15 @@ export const getStepResultMeta = fromPromise<
     accessToken: input.accessToken,
     prismaticUrl: input.prismaticUrl,
     startedAt: input.startedAt,
-    endedAt: input.endedAt
+    endedAt: input.endedAt,
   });
 
   if (response.errors) {
     throw new Error(response.errors[0].message);
   }
 
-  const {
-    id,
-    resultsMetadataUrl,
-    resultsUrl,
-  } = response.data.stepResults.nodes.find((node) => node?.id === input.id)!;
+  const { id, resultsMetadataUrl, resultsUrl } =
+    response.data.stepResults.nodes.find((node) => node?.id === input.id)!;
 
   return {
     stepResultMeta: {

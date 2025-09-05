@@ -1,10 +1,10 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { App } from "@/webview/views/configWizard/App";
-import { ThemeProvider } from "@/webview/providers/theme/ThemeProvider";
 import { AuthProvider } from "@/webview/providers/AuthProvider";
-import { ConfigWizardProvider } from "@/webview/views/configWizard/providers/ConfigWizardProvider";
 import { IntegrationProvider } from "@/webview/providers/IntegrationProvider";
+import { ThemeProvider } from "@/webview/providers/theme/ThemeProvider";
+import { App } from "@/webview/views/configWizard/App";
+import { ConfigWizardProvider } from "@/webview/views/configWizard/providers/ConfigWizardProvider";
 
 const rootElement = document.getElementById("root");
 
@@ -25,5 +25,5 @@ root.render(
         </IntegrationProvider>
       </AuthProvider>
     </ThemeProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

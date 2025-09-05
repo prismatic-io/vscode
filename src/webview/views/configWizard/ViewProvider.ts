@@ -12,7 +12,7 @@ export function createConfigWizardPanel(context: vscode.ExtensionContext) {
       viewType: WEBVIEW_CONFIG.viewType,
       title: WEBVIEW_CONFIG.title,
       scriptPath: WEBVIEW_CONFIG.scriptPath,
-      onMessage: async (message, postMessage) => {
+      onMessage: async (message, _postMessage) => {
         switch (message.type) {
           case "configWizard.closed": {
             configWizardProvider.close();
@@ -24,10 +24,10 @@ export function createConfigWizardPanel(context: vscode.ExtensionContext) {
           }
         }
       },
-    }
+    },
   );
 
   return vscode.commands.registerCommand(WEBVIEW_CONFIG.command, () =>
-    configWizardProvider.createPanel()
+    configWizardProvider.createPanel(),
   );
 }

@@ -1,5 +1,4 @@
-import { existsSync } from "node:fs";
-import fs from "node:fs";
+import fs, { existsSync } from "node:fs";
 import path from "node:path";
 import { getWorkspacePath } from "@/extension/getWorkspacePath";
 
@@ -37,7 +36,7 @@ export const getWorkspaceJsonFile = ({
     const errorMessage = error instanceof Error ? error.message : String(error);
 
     throw new Error(
-      `Failed to read or parse ${fileName} in ${directory}: ${errorMessage}`
+      `Failed to read or parse ${fileName} in ${directory}: ${errorMessage}`,
     );
   }
 };

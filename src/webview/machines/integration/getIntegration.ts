@@ -1,7 +1,7 @@
 import { fromPromise } from "xstate";
 import { fetcher } from "@/lib/fetcher";
-import { IntegrationFlow } from "@/webview/machines/integration/integration.machine";
-import { GraphQLVariables } from "@/types/graphql";
+import type { GraphQLVariables } from "@/types/graphql";
+import type { IntegrationFlow } from "@/webview/machines/integration/integration.machine";
 
 type GetIntegrationQuery = {
   integration: {

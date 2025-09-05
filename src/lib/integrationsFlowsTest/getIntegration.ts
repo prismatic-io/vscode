@@ -1,31 +1,30 @@
 import { fromPromise } from "xstate";
 import { fetcher } from "@/lib/fetcher";
-import { GraphQLVariables } from "@/types/graphql";
-import { IntegrationFlow } from "@/webview/machines/integration/integration.machine";
+import type { GraphQLVariables } from "@/types/graphql";
 
 export enum InstanceConfigState {
-	FULLY_CONFIGURED = "FULLY_CONFIGURED",
-	NEEDS_INSTANCE_CONFIGURATION = "NEEDS_INSTANCE_CONFIGURATION",
-	NEEDS_USER_LEVEL_CONFIGURATION = "NEEDS_USER_LEVEL_CONFIGURATION",
+  FULLY_CONFIGURED = "FULLY_CONFIGURED",
+  NEEDS_INSTANCE_CONFIGURATION = "NEEDS_INSTANCE_CONFIGURATION",
+  NEEDS_USER_LEVEL_CONFIGURATION = "NEEDS_USER_LEVEL_CONFIGURATION",
 }
 
 type GetIntegrationQuery = {
-	integration: {
-		systemInstance: {
-			id: string;
-			configState: InstanceConfigState | null;
-		};
-		flows: {
-			nodes: {
-				id: string;
-				name: string;
-			}[];
-		};
-	};
+  integration: {
+    systemInstance: {
+      id: string;
+      configState: InstanceConfigState | null;
+    };
+    flows: {
+      nodes: {
+        id: string;
+        name: string;
+      }[];
+    };
+  };
 };
 
 interface GetIntegrationVariables {
-	integrationId: string;
+  integrationId: string;
 }
 
 const GET_INTEGRATION = `
@@ -46,52 +45,52 @@ const GET_INTEGRATION = `
 `;
 
 export interface GetIntegrationOutput {
-	systemInstanceId: string;
-	configState: InstanceConfigState | null;
-	initialFlow: {
-		id: string;
-		name: string;
-	} | null;
+  systemInstanceId: string;
+  configState: InstanceConfigState | null;
+  initialFlow: {
+    id: string;
+    name: string;
+  } | null;
 }
 
 interface GetIntegrationInput {
-	integrationId: string;
+  integrationId: string;
 }
 
 export const getIntegration = fromPromise<
-	GetIntegrationOutput,
-	GraphQLVariables<GetIntegrationInput>
+  GetIntegrationOutput,
+  GraphQLVariables<GetIntegrationInput>
 >(async ({ input }) => {
-	if (!input.accessToken || !input.prismaticUrl) {
-		throw new Error("Access token and prismatic URL are required");
-	}
+  if (!input.accessToken || !input.prismaticUrl) {
+    throw new Error("Access token and prismatic URL are required");
+  }
 
-	const response = await fetcher<
-		GetIntegrationQuery,
-		GraphQLVariables<GetIntegrationVariables>
-	>(GET_INTEGRATION, {
-		accessToken: input.accessToken,
-		prismaticUrl: input.prismaticUrl,
-		integrationId: input.integrationId,
-	});
+  const response = await fetcher<
+    GetIntegrationQuery,
+    GraphQLVariables<GetIntegrationVariables>
+  >(GET_INTEGRATION, {
+    accessToken: input.accessToken,
+    prismaticUrl: input.prismaticUrl,
+    integrationId: input.integrationId,
+  });
 
-	if (response.errors) {
-		throw new Error(response.errors[0].message);
-	}
+  if (response.errors) {
+    throw new Error(response.errors[0].message);
+  }
 
-	const integration = response.data?.integration;
+  const integration = response.data?.integration;
 
-	if (!integration) {
-		throw new Error("Integration data not found in response");
-	}
+  if (!integration) {
+    throw new Error("Integration data not found in response");
+  }
 
-	const systemInstanceId = integration.systemInstance.id;
-	const configState = integration.systemInstance?.configState ?? null;
-	const initialFlow = integration.flows?.nodes?.[0] ?? null;
+  const systemInstanceId = integration.systemInstance.id;
+  const configState = integration.systemInstance?.configState ?? null;
+  const initialFlow = integration.flows?.nodes?.[0] ?? null;
 
-	return {
-		systemInstanceId,
-		configState,
-		initialFlow,
-	};
+  return {
+    systemInstanceId,
+    configState,
+    initialFlow,
+  };
 });

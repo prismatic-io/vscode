@@ -1,10 +1,10 @@
 import { format } from "date-fns";
-import type { ExecutionLogs } from "@/webview/views/executionResults/types";
-import { LoadingSpinner } from "@/webview/components/LoadingSpinner";
-import { DATE_TIME_FORMAT } from "@/webview/views/executionResults/components/Executions";
 import { useState } from "react";
-import { useExecutionResultsContext } from "@/webview/views/executionResults/providers/ExecutionResultsProvider";
+import { LoadingSpinner } from "@/webview/components/LoadingSpinner";
 import { useConditionalSelector } from "@/webview/hooks/useConditionalSelector";
+import { DATE_TIME_FORMAT } from "@/webview/views/executionResults/components/Executions";
+import { useExecutionResultsContext } from "@/webview/views/executionResults/providers/ExecutionResultsProvider";
+import type { ExecutionLogs } from "@/webview/views/executionResults/types";
 
 export const StepOutputsContainer = () => {
   const { stepResult: selectedStepResult } = useExecutionResultsContext();
@@ -14,25 +14,25 @@ export const StepOutputsContainer = () => {
   const stepOutputs = useConditionalSelector(
     stepResultActorRef,
     (state) => state.context.output,
-    null
+    null,
   );
 
   const stepLogs = useConditionalSelector(
     stepResultActorRef,
     (state) => state.context.logs,
-    null
+    null,
   );
 
   const isLoading = useConditionalSelector(
     stepResultActorRef,
     (state) => state.hasTag("loading"),
-    false
+    false,
   );
 
   const hasLoaded = useConditionalSelector(
     stepResultActorRef,
     (state) => state.context.hasLoaded,
-    false
+    false,
   );
 
   return (
@@ -122,12 +122,11 @@ export const StepOutputs = ({
                     {hasLoaded && !stepLogs?.length ? (
                       <div className="column__body__empty">No logs found.</div>
                     ) : null}
-                    {hasLoaded && stepLogs?.length ? (
-                      <>
-                        {stepLogs?.map((log) => {
+                    {hasLoaded && stepLogs?.length
+                      ? stepLogs?.map((log) => {
                           const time = format(
                             Date.parse(log.timestamp),
-                            DATE_TIME_FORMAT
+                            DATE_TIME_FORMAT,
                           );
 
                           return (
@@ -149,9 +148,8 @@ export const StepOutputs = ({
                               </span>
                             </div>
                           );
-                        })}
-                      </>
-                    ) : null}
+                        })
+                      : null}
                   </>
                 ) : null}
               </>

@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
 import { MessageHandlerManager } from "@extension/MessageHandlerManager";
 import type { MessageType } from "@type/messages";
+import { useCallback, useEffect, useState } from "react";
 
 const messageHandlerManager = new MessageHandlerManager();
 
@@ -34,7 +34,7 @@ export function useWebviewMessage<T extends MessageType["type"]>(type: T) {
     (payload: Payload) => {
       messageHandlerManager.postMessage({ type, payload } as Message);
     },
-    [type]
+    [type],
   );
 
   return {

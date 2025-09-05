@@ -11,7 +11,7 @@ type ExecError = Error & {
 const execAsync = promisify(exec);
 
 export const executeProjectNpmScript = async (
-  scriptName: string
+  scriptName: string,
 ): Promise<{ stdout: string; stderr: string }> => {
   const { workspaceFolderPath } = getWorkspaceJsonFile({
     fileName: "package.json",
@@ -23,7 +23,7 @@ export const executeProjectNpmScript = async (
   if (!npmPath) {
     throw new Error(
       "npm is not found. Please ensure npm is installed and accessible. " +
-        "You can install npm by running 'brew install node' (macOS) or visiting https://nodejs.org/"
+        "You can install npm by running 'brew install node' (macOS) or visiting https://nodejs.org/",
     );
   }
 
@@ -37,7 +37,7 @@ export const executeProjectNpmScript = async (
           // note: explicitly override DEBUG to prevent Node's require from dumping debug data when CNI projects set DEBUG=true via dotenv
           DEBUG: "false",
         },
-      }
+      },
     );
 
     return { stdout, stderr };
@@ -51,12 +51,12 @@ export const executeProjectNpmScript = async (
       errorMessage.includes("ENOENT")
     ) {
       throw new Error(
-        `Failed to execute npm script '${scriptName}': npm command not found. Please ensure npm is installed and accessible. You can install npm by running 'brew install node' (macOS) or visiting https://nodejs.org/`
+        `Failed to execute npm script '${scriptName}': npm command not found. Please ensure npm is installed and accessible. You can install npm by running 'brew install node' (macOS) or visiting https://nodejs.org/`,
       );
     }
 
     throw new Error(
-      `Failed to execute npm script '${scriptName}': ${errorMessage} \n ${errorStdOut}`
+      `Failed to execute npm script '${scriptName}': ${errorMessage} \n ${errorStdOut}`,
     );
   }
 };

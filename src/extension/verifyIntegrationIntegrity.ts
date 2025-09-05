@@ -35,8 +35,11 @@ export const verifyIntegrationIntegrity = async (): Promise<void> => {
     dataActor.start();
 
     await toPromise(dataActor);
-  } catch (error) {
-    log("WARN", `No integration found for ID (${integrationId}) in ${globalState?.prismaticUrl}, clearing workspace state...`);
+  } catch (_error) {
+    log(
+      "WARN",
+      `No integration found for ID (${integrationId}) in ${globalState?.prismaticUrl}, clearing workspace state...`,
+    );
 
     await stateManager.updateWorkspaceState({
       integrationId: undefined,

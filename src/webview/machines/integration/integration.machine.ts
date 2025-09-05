@@ -49,7 +49,7 @@ export const integrationMachine = setup({
         return {
           systemInstanceId: params.systemInstanceId,
         };
-      }
+      },
     ),
     updateFlows: assign((_, params: { flows: IntegrationFlow[] }) => {
       return {

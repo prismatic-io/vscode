@@ -32,25 +32,25 @@ interface ExecutionResultsContext {
 
 type ExecutionResultsEvents =
   | {
-    type: "FETCH";
-  }
+      type: "FETCH";
+    }
   | {
-    type: "SET_FLOW_ID";
-    flowId: string;
-  }
+      type: "SET_FLOW_ID";
+      flowId: string;
+    }
   | {
-    type: "SET_EXECUTION_RESULT";
-    executionResultId: string;
-  }
+      type: "SET_EXECUTION_RESULT";
+      executionResultId: string;
+    }
   | {
-    type: "SET_STEP_RESULT";
-    stepResultId: string;
-  }
+      type: "SET_STEP_RESULT";
+      stepResultId: string;
+    }
   | {
-    type: "SET_STEP_LOGS_AND_OUTPUTS_CACHE";
-    stepId: string;
-    cache: StepLogsAndOutputsCache;
-  };
+      type: "SET_STEP_LOGS_AND_OUTPUTS_CACHE";
+      stepId: string;
+      cache: StepLogsAndOutputsCache;
+    };
 
 type ExecutionResultsTags = "idle" | "loading";
 
@@ -76,7 +76,7 @@ export const executionResultsMachine = setup({
         return {
           executionResults: params.executionResults,
         };
-      }
+      },
     ),
     updateFlowId: assign((_, params: { flowId: string }) => {
       return {
@@ -86,18 +86,18 @@ export const executionResultsMachine = setup({
     updateExecutionResult: assign(
       ({ context }, params: { executionResultId: string }) => {
         const executionResult = context.executionResults.find(
-          (executionResult) => executionResult.id === params.executionResultId
+          (executionResult) => executionResult.id === params.executionResultId,
         );
 
         return {
           executionResult,
         };
-      }
+      },
     ),
     updateStepResult: assign(
       ({ context, spawn }, params: { stepResultId: string }) => {
         const stepResult = context.executionResult?.stepResults.find(
-          (stepResult) => stepResult.id === params.stepResultId
+          (stepResult) => stepResult.id === params.stepResultId,
         );
 
         if (!context.executionResult || !stepResult) {
@@ -127,7 +127,7 @@ export const executionResultsMachine = setup({
           stepResult,
           stepResultActorRef,
         };
-      }
+      },
     ),
     updateStepLogsAndOutputsCache: assign(
       (
@@ -135,7 +135,7 @@ export const executionResultsMachine = setup({
         params: {
           stepId: string;
           cache: StepLogsAndOutputsCache;
-        }
+        },
       ) => {
         const cacheKey = `${context.executionResult?.id}-${params.stepId}`;
 
@@ -155,7 +155,7 @@ export const executionResultsMachine = setup({
         return {
           stepLogsAndOutputsCache: context.stepLogsAndOutputsCache,
         };
-      }
+      },
     ),
   },
   guards: {

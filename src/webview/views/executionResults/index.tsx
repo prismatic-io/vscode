@@ -3,8 +3,8 @@ import { createRoot } from "react-dom/client";
 import { AuthProvider } from "@/webview/providers/AuthProvider";
 import { IntegrationProvider } from "@/webview/providers/IntegrationProvider";
 import { ThemeProvider } from "@/webview/providers/theme/ThemeProvider";
-import { ExecutionResultsProvider } from "@/webview/views/executionResults/providers/ExecutionResultsProvider";
 import { App } from "@/webview/views/executionResults/App";
+import { ExecutionResultsProvider } from "@/webview/views/executionResults/providers/ExecutionResultsProvider";
 
 const rootElement = document.getElementById("root");
 
@@ -25,5 +25,5 @@ root.render(
         </IntegrationProvider>
       </AuthProvider>
     </ThemeProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

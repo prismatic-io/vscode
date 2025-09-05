@@ -1,5 +1,5 @@
-import { ContainerBase, TextBase } from "@/webview/providers/theme/base";
 import styled from "styled-components";
+import { ContainerBase, TextBase } from "@/webview/providers/theme/base";
 
 export const NoIntegration: React.FC = () => {
   return (
