@@ -1,3 +1,4 @@
+import { useActorRef, useSelector } from "@xstate/react";
 import type { ReactNode } from "react";
 import {
   createContext,
@@ -6,15 +7,13 @@ import {
   useEffect,
   useMemo,
 } from "react";
-import { useActorRef, useSelector } from "@xstate/react";
-import { useAuthContext } from "@/webview/providers/AuthProvider";
+import { NoIntegration } from "@/webview/components/NoIntegration";
 import { useVSCodeState } from "@/webview/hooks/useVSCodeState";
 import {
   type IntegrationFlow,
   integrationMachine,
 } from "@/webview/machines/integration/integration.machine";
-import { NoIntegration } from "@/webview/components/NoIntegration";
-import { LoadingSpinner } from "@/webview/components/LoadingSpinner";
+import { useAuthContext } from "@/webview/providers/AuthProvider";
 
 const IntegrationContext = createContext<{
   flowId: string;
@@ -27,9 +26,9 @@ const IntegrationContext = createContext<{
   flowId: "",
   flows: [],
   isLoading: false,
-  refetch: () => {},
+  refetch: () => { },
   systemInstanceId: "",
-  setFlowId: () => {},
+  setFlowId: () => { },
 });
 
 export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
@@ -49,19 +48,19 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
 
   const systemInstanceId = useSelector(
     integrationMachineActorRef,
-    (state) => state.context.systemInstanceId
+    (state) => state.context.systemInstanceId,
   );
 
   const flows = useSelector(
     integrationMachineActorRef,
-    (state) => state.context.flows
+    (state) => state.context.flows,
   );
 
   const setFlowId = useCallback(
     (flowId: string) => {
       updateWorkspaceState({ flowId });
     },
-    [updateWorkspaceState]
+    [updateWorkspaceState],
   );
 
   const refetch = useCallback(() => {
@@ -69,8 +68,10 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
   }, [integrationMachineActorRef]);
 
   const isLoading = useSelector(integrationMachineActorRef, (state) =>
-    state.hasTag("loading")
+    state.hasTag("loading"),
   );
+
+  console.log({ integrationMachineActorRef, isLoading });
 
   useEffect(() => {
     if (workspaceState?.integrationId) {
@@ -110,14 +111,10 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
       refetch,
       isLoading,
       setFlowId,
-    ]
+    ],
   );
 
-  if (isLoading || !hasLoadedWorkspaceState) {
-    return <LoadingSpinner size={40} />;
-  }
-
-  if (!workspaceState?.integrationId) {
+  if (hasLoadedWorkspaceState && !workspaceState?.integrationId) {
     return <NoIntegration />;
   }
 
@@ -133,7 +130,7 @@ export const useIntegrationContext = () => {
 
   if (!context) {
     throw new Error(
-      "useIntegrationContext must be used within IntegrationProvider"
+      "useIntegrationContext must be used within IntegrationProvider",
     );
   }
 

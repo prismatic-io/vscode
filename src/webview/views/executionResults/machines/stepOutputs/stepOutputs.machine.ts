@@ -1,12 +1,12 @@
-import { type ActorRefFrom, assign, log, setup, sendParent } from "xstate";
+import { type ActorRefFrom, assign, sendParent, setup } from "xstate";
 import { getExecutionLogs } from "@/webview/views/executionResults/machines/stepOutputs/getExecutionLogs";
 import { getStepOutputs } from "@/webview/views/executionResults/machines/stepOutputs/getStepOutputs";
+import { getStepResultMeta } from "@/webview/views/executionResults/machines/stepOutputs/getStepResultMeta";
 import type {
   ExecutionLogs,
   StepResult,
   StepResultMeta,
 } from "@/webview/views/executionResults/types";
-import { getStepResultMeta } from "@/webview/views/executionResults/machines/stepOutputs/getStepResultMeta";
 
 interface StepOutputsInput {
   accessToken: string;
@@ -155,7 +155,7 @@ export const stepOutputsMachine = setup({
                   ],
                   target: "GETTING_STEP_OUTPUTS",
                 },
-                onError: "IDLE",
+                onError: "FINISHING_FETCHING_OUTPUTS",
               },
             },
             GETTING_STEP_OUTPUTS: {
@@ -183,7 +183,7 @@ export const stepOutputsMachine = setup({
                   ],
                   target: "FINISHING_FETCHING_OUTPUTS",
                 },
-                onError: "IDLE",
+                onError: "FINISHING_FETCHING_OUTPUTS",
               },
             },
             FINISHING_FETCHING_OUTPUTS: {
@@ -218,7 +218,7 @@ export const stepOutputsMachine = setup({
                   ],
                   target: "FINISHED_GETTING_EXECUTION_LOGS",
                 },
-                onError: "IDLE",
+                onError: "FINISHED_GETTING_EXECUTION_LOGS",
               },
             },
             FINISHED_GETTING_EXECUTION_LOGS: {

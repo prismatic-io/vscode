@@ -1,14 +1,14 @@
-import { assign, setup } from "xstate";
 import type {
   ExecutionResult,
   ExecutionResults,
-  StepResult,
   StepLogsAndOutputsCache,
+  StepResult,
 } from "@webview/views/executionResults/types";
+import { assign, setup } from "xstate";
 import { getExecutionResults } from "@/webview/views/executionResults/machines/executionResults/getExecutionResults";
 import {
-  stepOutputsMachine,
   type StepOutputsActorRef,
+  stepOutputsMachine,
 } from "@/webview/views/executionResults/machines/stepOutputs/stepOutputs.machine";
 
 interface ExecutionResultsInput {
@@ -32,25 +32,25 @@ interface ExecutionResultsContext {
 
 type ExecutionResultsEvents =
   | {
-      type: "FETCH";
-    }
+    type: "FETCH";
+  }
   | {
-      type: "SET_FLOW_ID";
-      flowId: string;
-    }
+    type: "SET_FLOW_ID";
+    flowId: string;
+  }
   | {
-      type: "SET_EXECUTION_RESULT";
-      executionResultId: string;
-    }
+    type: "SET_EXECUTION_RESULT";
+    executionResultId: string;
+  }
   | {
-      type: "SET_STEP_RESULT";
-      stepResultId: string;
-    }
+    type: "SET_STEP_RESULT";
+    stepResultId: string;
+  }
   | {
-      type: "SET_STEP_LOGS_AND_OUTPUTS_CACHE";
-      stepId: string;
-      cache: StepLogsAndOutputsCache;
-    };
+    type: "SET_STEP_LOGS_AND_OUTPUTS_CACHE";
+    stepId: string;
+    cache: StepLogsAndOutputsCache;
+  };
 
 type ExecutionResultsTags = "idle" | "loading";
 

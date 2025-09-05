@@ -1,5 +1,11 @@
-import type { ReactNode, PropsWithChildren } from "react";
-import { subHours, addHours, formatISO } from "date-fns";
+import type {
+  ExecutionResult,
+  ExecutionResults,
+  StepResult,
+} from "@webview/views/executionResults/types";
+import { useActorRef, useSelector } from "@xstate/react";
+import { addHours, formatISO, subHours } from "date-fns";
+import type { PropsWithChildren, ReactNode } from "react";
 import {
   createContext,
   useCallback,
@@ -7,15 +13,9 @@ import {
   useEffect,
   useMemo,
 } from "react";
-import { useActorRef, useSelector } from "@xstate/react";
 import { useAuthContext } from "@/webview/providers/AuthProvider";
 import { useIntegrationContext } from "@/webview/providers/IntegrationProvider";
 import { executionResultsMachine } from "@/webview/views/executionResults/machines/executionResults/executionResults.machine";
-import type {
-  ExecutionResult,
-  ExecutionResults,
-  StepResult,
-} from "@webview/views/executionResults/types";
 import type { StepOutputsActorRef } from "@/webview/views/executionResults/machines/stepOutputs/stepOutputs.machine";
 
 const DEFAULT_LIMIT = 5;
@@ -35,11 +35,11 @@ const ExecutionResultsContext = createContext<{
   executionResult: null,
   stepResult: null,
   stepResultActorRef: null,
-  refetch: () => {},
+  refetch: () => { },
   isLoading: false,
   hasLoaded: false,
-  setExecutionResult: () => {},
-  setStepResult: () => {},
+  setExecutionResult: () => { },
+  setStepResult: () => { },
 });
 
 export const ExecutionResultsProvider = ({
@@ -79,12 +79,12 @@ export const ExecutionResultsProvider = ({
 
   const executionResults = useSelector(
     executionResultsMachineActorRef,
-    (state) => state.context.executionResults
+    (state) => state.context.executionResults,
   );
 
   const executionResult = useSelector(
     executionResultsMachineActorRef,
-    (state) => state.context.executionResult
+    (state) => state.context.executionResult,
   );
 
   const setExecutionResult = useCallback(
@@ -94,12 +94,12 @@ export const ExecutionResultsProvider = ({
         executionResultId,
       });
     },
-    [executionResultsMachineActorRef]
+    [executionResultsMachineActorRef],
   );
 
   const stepResult = useSelector(
     executionResultsMachineActorRef,
-    (state) => state.context.stepResult
+    (state) => state.context.stepResult,
   );
 
   const setStepResult = useCallback(
@@ -109,12 +109,12 @@ export const ExecutionResultsProvider = ({
         stepResultId,
       });
     },
-    [executionResultsMachineActorRef]
+    [executionResultsMachineActorRef],
   );
 
   const stepResultActorRef = useSelector(
     executionResultsMachineActorRef,
-    (state) => state.context.stepResultActorRef
+    (state) => state.context.stepResultActorRef,
   );
 
   const refetch = useCallback(() => {
@@ -122,12 +122,12 @@ export const ExecutionResultsProvider = ({
   }, [executionResultsMachineActorRef]);
 
   const isLoading = useSelector(executionResultsMachineActorRef, (state) =>
-    state.hasTag("loading")
+    state.hasTag("loading"),
   );
 
   const hasLoaded = useSelector(
     executionResultsMachineActorRef,
-    (state) => state.context.hasLoaded
+    (state) => state.context.hasLoaded,
   );
 
   const value = useMemo(
@@ -152,7 +152,7 @@ export const ExecutionResultsProvider = ({
       setExecutionResult,
       setStepResult,
       stepResultActorRef,
-    ]
+    ],
   );
 
   return (
@@ -167,7 +167,7 @@ export const useExecutionResultsContext = () => {
 
   if (!context) {
     throw new Error(
-      "useExecutionResultsContext must be used within ExecutionResultsProvider"
+      "useExecutionResultsContext must be used within ExecutionResultsProvider",
     );
   }
 
