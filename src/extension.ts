@@ -1,15 +1,16 @@
-import * as vscode from "vscode";
-import { StateManager } from "@extension/StateManager";
-import { createExecutionResultsViewProvider } from "@webview/views/executionResults/ViewProvider";
-import { createConfigWizardPanel } from "@webview/views/configWizard/ViewProvider";
-import { PrismCLIManager } from "@extension/PrismCLIManager";
-import { TokenManager } from "@extension/TokenManager";
 import { executeProjectNpmScript } from "@extension/executeProjectNpmScript";
+import { PrismCLIManager } from "@extension/PrismCLIManager";
+import { StateManager } from "@extension/StateManager";
+import { TokenManager } from "@extension/TokenManager";
+import { createConfigWizardPanel } from "@webview/views/configWizard/ViewProvider";
+import { createExecutionResultsViewProvider } from "@webview/views/executionResults/ViewProvider";
 import { CONFIG } from "config";
+import * as vscode from "vscode";
 import { createActor } from "xstate";
+import { verifyIntegrationIntegrity } from "@/extension/verifyIntegrationIntegrity";
 import {
-  testIntegrationFlowMachine,
   type TestIntegrationFlowMachineActorRef,
+  testIntegrationFlowMachine,
 } from "./lib/integrationsFlowsTest/testIntegrationFlow.machine";
 import { syncPrismaticUrl } from "@/extension/syncPrismaticUrl";
 
@@ -31,7 +32,7 @@ export async function activate(context: vscode.ExtensionContext) {
     await vscode.commands.executeCommand(
       "setContext",
       "prismatic.workspaceEnabled",
-      true
+      true,
     );
 
     /**
@@ -51,7 +52,7 @@ export async function activate(context: vscode.ExtensionContext) {
     - extensionPath: ${context.extensionPath}
     - globalStorageUri: ${context.globalStorageUri}
     - logUri: ${context.logUri}
-    `
+    `,
     );
 
     /**
@@ -85,7 +86,7 @@ export async function activate(context: vscode.ExtensionContext) {
         const response = await vscode.window.showInformationMessage(
           "You need to login to Prismatic to continue.",
           { modal: true },
-          loginAction
+          loginAction,
         );
 
         if (response !== loginAction) {
@@ -107,6 +108,11 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     await syncPrismaticUrl();
+
+    /**
+     * sync the integration id between workspace state and file system
+     */
+    await verifyIntegrationIntegrity();
 
     /**
      * register views
@@ -138,7 +144,7 @@ export async function activate(context: vscode.ExtensionContext) {
         } catch (error) {
           log("ERROR", String(error));
         }
-      }
+      },
     );
     context.subscriptions.push(prismMeCommand);
 
@@ -157,7 +163,7 @@ export async function activate(context: vscode.ExtensionContext) {
         } catch (error) {
           log("ERROR", String(error), true);
         }
-      }
+      },
     );
     context.subscriptions.push(prismLoginCommand);
 
@@ -171,12 +177,11 @@ export async function activate(context: vscode.ExtensionContext) {
         try {
           const result = await prismCLIManager.logout();
           await tokenManager.clearTokens();
-
           log("SUCCESS", result, true);
         } catch (error) {
           log("ERROR", String(error), true);
         }
-      }
+      },
     );
     context.subscriptions.push(prismLogoutCommand);
 
@@ -233,16 +238,16 @@ export async function activate(context: vscode.ExtensionContext) {
           log(
             "SUCCESS",
             `Integration imported successfully! ID: ${integrationId}`,
-            true
+            true,
           );
         } catch (error) {
           log(
             "ERROR",
             `Error during integration import: ${String(error)}`,
-            true
+            true,
           );
         }
-      }
+      },
     );
     context.subscriptions.push(prismIntegrationsImportCommand);
 
@@ -259,7 +264,7 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.commands.executeCommand(
           "setContext",
           "prismatic.testCommandEnabled",
-          !!snapshot.hasTag("idle")
+          !!snapshot.hasTag("idle"),
         );
       });
 
@@ -288,7 +293,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
           if (!workspaceState?.integrationId) {
             throw new Error(
-              "No integration ID found. Please import an integration first."
+              "No integration ID found. Please import an integration first.",
             );
           }
 
@@ -307,7 +312,7 @@ export async function activate(context: vscode.ExtensionContext) {
         } catch (error) {
           log("ERROR", String(error), true);
         }
-      }
+      },
     );
     context.subscriptions.push(integrationFlowTestCommand);
 
@@ -319,12 +324,13 @@ export async function activate(context: vscode.ExtensionContext) {
       "prismatic.prismaticUrl",
       async () => {
         const globalState = await stateManager.getGlobalState();
+        const prismaticUrl = globalState?.prismaticUrl || process.env.PRISMATIC_URL || CONFIG.prismaticUrl;
 
         // note: show the input box
         const updatedPrismaticUrl = await vscode.window.showInputBox({
           prompt: "Enter Prismatic URL",
-          placeHolder: globalState?.prismaticUrl || CONFIG.prismaticUrl,
-          value: globalState?.prismaticUrl || CONFIG.prismaticUrl,
+          placeHolder: prismaticUrl,
+          value: prismaticUrl,
           validateInput: (value) => {
             try {
               new URL(value);
@@ -359,7 +365,7 @@ export async function activate(context: vscode.ExtensionContext) {
         } catch (error) {
           log("ERROR", String(error), true);
         }
-      }
+      },
     );
     context.subscriptions.push(prismPrismaticUrlCommand);
 
@@ -406,19 +412,19 @@ export async function deactivate() {
 export const log = (
   level: "SUCCESS" | "WARN" | "ERROR" | "INFO",
   message: string,
-  showMessage = false
+  showMessage = false,
 ) => {
   const timestamp = new Date().toISOString();
   const emoji =
     level === "SUCCESS"
       ? "✅"
       : level === "WARN"
-      ? "⚠️"
-      : level === "ERROR"
-      ? "❌"
-      : level === "INFO"
-      ? "ℹ️"
-      : "";
+        ? "⚠️"
+        : level === "ERROR"
+          ? "❌"
+          : level === "INFO"
+            ? "ℹ️"
+            : "";
 
   outputChannel.appendLine(`[${timestamp}] ${emoji} [${level}] ${message}`);
 
