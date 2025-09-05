@@ -12,6 +12,7 @@ import {
   type TestIntegrationFlowMachineActorRef,
   testIntegrationFlowMachine,
 } from "./lib/integrationsFlowsTest/testIntegrationFlow.machine";
+import { syncPrismaticUrl } from "@/extension/syncPrismaticUrl";
 
 // disposables
 let executionResultsViewProvider: vscode.Disposable | undefined;
@@ -105,6 +106,8 @@ export async function activate(context: vscode.ExtensionContext) {
     } catch (error) {
       log("ERROR", String(error), true);
     }
+
+    await syncPrismaticUrl();
 
     /**
      * sync the integration id between workspace state and file system

@@ -32,6 +32,11 @@ export const executeProjectNpmScript = async (
       `"${npmPath}" run ${scriptName}`,
       {
         cwd: workspaceFolderPath,
+        env: {
+          ...process.env,
+          // note: explicitly override DEBUG to prevent Node's require from dumping debug data when CNI projects set DEBUG=true via dotenv
+          DEBUG: "false",
+        },
       }
     );
 
