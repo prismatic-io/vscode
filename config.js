@@ -17,7 +17,7 @@ const CONFIG = {
       viewType: "configWizard.webview",
     },
   },
-  prismaticUrl: "https://app.dev.prismatic-dev.io",
+  prismaticUrl: "https://app.prismatic.io",
 };
 
 module.exports = { CONFIG };

@@ -11,6 +11,7 @@ import {
   testIntegrationFlowMachine,
   type TestIntegrationFlowMachineActorRef,
 } from "./lib/integrationsFlowsTest/testIntegrationFlow.machine";
+import { syncPrismaticUrl } from "@/extension/syncPrismaticUrl";
 
 // disposables
 let executionResultsViewProvider: vscode.Disposable | undefined;
@@ -104,6 +105,8 @@ export async function activate(context: vscode.ExtensionContext) {
     } catch (error) {
       log("ERROR", String(error), true);
     }
+
+    await syncPrismaticUrl();
 
     /**
      * register views
