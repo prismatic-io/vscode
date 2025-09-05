@@ -4,8 +4,8 @@ import type {
   StepResult,
 } from "@webview/views/executionResults/types";
 import { useActorRef, useSelector } from "@xstate/react";
-import { addHours, formatISO, subHours } from "date-fns";
-import type { PropsWithChildren, ReactNode } from "react";
+import { addHours } from "date-fns";
+import type { PropsWithChildren } from "react";
 import {
   createContext,
   useCallback,
@@ -35,11 +35,11 @@ const ExecutionResultsContext = createContext<{
   executionResult: null,
   stepResult: null,
   stepResultActorRef: null,
-  refetch: () => { },
+  refetch: () => {},
   isLoading: false,
   hasLoaded: false,
-  setExecutionResult: () => { },
-  setStepResult: () => { },
+  setExecutionResult: () => {},
+  setStepResult: () => {},
 });
 
 export const ExecutionResultsProvider = ({

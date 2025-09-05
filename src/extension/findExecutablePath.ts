@@ -12,7 +12,7 @@ interface FindExecutablePathOptions {
 
 export async function findExecutablePath(
   executable: string,
-  options: FindExecutablePathOptions = {}
+  options: FindExecutablePathOptions = {},
 ): Promise<string | null> {
   const { npxFallback, logPrefix = "findExecutablePath" } = options;
 
@@ -59,7 +59,7 @@ export async function findExecutablePath(
         process.env.HOME || "",
         ".npm-global",
         "bin",
-        executable
+        executable,
       );
 
       return existsSync(userLocalPath)
@@ -75,7 +75,7 @@ export async function findExecutablePath(
         "node",
         "current",
         "bin",
-        executable
+        executable,
       );
 
       return existsSync(nvmPath)
@@ -88,7 +88,7 @@ export async function findExecutablePath(
         process.env.HOME || "",
         ".asdf",
         "shims",
-        executable
+        executable,
       );
 
       return existsSync(asdfShim)

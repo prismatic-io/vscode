@@ -1,8 +1,8 @@
 import {
   createContext,
+  type PropsWithChildren,
   useContext,
   useMemo,
-  type PropsWithChildren,
 } from "react";
 import { LoadingSpinner } from "@/webview/components/LoadingSpinner";
 import { NotLoggedIn } from "@/webview/components/NotLoggedIn";

@@ -1,7 +1,7 @@
 import type {
-  WebviewApi,
-  MessageType,
   MessageHandlerManager as MessageHandlerManagerType,
+  MessageType,
+  WebviewApi,
 } from "@type/messages";
 
 export class MessageHandlerManager {

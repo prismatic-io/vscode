@@ -1,4 +1,4 @@
-import type { WorkspaceState, GlobalState } from "@type/state";
+import type { GlobalState, WorkspaceState } from "@type/state";
 import type { ConfigWizardMessage } from "@webview/views/configWizard/types";
 import type { ExecutionResultsMessage } from "@webview/views/executionResults/types";
 

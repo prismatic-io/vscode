@@ -1,8 +1,8 @@
-import { promisify } from "node:util";
 import { exec, spawn } from "node:child_process";
+import { promisify } from "node:util";
+import { StateManager } from "@extension/StateManager";
 import * as vscode from "vscode";
 import { findPrismPath } from "@/extension/findPrismPath";
-import { StateManager } from "@extension/StateManager";
 
 const execAsync = promisify(exec);
 
@@ -38,7 +38,7 @@ export class PrismCLIManager {
 
     if (!prismPath) {
       throw new Error(
-        "Prismatic CLI is not properly installed. Please ensure @prismatic-io/prism is installed on your system. Run 'npm install -g @prismatic-io/prism' to install it."
+        "Prismatic CLI is not properly installed. Please ensure @prismatic-io/prism is installed on your system. Run 'npm install -g @prismatic-io/prism' to install it.",
       );
     }
 
@@ -54,13 +54,13 @@ export class PrismCLIManager {
    */
   public async executeCommand(
     command: string,
-    fromWorkspace = false
+    fromWorkspace = false,
   ): Promise<{ stdout: string; stderr: string }> {
     const globalState = await this.stateManager.getGlobalState();
 
     if (!globalState?.prismaticUrl) {
       throw new Error(
-        "Prismatic URL is not set. Please set it using the 'Prismatic URL' command."
+        "Prismatic URL is not set. Please set it using the 'Prismatic URL' command.",
       );
     }
 
@@ -79,7 +79,7 @@ export class PrismCLIManager {
             // note: explicitly override DEBUG to prevent Node's require from dumping debug data when CNI projects set DEBUG=true via dotenv
             DEBUG: "false",
           },
-        }
+        },
       );
 
       return { stdout, stderr };
@@ -87,7 +87,7 @@ export class PrismCLIManager {
       throw new Error(
         `Failed to execute Prismatic CLI command: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
       );
     }
   }
@@ -143,7 +143,7 @@ export class PrismCLIManager {
 
         if (
           chunk.includes(
-            "Press any key to open prismatic.io in your default browser"
+            "Press any key to open prismatic.io in your default browser",
           ) &&
           !promptShown
         ) {
@@ -157,14 +157,14 @@ export class PrismCLIManager {
           if (code === 126) {
             reject(
               new Error(
-                "Prismatic CLI was found but could not be executed (exit code 126). Please check that it is installed correctly and is executable."
-              )
+                "Prismatic CLI was found but could not be executed (exit code 126). Please check that it is installed correctly and is executable.",
+              ),
             );
           } else if (code === 127) {
             reject(
               new Error(
-                "Prismatic CLI was not found (exit code 127). Please ensure @prismatic-io/prism is installed and in your PATH."
-              )
+                "Prismatic CLI was not found (exit code 127). Please ensure @prismatic-io/prism is installed and in your PATH.",
+              ),
             );
           } else {
             code === 0
@@ -177,8 +177,8 @@ export class PrismCLIManager {
       loginProcess.on("error", (error) => {
         reject(
           new Error(
-            `Failed to start login process: ${error.message}\nPlease ensure @prismatic-io/prism is installed and executable.`
-          )
+            `Failed to start login process: ${error.message}\nPlease ensure @prismatic-io/prism is installed and executable.`,
+          ),
         );
       });
     });

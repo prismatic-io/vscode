@@ -26,9 +26,9 @@ const IntegrationContext = createContext<{
   flowId: "",
   flows: [],
   isLoading: false,
-  refetch: () => { },
+  refetch: () => {},
   systemInstanceId: "",
-  setFlowId: () => { },
+  setFlowId: () => {},
 });
 
 export const IntegrationProvider = ({ children }: { children: ReactNode }) => {

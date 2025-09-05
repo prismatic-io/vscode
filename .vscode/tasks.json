@@ -1,0 +1,53 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "npm: build:dev",
+      "type": "npm",
+      "script": "build:dev",
+      "problemMatcher": "$tsc",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "silent"
+      }
+    },
+    {
+      "label": "npm: watch",
+      "type": "npm",
+      "script": "watch",
+      "problemMatcher": "$tsc-watch",
+      "isBackground": true,
+      "group": "build",
+      "presentation": {
+        "group": "watch",
+        "reveal": "never"
+      }
+    },
+    {
+      "label": "npm: build:prod",
+      "type": "npm",
+      "script": "build:prod",
+      "problemMatcher": "$tsc",
+      "group": "build",
+      "presentation": {
+        "reveal": "silent"
+      }
+    },
+    {
+      "label": "get-npm-global-bin",
+      "type": "shell",
+      "command": "npm config get prefix",
+      "presentation": {
+        "reveal": "never"
+      }
+    },
+    {
+      "label": "prepare-dev-environment",
+      "dependsOn": ["get-npm-global-bin", "npm: build:dev"],
+      "dependsOrder": "sequence"
+    }
+  ]
+}

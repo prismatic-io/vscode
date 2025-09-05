@@ -7,12 +7,12 @@ import { createExecutionResultsViewProvider } from "@webview/views/executionResu
 import { CONFIG } from "config";
 import * as vscode from "vscode";
 import { createActor } from "xstate";
+import { syncPrismaticUrl } from "@/extension/syncPrismaticUrl";
 import { verifyIntegrationIntegrity } from "@/extension/verifyIntegrationIntegrity";
 import {
   type TestIntegrationFlowMachineActorRef,
   testIntegrationFlowMachine,
 } from "./lib/integrationsFlowsTest/testIntegrationFlow.machine";
-import { syncPrismaticUrl } from "@/extension/syncPrismaticUrl";
 
 // disposables
 let executionResultsViewProvider: vscode.Disposable | undefined;
@@ -199,7 +199,7 @@ export async function activate(context: vscode.ExtensionContext) {
         } catch (error) {
           log("ERROR", String(error), true);
         }
-      }
+      },
     );
     context.subscriptions.push(prismRefreshTokenCommand);
 
@@ -324,7 +324,10 @@ export async function activate(context: vscode.ExtensionContext) {
       "prismatic.prismaticUrl",
       async () => {
         const globalState = await stateManager.getGlobalState();
-        const prismaticUrl = globalState?.prismaticUrl || process.env.PRISMATIC_URL || CONFIG.prismaticUrl;
+        const prismaticUrl =
+          globalState?.prismaticUrl ||
+          process.env.PRISMATIC_URL ||
+          CONFIG.prismaticUrl;
 
         // note: show the input box
         const updatedPrismaticUrl = await vscode.window.showInputBox({

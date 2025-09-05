@@ -1,6 +1,6 @@
-import * as vscode from "vscode";
 import { StateManager } from "@extension/StateManager";
 import type { MessageType } from "@type/messages";
+import * as vscode from "vscode";
 
 export interface WebviewViewManagerConfig<T extends MessageType> {
   viewType: string;
@@ -23,7 +23,7 @@ export class WebviewViewManager<T extends MessageType>
    */
   constructor(
     private readonly _extensionUri: vscode.Uri,
-    private readonly _config: WebviewViewManagerConfig<T>
+    private readonly _config: WebviewViewManagerConfig<T>,
   ) {}
 
   /**
@@ -36,7 +36,7 @@ export class WebviewViewManager<T extends MessageType>
       this._view.webview.postMessage(message);
     } else {
       console.warn(
-        "[WebviewViewManager] Cannot post message - view is undefined"
+        "[WebviewViewManager] Cannot post message - view is undefined",
       );
     }
   }
@@ -51,7 +51,7 @@ export class WebviewViewManager<T extends MessageType>
   public resolveWebviewView(
     webviewView: vscode.WebviewView,
     _context: vscode.WebviewViewResolveContext,
-    _token: vscode.CancellationToken
+    _token: vscode.CancellationToken,
   ) {
     this._view = webviewView;
     const stateManager = StateManager.getInstance();
@@ -63,12 +63,12 @@ export class WebviewViewManager<T extends MessageType>
     };
 
     const scriptPath = webviewView.webview.asWebviewUri(
-      vscode.Uri.joinPath(this._extensionUri, this._config.scriptPath)
+      vscode.Uri.joinPath(this._extensionUri, this._config.scriptPath),
     );
 
     webviewView.webview.html = this._getHtmlForWebview(
       webviewView.webview,
-      scriptPath
+      scriptPath,
     );
 
     if (this._config.onMessage) {
@@ -136,12 +136,12 @@ export class WebviewViewManager<T extends MessageType>
               default: {
                 this._config.onMessage?.(
                   message as T,
-                  this.postMessage.bind(this)
+                  this.postMessage.bind(this),
                 );
               }
             }
-          }
-        )
+          },
+        ),
       );
     }
   }

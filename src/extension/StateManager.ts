@@ -1,7 +1,7 @@
-import type * as vscode from "vscode";
-import { produce } from "immer";
-import type { GlobalState, WorkspaceState } from "@type/state";
 import type { MessageType } from "@type/messages";
+import type { GlobalState, WorkspaceState } from "@type/state";
+import { produce } from "immer";
+import type * as vscode from "vscode";
 import { CONFIG } from "../../config";
 
 const GLOBAL_STATE_KEY = "prismatic-global-state";
@@ -38,7 +38,7 @@ export class StateManager {
    * @returns The initialized StateManager instance
    */
   static async initialize(
-    context: vscode.ExtensionContext
+    context: vscode.ExtensionContext,
   ): Promise<StateManager> {
     if (!StateManager.instance) {
       StateManager.instance = new StateManager(context);
@@ -146,7 +146,7 @@ export class StateManager {
    * @param value - The new value to set
    */
   public async updateGlobalState(
-    incomingValue: Partial<GlobalState>
+    incomingValue: Partial<GlobalState>,
   ): Promise<void> {
     const currentState = (await this.getGlobalState()) ?? DEFAULT_GLOBAL_STATE;
     const updatedState = this.createNewState(currentState, incomingValue);
@@ -168,7 +168,7 @@ export class StateManager {
    * @param value - The new value to set
    */
   public async updateWorkspaceState(
-    incomingValue: Partial<WorkspaceState>
+    incomingValue: Partial<WorkspaceState>,
   ): Promise<void> {
     const currentState =
       (await this.getWorkspaceState()) ?? DEFAULT_WORKSPACE_STATE;

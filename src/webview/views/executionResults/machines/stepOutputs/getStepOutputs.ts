@@ -140,7 +140,7 @@ const transformResultJson = (result: unknown): unknown => {
     }
 
     return Object.fromEntries(
-      Object.entries(result).map(([k, v]) => [k, transformResultJson(v)])
+      Object.entries(result).map(([k, v]) => [k, transformResultJson(v)]),
     );
   }
 

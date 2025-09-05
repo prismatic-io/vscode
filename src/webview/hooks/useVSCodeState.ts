@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
 import { MessageHandlerManager } from "@extension/MessageHandlerManager";
 import type { MessageType } from "@type/messages";
 import type { GlobalState, WorkspaceState } from "@type/state";
+import { useCallback, useEffect, useState } from "react";
 
 const messageHandlerManager = new MessageHandlerManager();
 
@@ -13,10 +13,10 @@ interface StateOptions<T extends "global" | "workspace"> {
 }
 
 export function useVSCodeState<T extends "global" | "workspace">(
-  options: StateOptions<T>
+  options: StateOptions<T>,
 ) {
   const [state, setState] = useState<StateValue<T> | undefined>(
-    options.initialValue
+    options.initialValue,
   );
   const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +63,7 @@ export function useVSCodeState<T extends "global" | "workspace">(
         setError(error);
       }
     },
-    [options.scope]
+    [options.scope],
   );
 
   // note: listen for state changes from the extension

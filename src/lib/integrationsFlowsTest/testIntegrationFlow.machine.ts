@@ -1,8 +1,8 @@
 import * as vscode from "vscode";
-import { assign, setup, type ActorRefFrom } from "xstate";
+import { type ActorRefFrom, assign, setup } from "xstate";
+import { log } from "@/extension";
 import { getIntegration, InstanceConfigState } from "./getIntegration";
 import { testIntegrationFlow } from "./testIntegrationFlow";
-import { log } from "@/extension";
 
 type TestIntegrationFlowInput = {};
 
@@ -143,7 +143,7 @@ export const testIntegrationFlowMachine = setup({
             () =>
               log(
                 "WARN",
-                "Opening config wizard. Complete the instance setup, then proceed with a new test."
+                "Opening config wizard. Complete the instance setup, then proceed with a new test.",
               ),
             "configureInstance",
           ],
@@ -165,7 +165,7 @@ export const testIntegrationFlowMachine = setup({
                 () =>
                   log(
                     "SUCCESS",
-                    "Integration flow test completed successfully!"
+                    "Integration flow test completed successfully!",
                   ),
               ],
               target: "#testIntegrationFlow.WAITING_FOR_TEST",
@@ -174,7 +174,7 @@ export const testIntegrationFlowMachine = setup({
               actions: ({ event }) =>
                 log(
                   "ERROR",
-                  `Error running integration flow test. ${event.error}`
+                  `Error running integration flow test. ${event.error}`,
                 ),
               target: "#testIntegrationFlow.WAITING_FOR_TEST",
             },

@@ -1,12 +1,12 @@
-import * as vscode from "vscode";
 import { WebviewViewManager } from "@extension/WebviewViewManager";
+import * as vscode from "vscode";
 import type { ExecutionResultsMessage } from "@/webview/views/executionResults/types";
 import { CONFIG } from "../../../../config";
 
 const WEBVIEW_CONFIG = CONFIG.webviews.executionResults;
 
 export function createExecutionResultsViewProvider(
-  context: vscode.ExtensionContext
+  context: vscode.ExtensionContext,
 ) {
   const ExecutionResultsViewProvider =
     new WebviewViewManager<ExecutionResultsMessage>(context.extensionUri, {
@@ -17,7 +17,7 @@ export function createExecutionResultsViewProvider(
         switch (message.type) {
           case "executionResults.example": {
             vscode.window.showInformationMessage(
-              `Received from execution results view: ${message.payload}`
+              `Received from execution results view: ${message.payload}`,
             );
 
             postMessage({
@@ -36,6 +36,6 @@ export function createExecutionResultsViewProvider(
 
   return vscode.window.registerWebviewViewProvider(
     WEBVIEW_CONFIG.viewType,
-    ExecutionResultsViewProvider
+    ExecutionResultsViewProvider,
   );
 }

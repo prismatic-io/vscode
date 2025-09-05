@@ -1,6 +1,6 @@
 import { fromPromise } from "xstate";
 import { fetcher } from "@/lib/fetcher";
-import { GraphQLVariables } from "@/types/graphql";
+import type { GraphQLVariables } from "@/types/graphql";
 import type {
   ExecutionResults,
   InstanceExecutionResultInvokeType,
@@ -113,7 +113,7 @@ export const getExecutionResults = fromPromise<
           acc.push(step);
           return acc;
         },
-        [] as StepResult[]
+        [] as StepResult[],
       );
 
       acc.push({
@@ -123,7 +123,7 @@ export const getExecutionResults = fromPromise<
 
       return acc;
     },
-    [] as ExecutionResults
+    [] as ExecutionResults,
   );
 
   return {

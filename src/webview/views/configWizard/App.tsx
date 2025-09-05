@@ -1,7 +1,7 @@
 import type React from "react";
-import { Container, Iframe } from "@/webview/views/configWizard/styles";
-import { useConfigWizardContext } from "@/webview/views/configWizard/providers/ConfigWizardProvider";
 import { LoadingSpinner } from "@/webview/components/LoadingSpinner";
+import { useConfigWizardContext } from "@/webview/views/configWizard/providers/ConfigWizardProvider";
+import { Container, Iframe } from "@/webview/views/configWizard/styles";
 
 export const App: React.FC = () => {
   const { iframeRef, iframeUrl, hasLoaded } = useConfigWizardContext();

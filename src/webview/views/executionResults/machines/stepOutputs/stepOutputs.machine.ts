@@ -1,5 +1,4 @@
 import { type ActorRefFrom, assign, sendParent, setup } from "xstate";
-import { log } from "@/extension";
 import { getExecutionLogs } from "@/webview/views/executionResults/machines/stepOutputs/getExecutionLogs";
 import { getStepOutputs } from "@/webview/views/executionResults/machines/stepOutputs/getStepOutputs";
 import { getStepResultMeta } from "@/webview/views/executionResults/machines/stepOutputs/getStepResultMeta";
@@ -54,7 +53,7 @@ export const stepOutputsMachine = setup({
         return {
           stepResultMeta: params.stepResultMeta,
         };
-      }
+      },
     ),
     updateStepOutput: assign(
       (
@@ -64,16 +63,16 @@ export const stepOutputsMachine = setup({
             data: unknown;
             message: string | null;
           };
-        }
+        },
       ) => {
         return {
           output: params.output,
         };
-      }
+      },
     ),
     updateLogs: assign(({ context }, params: { logs: ExecutionLogs }) => {
       const stepLogs = params.logs.filter(
-        (log) => log.stepName === context["@input"].stepResult.stepName
+        (log) => log.stepName === context["@input"].stepResult.stepName,
       );
 
       return {
