@@ -1,6 +1,6 @@
-import { fromPromise } from "xstate";
 import { decode } from "@msgpack/msgpack";
 import { isValid } from "date-fns";
+import { fromPromise } from "xstate";
 
 const MAX_PREVIEW_SIZE = 1048576;
 
@@ -12,8 +12,8 @@ export interface GetStepOutputsOutput {
 }
 
 interface GetStepOutputsInput {
-  resultsMetadataUrl: string;
-  resultsUrl: string;
+  resultsMetadataUrl?: string;
+  resultsUrl?: string;
   responseType?: "json" | "msgpack";
 }
 
@@ -21,9 +21,22 @@ export const getStepOutputs = fromPromise<
   GetStepOutputsOutput,
   GetStepOutputsInput
 >(async ({ input }) => {
+  if (!input.resultsMetadataUrl || !input.resultsUrl) {
+    return {
+      stepOutputs: {
+        data: "<Unable to load preview>",
+        message: "Step outputs metadata URL or results URL is required",
+      },
+    };
+  }
+
   const metaDataResults = await fetch(input.resultsMetadataUrl, {
     method: "HEAD",
   });
+
+  if (metaDataResults.status === 403) {
+    throw new Error("Access to step outputs is forbidden (403)");
+  }
 
   if (!metaDataResults.ok) {
     return {
@@ -58,6 +71,10 @@ export const getStepOutputs = fromPromise<
   const results = await fetch(input.resultsUrl, {
     method: "GET",
   });
+
+  if (results.status === 403) {
+    throw new Error("Access to step outputs is forbidden (403)");
+  }
 
   if (!results.ok) {
     return {

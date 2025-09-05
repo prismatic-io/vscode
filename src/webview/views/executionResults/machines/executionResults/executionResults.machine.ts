@@ -1,13 +1,14 @@
-import { assign, setup } from "xstate";
 import type {
   ExecutionResult,
   ExecutionResults,
+  StepLogsAndOutputsCache,
   StepResult,
 } from "@webview/views/executionResults/types";
+import { assign, setup } from "xstate";
 import { getExecutionResults } from "@/webview/views/executionResults/machines/executionResults/getExecutionResults";
 import {
-  stepOutputsMachine,
   type StepOutputsActorRef,
+  stepOutputsMachine,
 } from "@/webview/views/executionResults/machines/stepOutputs/stepOutputs.machine";
 
 interface ExecutionResultsInput {
@@ -25,14 +26,31 @@ interface ExecutionResultsContext {
   stepResult: StepResult | null;
   stepResultActorRef: StepOutputsActorRef | null;
   hasLoaded: boolean;
+  stepLogsAndOutputsCache: Map<string, StepLogsAndOutputsCache>;
   "@input": ExecutionResultsInput;
 }
 
 type ExecutionResultsEvents =
-  | { type: "FETCH" }
-  | { type: "SET_FLOW_ID"; flowId: string }
-  | { type: "SET_EXECUTION_RESULT"; executionResultId: string }
-  | { type: "SET_STEP_RESULT"; stepResultId: string };
+  | {
+    type: "FETCH";
+  }
+  | {
+    type: "SET_FLOW_ID";
+    flowId: string;
+  }
+  | {
+    type: "SET_EXECUTION_RESULT";
+    executionResultId: string;
+  }
+  | {
+    type: "SET_STEP_RESULT";
+    stepResultId: string;
+  }
+  | {
+    type: "SET_STEP_LOGS_AND_OUTPUTS_CACHE";
+    stepId: string;
+    cache: StepLogsAndOutputsCache;
+  };
 
 type ExecutionResultsTags = "idle" | "loading";
 
@@ -89,20 +107,53 @@ export const executionResultsMachine = setup({
           };
         }
 
+        const cacheKey = `${context.executionResult.id}-${stepResult.id}`;
+
+        const cachedData = context.stepLogsAndOutputsCache.get(cacheKey);
+
         const stepResultActorRef = spawn("stepOutputsMachine", {
           id: "stepOutputsMachine",
           input: {
             prismaticUrl: context["@input"].prismaticUrl,
             accessToken: context["@input"].accessToken,
             executionResultId: context.executionResult.id,
-            startDate: stepResult.startedAt,
+            executionStartedAt: context.executionResult.startedAt,
             stepResult,
+            cachedData,
           },
         });
 
         return {
           stepResult,
           stepResultActorRef,
+        };
+      }
+    ),
+    updateStepLogsAndOutputsCache: assign(
+      (
+        { context },
+        params: {
+          stepId: string;
+          cache: StepLogsAndOutputsCache;
+        }
+      ) => {
+        const cacheKey = `${context.executionResult?.id}-${params.stepId}`;
+
+        const existingCache = context.stepLogsAndOutputsCache.get(cacheKey) || {
+          output: null,
+          logs: null,
+        };
+
+        const updatedCache = {
+          ...existingCache,
+          output: params.cache.output,
+          logs: params.cache.logs,
+        };
+
+        context.stepLogsAndOutputsCache.set(cacheKey, updatedCache);
+
+        return {
+          stepLogsAndOutputsCache: context.stepLogsAndOutputsCache,
         };
       }
     ),
@@ -121,6 +172,7 @@ export const executionResultsMachine = setup({
       stepResult: null,
       stepResultActorRef: null,
       hasLoaded: false,
+      stepLogsAndOutputsCache: new Map(),
       "@input": input,
     };
 
@@ -170,6 +222,17 @@ export const executionResultsMachine = setup({
         {
           type: "updateStepResult",
           params: ({ event }) => ({ stepResultId: event.stepResultId }),
+        },
+      ],
+    },
+    SET_STEP_LOGS_AND_OUTPUTS_CACHE: {
+      actions: [
+        {
+          type: "updateStepLogsAndOutputsCache",
+          params: ({ event }) => ({
+            stepId: event.stepId,
+            cache: event.cache,
+          }),
         },
       ],
     },

@@ -41,6 +41,12 @@ export enum LogSeverityLevel {
   WARN = "WARN",
 }
 
+export interface StepResultMeta {
+  id: string;
+  resultsMetadataUrl: string;
+  resultsUrl: string;
+}
+
 export interface StepResult {
   id: string;
   startedAt: string;
@@ -50,6 +56,11 @@ export interface StepResult {
   hasError: boolean;
   resultsMetadataUrl: string;
   resultsUrl: string;
+}
+
+export interface StepLogsAndOutputsCache {
+  output: { data: unknown; message: string | null } | null;
+  logs: ExecutionLogs | null;
 }
 
 export interface ExecutionResult {

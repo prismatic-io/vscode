@@ -4,9 +4,9 @@ import {
   useMemo,
   type PropsWithChildren,
 } from "react";
-import { useVSCodeState } from "@/webview/hooks/useVSCodeState";
-import { NotLoggedIn } from "@/webview/components/NotLoggedIn";
 import { LoadingSpinner } from "@/webview/components/LoadingSpinner";
+import { NotLoggedIn } from "@/webview/components/NotLoggedIn";
+import { useVSCodeState } from "@/webview/hooks/useVSCodeState";
 
 const AuthContext = createContext<{
   accessToken: string;
@@ -14,8 +14,13 @@ const AuthContext = createContext<{
 } | null>(null);
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
-  const { state: globalState, hasLoaded } = useVSCodeState({
-    scope: "global",
+  const { state: globalState, hasLoaded: hasLoadedGlobalState } =
+    useVSCodeState({
+      scope: "global",
+    });
+
+  const { hasLoaded: hasLoadedWorkspaceState } = useVSCodeState({
+    scope: "workspace",
   });
 
   const value = useMemo(() => {
@@ -29,7 +34,7 @@ export const AuthProvider = ({ children }: PropsWithChildren) => {
     };
   }, [globalState]);
 
-  if (!hasLoaded) {
+  if (!hasLoadedGlobalState || !hasLoadedWorkspaceState) {
     return <LoadingSpinner size={40} />;
   }
 
