@@ -1,7 +1,7 @@
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { findNpmPath } from "@/extension/findNpmPath";
-import { getWorkspaceJsonFile } from "@/extension/getWorkspaceJsonFile";
+import { getWorkspaceJsonFile } from "@/extension/lib/getWorkspaceJsonFile";
 
 type ExecError = Error & {
   stdout?: string;

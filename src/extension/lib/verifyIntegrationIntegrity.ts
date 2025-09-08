@@ -1,8 +1,8 @@
 import { createActor, toPromise } from "xstate";
 import { log } from "@/extension";
-import { getWorkspaceJsonFile } from "@/extension/getWorkspaceJsonFile";
+import { getWorkspaceJsonFile } from "@/extension/lib/getWorkspaceJsonFile";
+import { getIntegration } from "@/extension/machines/integrationsFlowsTest/getIntegration";
 import { StateManager } from "@/extension/StateManager";
-import { getIntegration } from "@/lib/integrationsFlowsTest/getIntegration";
 
 /**
  * Verifies that the current integration ID exists and is accessible in Prismatic.

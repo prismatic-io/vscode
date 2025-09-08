@@ -2,7 +2,7 @@ import { exec, spawn } from "node:child_process";
 import { promisify } from "node:util";
 import { StateManager } from "@extension/StateManager";
 import * as vscode from "vscode";
-import { findPrismPath } from "@/extension/findPrismPath";
+import { findPrismPath } from "@/extension/lib/findPrismPath";
 
 const execAsync = promisify(exec);
 

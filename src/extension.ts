@@ -1,5 +1,4 @@
 import { AuthManager } from "@extension/AuthManager";
-import { executeProjectNpmScript } from "@extension/executeProjectNpmScript";
 import { PrismCLIManager } from "@extension/PrismCLIManager";
 import { StateManager } from "@extension/StateManager";
 import { createConfigWizardPanel } from "@webview/views/configWizard/ViewProvider";
@@ -7,12 +6,13 @@ import { createExecutionResultsViewProvider } from "@webview/views/executionResu
 import { CONFIG } from "config";
 import * as vscode from "vscode";
 import { createActor } from "xstate";
-import { syncPrismaticUrl } from "@/extension/syncPrismaticUrl";
-import { verifyIntegrationIntegrity } from "@/extension/verifyIntegrationIntegrity";
+import { executeProjectNpmScript } from "@/extension/lib/executeProjectNpmScript";
+import { syncPrismaticUrl } from "@/extension/lib/syncPrismaticUrl";
+import { verifyIntegrationIntegrity } from "@/extension/lib/verifyIntegrationIntegrity";
 import {
   type TestIntegrationFlowMachineActorRef,
   testIntegrationFlowMachine,
-} from "./lib/integrationsFlowsTest/testIntegrationFlow.machine";
+} from "./extension/machines/integrationsFlowsTest/testIntegrationFlow.machine";
 
 // Disposables
 let executionResultsViewProvider: vscode.Disposable | undefined;
