@@ -2,7 +2,7 @@ import { exec, spawn } from "node:child_process";
 import { promisify } from "node:util";
 import { StateManager } from "@extension/StateManager";
 import * as vscode from "vscode";
-import { findPrismPath } from "@/extension/findPrismPath";
+import { findPrismPath } from "@/extension/lib/findPrismPath";
 
 const execAsync = promisify(exec);
 
@@ -76,7 +76,7 @@ export class PrismCLIManager {
           env: {
             ...process.env,
             PRISMATIC_URL: globalState.prismaticUrl,
-            // note: explicitly override DEBUG to prevent Node's require from dumping debug data when CNI projects set DEBUG=true via dotenv
+            // explicitly override DEBUG to prevent Node's require from dumping debug data when CNI projects set DEBUG=true via dotenv
             DEBUG: "false",
           },
         },
@@ -89,20 +89,6 @@ export class PrismCLIManager {
           error instanceof Error ? error.message : String(error)
         }`,
       );
-    }
-  }
-
-  /**
-   * Checks if the user is currently logged in to Prismatic.
-   * @returns {Promise<boolean>} A promise that resolves to true if logged in, false otherwise
-   */
-  public async isLoggedIn(): Promise<boolean> {
-    try {
-      const result = await this.me();
-
-      return !result.includes("Error: You are not logged");
-    } catch {
-      return false;
     }
   }
 

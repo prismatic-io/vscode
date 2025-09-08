@@ -132,7 +132,7 @@ export class WebviewViewManager<T extends MessageType>
                 }
                 break;
               }
-              // note: send other postMessage to the webview
+              // send other postMessage to the webview
               default: {
                 this._config.onMessage?.(
                   message as T,

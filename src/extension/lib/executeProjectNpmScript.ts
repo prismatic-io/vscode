@@ -1,7 +1,7 @@
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { findNpmPath } from "@/extension/findNpmPath";
-import { getWorkspaceJsonFile } from "@/extension/getWorkspaceJsonFile";
+import { getWorkspaceJsonFile } from "@/extension/lib/getWorkspaceJsonFile";
 
 type ExecError = Error & {
   stdout?: string;
@@ -34,7 +34,7 @@ export const executeProjectNpmScript = async (
         cwd: workspaceFolderPath,
         env: {
           ...process.env,
-          // note: explicitly override DEBUG to prevent Node's require from dumping debug data when CNI projects set DEBUG=true via dotenv
+          // explicitly override DEBUG to prevent Node's require from dumping debug data when CNI projects set DEBUG=true via dotenv
           DEBUG: "false",
         },
       },

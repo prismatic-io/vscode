@@ -1,5 +1,5 @@
 import { fromPromise } from "xstate";
-import { fetcher } from "@/lib/fetcher";
+import { fetcher } from "@/shared/fetcher";
 import type { GraphQLVariables } from "@/types/graphql";
 import type {
   ExecutionResults,
