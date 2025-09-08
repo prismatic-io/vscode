@@ -1,7 +1,7 @@
+import { AuthManager } from "@extension/AuthManager";
 import { executeProjectNpmScript } from "@extension/executeProjectNpmScript";
 import { PrismCLIManager } from "@extension/PrismCLIManager";
 import { StateManager } from "@extension/StateManager";
-import { TokenManager } from "@extension/TokenManager";
 import { createConfigWizardPanel } from "@webview/views/configWizard/ViewProvider";
 import { createExecutionResultsViewProvider } from "@webview/views/executionResults/ViewProvider";
 import { CONFIG } from "config";
@@ -18,7 +18,7 @@ import {
 let executionResultsViewProvider: vscode.Disposable | undefined;
 let configWizardPanel: vscode.Disposable | undefined;
 let outputChannel: vscode.OutputChannel;
-let tokenManager: TokenManager;
+let authManager: AuthManager;
 let stateManager: StateManager;
 let prismCLIManager: PrismCLIManager;
 let testIntegrationFlowActor: TestIntegrationFlowMachineActorRef | undefined;
@@ -62,51 +62,25 @@ export async function activate(context: vscode.ExtensionContext) {
     stateManager = await StateManager.initialize(context);
 
     /**
-     * initialize Token Manager
-     */
-    log("INFO", "Initializing Token Manager...");
-    tokenManager = await TokenManager.getInstance();
-
-    /**
      * initialize Prism CLI
      */
     log("INFO", "Initializing Prism CLI...");
     prismCLIManager = await PrismCLIManager.getInstance();
 
     /**
-     * check if user is logged in
-     *   - if not, show login prompt
-     *   - if yes, check if tokens are valid
-     *     - if not, show token refresh prompt
+     * initialize Auth Manager
      */
-    try {
-      if (!(await prismCLIManager.isLoggedIn())) {
-        const loginAction = "Login to Prismatic";
+    log("INFO", "Initializing Auth Manager...");
+    authManager = await AuthManager.getInstance();
 
-        const response = await vscode.window.showInformationMessage(
-          "You need to login to Prismatic to continue.",
-          { modal: true },
-          loginAction,
-        );
+    /**
+     * perform initial auth flow
+     */
+    await authManager.performInitialAuthFlow();
 
-        if (response !== loginAction) {
-          throw new Error("Login required to continue");
-        }
-
-        log("INFO", "Logging in...");
-        await prismCLIManager.login();
-        log("SUCCESS", "Successfully logged in!");
-      }
-
-      if (!(await tokenManager.hasTokens())) {
-        log("INFO", "Initializing tokens...");
-        await tokenManager.initializeTokens();
-        log("SUCCESS", "Successfully initialized tokens!");
-      }
-    } catch (error) {
-      log("ERROR", String(error), true);
-    }
-
+    /**
+     * sync the prismatic url
+     */
     await syncPrismaticUrl();
 
     /**
@@ -138,7 +112,7 @@ export async function activate(context: vscode.ExtensionContext) {
         outputChannel.show(true);
 
         try {
-          const user = await prismCLIManager.me();
+          const user = await authManager.getCurrentUser();
 
           log("INFO", `\n${user}`);
         } catch (error) {
@@ -156,8 +130,7 @@ export async function activate(context: vscode.ExtensionContext) {
       "prismatic.login",
       async () => {
         try {
-          const result = await prismCLIManager.login();
-          await tokenManager.initializeTokens();
+          const result = await authManager.login();
 
           log("SUCCESS", result, true);
         } catch (error) {
@@ -175,8 +148,8 @@ export async function activate(context: vscode.ExtensionContext) {
       "prismatic.logout",
       async () => {
         try {
-          const result = await prismCLIManager.logout();
-          await tokenManager.clearTokens();
+          const result = await authManager.logout();
+
           log("SUCCESS", result, true);
         } catch (error) {
           log("ERROR", String(error), true);
@@ -193,7 +166,7 @@ export async function activate(context: vscode.ExtensionContext) {
       "prismatic.refreshToken",
       async () => {
         try {
-          await tokenManager.refreshAccessToken();
+          await authManager.refreshAccessToken();
 
           log("SUCCESS", "Successfully refreshed tokens!", true);
         } catch (error) {
@@ -283,13 +256,13 @@ export async function activate(context: vscode.ExtensionContext) {
         log("INFO", "Starting integration test...");
 
         try {
-          const accessToken = await tokenManager.getAccessToken();
+          if (!(await authManager.isLoggedIn())) {
+            throw new Error("User is not logged in. Please login first.");
+          }
+
+          const accessToken = await authManager.getAccessToken();
           const workspaceState = await stateManager.getWorkspaceState();
           const globalState = await stateManager.getGlobalState();
-
-          if (!accessToken) {
-            throw new Error("No access token available. Please login first.");
-          }
 
           if (!workspaceState?.integrationId) {
             throw new Error(
@@ -361,8 +334,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         // note: re-login and re-initialize tokens
         try {
-          const result = await prismCLIManager.login();
-          await tokenManager.initializeTokens();
+          const result = await authManager.login();
 
           log("SUCCESS", result, true);
         } catch (error) {
@@ -389,8 +361,8 @@ export async function deactivate() {
   try {
     log("INFO", `Extension deactivated at: ${new Date().toISOString()}`);
 
-    // note: dispose of token manager
-    await tokenManager.dispose();
+    // note: dispose of auth manager
+    await authManager.dispose();
 
     // note: dispose of state manager
     await stateManager.dispose();

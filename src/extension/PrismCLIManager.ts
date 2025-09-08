@@ -93,20 +93,6 @@ export class PrismCLIManager {
   }
 
   /**
-   * Checks if the user is currently logged in to Prismatic.
-   * @returns {Promise<boolean>} A promise that resolves to true if logged in, false otherwise
-   */
-  public async isLoggedIn(): Promise<boolean> {
-    try {
-      const result = await this.me();
-
-      return !result.includes("Error: You are not logged");
-    } catch {
-      return false;
-    }
-  }
-
-  /**
    * Initiates the Prismatic login process.
    * Opens the browser for authentication and handles the login flow.
    * @returns {Promise<string>} A promise that resolves to the login completion message
