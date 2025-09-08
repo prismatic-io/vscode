@@ -340,6 +340,9 @@ export async function activate(context: vscode.ExtensionContext) {
         } catch (error) {
           log("ERROR", String(error), true);
         }
+
+        // Re-sync the integration id
+        await verifyIntegrationIntegrity();
       },
     );
     context.subscriptions.push(prismPrismaticUrlCommand);
