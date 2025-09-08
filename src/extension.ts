@@ -14,7 +14,7 @@ import {
   testIntegrationFlowMachine,
 } from "./lib/integrationsFlowsTest/testIntegrationFlow.machine";
 
-// disposables
+// Disposables
 let executionResultsViewProvider: vscode.Disposable | undefined;
 let configWizardPanel: vscode.Disposable | undefined;
 let outputChannel: vscode.OutputChannel;
@@ -26,7 +26,7 @@ let testIntegrationFlowActor: TestIntegrationFlowMachineActorRef | undefined;
 export async function activate(context: vscode.ExtensionContext) {
   try {
     /**
-     * enable extension based on the workspace containing .spectral
+     * Enable extension based on the workspace containing .spectral
      * this includes showing commands & views.
      */
     await vscode.commands.executeCommand(
@@ -36,13 +36,13 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     /**
-     * create output channel
+     * Create output channel
      */
     outputChannel = vscode.window.createOutputChannel("Prismatic Debug");
     context.subscriptions.push(outputChannel);
 
     /**
-     * start extension activation
+     * Start extension activation
      */
     log("INFO", "Starting extension activation...");
     log("SUCCESS", `Extension activated at: ${new Date().toISOString()}`);
@@ -56,40 +56,40 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     /**
-     * initialize state manager
+     * Initialize state manager
      */
     log("INFO", "Initializing State Manager...");
     stateManager = await StateManager.initialize(context);
 
     /**
-     * initialize Prism CLI
+     * Initialize Prism CLI
      */
     log("INFO", "Initializing Prism CLI...");
     prismCLIManager = await PrismCLIManager.getInstance();
 
     /**
-     * initialize Auth Manager
+     * Initialize Auth Manager
      */
     log("INFO", "Initializing Auth Manager...");
     authManager = await AuthManager.getInstance();
 
     /**
-     * perform initial auth flow
+     * Perform initial auth flow
      */
     await authManager.performInitialAuthFlow();
 
     /**
-     * sync the prismatic url
+     * Sync the prismatic url
      */
     await syncPrismaticUrl();
 
     /**
-     * sync the integration id between workspace state and file system
+     * Sync the integration id between workspace state and file system
      */
     await verifyIntegrationIntegrity();
 
     /**
-     * register views
+     * Register views
      *   - settings
      *   - execution results
      *   - config wizard
@@ -188,7 +188,7 @@ export async function activate(context: vscode.ExtensionContext) {
         log("INFO", "Starting integration build and import process...");
 
         try {
-          // note: build the project
+          // build the project
           const { stdout: buildStdout, stderr: buildStderr } =
             await executeProjectNpmScript("build");
 
@@ -196,18 +196,18 @@ export async function activate(context: vscode.ExtensionContext) {
             log("WARN", `Build warnings/errors: ${buildStderr}`);
           }
 
-          // note: log the build output
+          // log the build output
           log("INFO", "Starting project build...");
           log("INFO", buildStdout);
           log("SUCCESS", "Project build completed successfully!");
           log("INFO", "Starting integration import...");
 
-          // note: import the integration
+          // import the integration
           const integrationId = await prismCLIManager.integrationsImport();
 
           stateManager.updateWorkspaceState({ integrationId });
 
-          // note: show the result
+          // show the result
           log(
             "SUCCESS",
             `Integration imported successfully! ID: ${integrationId}`,
@@ -232,7 +232,7 @@ export async function activate(context: vscode.ExtensionContext) {
         input: {},
       });
 
-      // note: subscribe to state changes for managing running state
+      // Subscribe to state changes for managing running state
       testIntegrationFlowActor.subscribe((snapshot) => {
         vscode.commands.executeCommand(
           "setContext",
@@ -241,7 +241,7 @@ export async function activate(context: vscode.ExtensionContext) {
         );
       });
 
-      // note: start the machine
+      // Start the machine
       testIntegrationFlowActor.start();
     }
 
@@ -274,7 +274,7 @@ export async function activate(context: vscode.ExtensionContext) {
             throw new Error("No test integration actor available.");
           }
 
-          // note: send the test event with the integration ID
+          // send the test event with the integration ID
           testIntegrationFlowActor.send({
             type: "TEST_INTEGRATION",
             integrationId: workspaceState.integrationId,
@@ -302,7 +302,7 @@ export async function activate(context: vscode.ExtensionContext) {
           process.env.PRISMATIC_URL ||
           CONFIG.prismaticUrl;
 
-        // note: show the input box
+        // show the input box
         const updatedPrismaticUrl = await vscode.window.showInputBox({
           prompt: "Enter Prismatic URL",
           placeHolder: prismaticUrl,
@@ -324,15 +324,15 @@ export async function activate(context: vscode.ExtensionContext) {
           return;
         }
 
-        // note: update the URL in state
+        // Update the URL in state
         await stateManager.updateGlobalState({
           prismaticUrl: updatedPrismaticUrl,
         });
 
-        // note: show the result
+        // Show the result
         log("SUCCESS", "Prismatic URL updated successfully!", true);
 
-        // note: re-login and re-initialize tokens
+        // Re-login and re-initialize tokens
         try {
           const result = await authManager.login();
 
@@ -355,7 +355,7 @@ export async function activate(context: vscode.ExtensionContext) {
       log("ERROR", `ERROR during activation: ${error}`);
     }
 
-    // note: re-throw to make sure VS Code sees the error
+    // Re-throw to make sure VS Code sees the error
     throw error;
   }
 }
@@ -364,23 +364,23 @@ export async function deactivate() {
   try {
     log("INFO", `Extension deactivated at: ${new Date().toISOString()}`);
 
-    // note: dispose of auth manager
+    // Dispose of auth manager
     await authManager.dispose();
 
-    // note: dispose of state manager
+    // Dispose of state manager
     await stateManager.dispose();
 
-    // note: dispose of prism CLI
+    // Dispose of prism CLI
     prismCLIManager.dispose();
 
-    // note: dispose of test integration flow actor
+    // Dispose of test integration flow actor
     testIntegrationFlowActor?.stop();
 
-    // note: dispose of views
+    // Dispose of views
     executionResultsViewProvider?.dispose();
     configWizardPanel?.dispose();
 
-    // note: dispose of output channel
+    // Dispose of output channel
     outputChannel?.dispose();
   } catch (error) {
     console.error("Deactivation error:", error);

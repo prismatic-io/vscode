@@ -21,7 +21,7 @@ export function useVSCodeState<T extends "global" | "workspace">(
   const [hasLoaded, setHasLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // note: get initial state
+  // get initial state
   useEffect(() => {
     messageHandlerManager.postMessage({
       type: "getState",
@@ -36,7 +36,7 @@ export function useVSCodeState<T extends "global" | "workspace">(
     });
   }, [options.scope]);
 
-  // note: update state
+  // update state
   const updateState = useCallback(
     (newValue: Partial<StateValue<T>>) => {
       try {
@@ -66,7 +66,7 @@ export function useVSCodeState<T extends "global" | "workspace">(
     [options.scope],
   );
 
-  // note: listen for state changes from the extension
+  // listen for state changes from the extension
   useEffect(() => {
     const handleMessage = (message: MessageType) => {
       if (
