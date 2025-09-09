@@ -1,6 +1,6 @@
 import fs, { existsSync } from "node:fs";
 import path from "node:path";
-import { getWorkspacePath } from "@/extension/getWorkspacePath";
+import { getWorkspacePath } from "@/extension/lib/getWorkspacePath";
 
 interface GetWorkspaceJsonFileProps {
   workspaceFolderPath?: string;

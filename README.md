@@ -1,135 +1,75 @@
-# Prismatic VS Code Extension
+# Prismatic Extension for VSCode & Cursor
 
-A VS Code extension that improves the developer experience around Code Native Integrations (CNI) by enabling test execution, integration imports, instance configuration, and inspection of execution results directly within the IDE.
+An extension for VSCode & Cursor that improves the developer experience around Code-Native Integrations (CNI) by enabling test execution, integration imports, instance configuration, and inspection of execution results directly within the IDE.
+
+## Purpose
+
+The main intent of this extension is to offer:
+
+1. **Seamless Development Workflow Integration:**
+   This extension bridges the gap between local development and the Prismatic platform by providing direct access to integration testing, configuration, and debugging tools within your IDE. Instead of constantly switching between your code editor and the Prismatic web interface, developers can manage their entire CNI development lifecycle from VS Code, reducing context switching and improving productivity.
+
+2. **Real-time Testing and Debugging:**
+   The extension provides immediate feedback on integration performance through real-time test execution and detailed step-by-step output streaming. This allows developers to quickly identify issues, debug problems, and iterate on their integrations without leaving their development environment, significantly reducing the feedback loop between coding and testing.
+
+3. **Unified Configuration Management:**
+   By integrating the Prismatic CLI directly into VS Code, the extension ensures consistent configuration management across different environments and team members. The Config Wizard provides a guided interface for setting up integration instances, while maintaining synchronization with the Prismatic platform, ensuring that local development configurations stay aligned with production environments.
 
 ## Features
 
-- **Authentication**: Secure login and token management through the Prismatic CLI
-- **Config Wizard**: Configure integration instances with a guided interface
-- **Execution Results**: View detailed step-by-step outputs and logs
-- **Integration Import**: Direct import of integrations from Prismatic
-- **Message Passing**: Bi-directional communication between webviews and extension
-- **React Integration**: Modern UI components using React and styled-components
-- **State Management**: Persistent state across extension sessions
-- **VSCode Theming**: Seamless integration with VS Code's theme system
+- **Authentication**: Secure login and token management through the Prismatic CLI.
+- **Config Wizard**: Configure integration instances with a guided interface.
+- **Execution Results**: View detailed step-by-step outputs and logs.
+- **Integration Import**: Direct import of integrations from Prismatic.
+- **Message Passing**: Bi-directional communication between webviews and extension.
+- **React Integration**: Modern UI components using React and styled-components.
+- **State Management**: Persistent state across extension sessions.
+- **VSCode Theming**: Seamless integration with VS Code's theme system.
 
-## Getting Started
+## Prerequisites
 
-1. Install the extension from the VS Code Marketplace
-2. Install the Prismatic CLI globally:
-   ```bash
-   npm install -g @prismatic-io/prism
-   ```
-   Note: The extension will also work with a local installation of the CLI, but a global installation is recommended for the best experience.
-3. Open the Prismatic view in the Activity Bar
-4. Log in to your Prismatic instance
-5. Use the Config Wizard to set up your integration
-6. View execution results in the panel
-
-## Development
-
-### Prerequisites
-
-- Node.js
-- VS Code (version 1.96.0 or higher)
-- npm or yarn
-- Prismatic CLI (installed globally)
-
-### Installation
-
-1. Clone the repository
-2. Install dependencies:
-
-```bash
-npm install
-```
-
-3. Build the extension:
-
-```bash
-npm run build:prod
-```
-
-4. Run in development mode:
-
-```bash
-npm run watch
-```
-
-### Project Structure
-
-```
-src/
-  ├── extension/      # VS Code extension code
-  ├── lib/            # Utility functions and shared code
-  ├── webview/        # React webview components
-  ├── types/          # TypeScript type definitions
-  └── extension.ts    # Extension entry point
-```
-
-### Available Commands
-
-- `prismatic.configWizard`: Open the Config Wizard
-- `prismatic.me`: View your user profile
-- `prismatic.refreshToken`: Refresh your authentication token
-- `prismatic.login`: Log in to Prismatic
-- `prismatic.logout`: Log out of Prismatic
-- `prismatic.integrations.import`: Import an integration
-- `prismatic.integrations.test`: Test the actively selected flow of an integration
-- `prismatic.prismaticUrl`: Set your Prismatic instance URL
-
-### Building
-
-The project uses esbuild for bundling:
-
-- Extension code is bundled to `extension/extension.js`
-- Webview components are bundled to their respective directories
-- Styles are handled by styled-components and use the VSCode theme
+- A [Prismatic account](https://prismatic.io).
+- The Prismatic CLI installed globally [Prism](https://prismatic.io/docs/cli/#installing-the-cli-tool).
+- VSCode [version 1.96.0 or higher](https://code.visualstudio.com/updates/v1_96).
+- A [Prismatic Code-Native Integration (CNI) project](https://prismatic.io/docs/integrations/code-native/).
 
 ## Usage
 
-The extension provides a commands and a webview panel that can be accessed through the VS Code command palette:
+The extension provides commands and webview panels that can be accessed through the VS Code command palette:
 
 1. Press `Cmd+Shift+P` (Mac) or `Ctrl+Shift+P` (Windows/Linux)
-2. Type "Prismatic" to see available commands
+2. Type "Prismatic" to see available commands.
 
-## Installing the extension (.vsix) for development
+### Available Commands
 
-Please note that the extension is not yet published to the VS Code Marketplace, so you will need to install it manually. Please request access to the vsix file from the extension maintainers.
+#### `Prismatic: Config Wizard`
+Launches the Config Wizard to create or edit configuration values for your integration instance.
 
-### VSCode
+#### `Prismatic: Import Integration`
+Imports the Code-Native Integration (CNI) from your local project into the Prismatic platform.
 
-How to install a VSIX extension in VS Code
+#### `Prismatic: Test Integration`
+Executes a test for the Code-Native Integration (CNI). After the test is complete, it streams step outputs and logs for debugging.
 
-1. **Open Visual Studio Code.**
-2. **Go to the Extensions view:**
-   - Click the Extensions icon in the Activity Bar on the side (it looks like four squares).
-   - Or press Ctrl+Shift+X (Windows/Linux) or Cmd+Shift+X (Mac).
-3. **Open the Extension Menu:**
-   - Click the three-dot menu (⋮) in the top-right corner of the Extensions view.
-4. **Select "Install from VSIX..."**
-   - In the dropdown menu, click on **Install from VSIX...**.
-5. **Choose Your VSIX File:**
-   - In the file dialog, navigate to the location of your .vsix file.
-   - Select the file.
-   - Click **Open**.
-6. **Wait for Installation:**
-   - VS Code will install the extension.
-   - If prompted, click **Reload** or **Restart** VS Code to activate the extension.
+#### `Prismatic: Login`
+Logs in to your Prismatic account using your globally installed Prismatic CLI (Prism) then stores your authentication session.
 
-### Cursor
+#### `Prismatic: Logout`
+Logs out of your Prismatic account using your globally installed Prismatic CLI (Prism) then clears your authentication session.
 
-How to install a VSIX extension in Cursor
+#### `Prismatic: Prismatic URL`
+Sets your systems PRISMATIC_URL environment variable for your Prismatic CLI (Prism) then syncs it to the extension. This allows you to change your Prismatic stack environment.
 
-1. **Open Cursor.**
-2. **Open Command Palette** (`Ctrl/Cmd+Shift+P`)
-3. **Type** "Extensions: Install from VSIX..."
-4. **Select** **Your VSIX File:**
-   - In the file dialog, navigate to the location of your `.vsix` file.
-   - Select the file.
-   - Click **Open**.
-5. **Complete Installation:**
-   - Wait for Cursor to install the extension. You may need to reload or restart Cursor to activate it.
+#### `Prismatic: Me`
+Displays details about the currently authenticated Prismatic user, including name, organization, and Prismatic stack environment information using your globally installed Prismatic CLI (Prism).
+
+#### `Prismatic: Refresh Token`
+Refreshes your Prismatic authentication token to ensure continued access without needing to logout and log in again using your globally installed Prismatic CLI (Prism).
+
+### Available Webviews
+
+#### `Prismatic: Execution Results`
+Displays the results of the Code-Native Integration (CNI) test. This includes the executions, step results (onTrigger and onExecution), and step outputs & logs.
 
 ## Troubleshooting
 
@@ -139,14 +79,6 @@ If you encounter issues with the Prismatic CLI:
 2. Verify the installation: `prism --version`
 3. Check your PATH environment variable includes the npm global bin directory
 4. Try reinstalling the extension
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
 
 ## License
 
