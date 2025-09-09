@@ -1,21 +1,45 @@
 {
-  "name": "prismatic-extension",
-  "displayName": "Prismatic",
+  "name": "prismatic-io",
+  "displayName": "Prismatic.io",
   "publisher": "prismatic",
   "private": true,
-  "description": "This VS Code extension improves the developer experience around Code Native Integrations (CNI) by enabling test execution, integration imports, instance configuration (including config variables, debug mode, and trigger payloads), and inspection of execution results—all directly within the IDE. Developers can view detailed step-by-step outputs and logs for both onTrigger and onExecution stages, streamlining the build, test, and debug workflow without leaving VS Code.",
-  "version": "0.0.22",
+  "description": "This extension improves the developer experience around Code Native Integrations (CNI) by enabling test execution, integration imports, instance configuration (including config variables, debug mode, and trigger payloads), and inspection of execution results—all directly within the IDE.",
+  "version": "0.0.23",
+  "icon": "resources/prismatic.png",
+  "galleryBanner": {
+    "color": "#101017",
+    "theme": "dark"
+  },
+  "homepage": "https://github.com/prismatic-io/vscode/blob/main/README.md",
   "repository": {
     "type": "git",
     "url": "https://github.com/prismatic-io/vscode"
   },
-  "icon": "resources/prismatic-icon.png",
+  "bugs": {
+    "url": "https://github.com/prismatic-io/vscode/issues",
+    "email": "dev@prismatic.io"
+  },
   "engines": {
     "vscode": "^1.96.0"
   },
   "categories": [
+    "Debuggers",
+    "Testing",
+    "Visualization",
     "Other"
   ],
+  "keywords": [
+    "prismatic",
+    "integration",
+    "cni",
+    "code-native integration",
+    "debugger",
+    "testing",
+    "api",
+    "workflow",
+    "automation"
+  ],
+  "license": "MIT",
   "main": "extension/extension.js",
   "activationEvents": [
     "workspaceContains:**/.spectral/*"
@@ -77,6 +101,7 @@
           "type": "webview",
           "id": "executionResults.webview",
           "name": "Execution Results",
+          "icon": "resources/prismatic.svg",
           "when": "prismatic.workspaceEnabled"
         }
       ]
