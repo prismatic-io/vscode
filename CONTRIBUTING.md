@@ -275,17 +275,6 @@ gh auth login
 - [ ] GitHub release created with notes
 - [ ] Internal team notified
 
-### Version Management
-
-```bash
-# Update version in package.json and create git tag
-npm version patch  # or minor/major
-
-# Build and package
-npm run build:prod
-npm run package
-```
-
 ## Architecture Notes
 
 ### Key Components
@@ -295,7 +284,7 @@ npm run package
 - **PrismCLIManager**: Interfaces with the Prismatic CLI to perform authentication and other CLI commands.
 - **WebviewPanelManager**: Manages webview panel lifecycle and communication with the extension.
 - **WebviewViewManager**: Manages webview view lifecycle and communication with the extension.
-- **XState Machines**: Handle complex state logic for integrations and execution results
+- **XState Machines**: Handle complex state logic for integrations and execution results.
 
 ### Webview Communication
 

@@ -3,8 +3,8 @@
   "displayName": "Prismatic.io",
   "publisher": "prismatic",
   "private": true,
-  "description": "This extension improves the developer experience around Code Native Integrations (CNI) by enabling test execution, integration imports, instance configuration (including config variables, debug mode, and trigger payloads), and inspection of execution results—all directly within the IDE.",
-  "version": "0.0.23",
+  "description": "This extension improves the developer experience around Code-Native Integrations (CNI) by enabling test execution, integration imports, instance configuration (including config variables, debug mode, and trigger payloads), and inspection of execution results—all directly within the IDE.",
+  "version": "0.0.24",
   "icon": "resources/prismatic.png",
   "galleryBanner": {
     "color": "#101017",

@@ -1,6 +1,6 @@
-# Prismatic Extension
+# Prismatic Extension for VSCode & Cursor
 
-A extension that improves the developer experience around Code-Native Integrations (CNI) by enabling test execution, integration imports, instance configuration, and inspection of execution results directly within the IDE.
+An extension for VSCode & Cursor that improves the developer experience around Code-Native Integrations (CNI) by enabling test execution, integration imports, instance configuration, and inspection of execution results directly within the IDE.
 
 ## Purpose
 
