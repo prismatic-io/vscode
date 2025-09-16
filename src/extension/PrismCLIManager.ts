@@ -2,7 +2,7 @@ import { exec, spawn } from "node:child_process";
 import { promisify } from "node:util";
 import { StateManager } from "@extension/StateManager";
 import * as vscode from "vscode";
-import { findPrismPath } from "@/extension/lib/findPrismPath";
+import { findPrismExecutablePath } from "@/extension/lib/findPrismExecutablePath";
 
 const execAsync = promisify(exec);
 
@@ -34,7 +34,7 @@ export class PrismCLIManager {
    * @returns {Promise<string>} A promise that resolves to the Prismatic CLI path
    */
   static async initializePrismPath(): Promise<string> {
-    const prismPath = await findPrismPath();
+    const prismPath = await findPrismExecutablePath();
 
     if (!prismPath) {
       throw new Error(

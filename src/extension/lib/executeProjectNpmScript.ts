@@ -1,6 +1,6 @@
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import { findNpmPath } from "@/extension/lib/findNpmPath";
+import { findNpmExecutablePath } from "@/extension/lib/findNpmExecutablePath";
 import { getWorkspaceJsonFile } from "@/extension/lib/getWorkspaceJsonFile";
 
 type ExecError = Error & {
@@ -13,14 +13,21 @@ const execAsync = promisify(exec);
 export const executeProjectNpmScript = async (
   scriptName: string,
 ): Promise<{ stdout: string; stderr: string }> => {
-  const { workspaceFolderPath } = getWorkspaceJsonFile({
-    fileName: "package.json",
-  });
+  const { workspaceFolderPath, fileData: packageFileData } =
+    getWorkspaceJsonFile({
+      fileName: "package.json",
+    });
 
-  const npmPath = await findNpmPath();
+  if (!packageFileData) {
+    throw new Error(
+      `No package.json found in the workspace. Please ensure it exists in project directory.`,
+    );
+  }
+
+  const npmExecutablePath = await findNpmExecutablePath();
 
   // 3. check if npm is installed and accessible
-  if (!npmPath) {
+  if (!npmExecutablePath) {
     throw new Error(
       "npm is not found. Please ensure npm is installed and accessible. " +
         "You can install npm by running 'brew install node' (macOS) or visiting https://nodejs.org/",
@@ -29,7 +36,7 @@ export const executeProjectNpmScript = async (
 
   try {
     const { stdout, stderr } = await execAsync(
-      `"${npmPath}" run ${scriptName}`,
+      `"${npmExecutablePath}" run ${scriptName}`,
       {
         cwd: workspaceFolderPath,
         env: {

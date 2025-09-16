@@ -42,7 +42,7 @@
   "license": "MIT",
   "main": "extension/extension.js",
   "activationEvents": [
-    "workspaceContains:**/.spectral/*"
+    "workspaceContains:.spectral/*"
   ],
   "contributes": {
     "commands": [

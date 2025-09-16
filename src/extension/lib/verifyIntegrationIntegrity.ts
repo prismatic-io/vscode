@@ -62,7 +62,7 @@ export const syncIntegrationId = async (): Promise<string | undefined> => {
     fileName: "prism.json",
   });
 
-  if ("integrationId" in fileData && fileData.integrationId) {
+  if (fileData && "integrationId" in fileData && fileData.integrationId) {
     const fileIntegrationId = fileData.integrationId as string;
 
     // check if in sync
