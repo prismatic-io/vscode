@@ -42,8 +42,10 @@ The extension provides commands and webview panels that can be accessed through 
 
 ### Available Commands
 
+<img width="756" height="311" alt="Image" src="https://github.com/user-attachments/assets/e29b9214-6364-4499-a178-1b4fa35a4c68" />
+
 #### `Prismatic: Config Wizard`
-Launches the Config Wizard to create or edit configuration values for your integration instance.
+Launches the Config Wizard to edit configuration values for your integration instance.
 
 #### `Prismatic: Import Integration`
 Imports the Code-Native Integration (CNI) from your local project into the Prismatic platform.
@@ -66,10 +68,20 @@ Displays details about the currently authenticated Prismatic user, including nam
 #### `Prismatic: Refresh Token`
 Refreshes your Prismatic authentication token to ensure continued access without needing to logout and log in again using your globally installed Prismatic CLI (Prism).
 
+#### `Prismatic: Focus on Execution Results View`
+Displays the results of the Code-Native Integration (CNI) test. This includes the executions, step results (onTrigger and onExecution), and step outputs & logs.
+
 ### Available Webviews
 
-#### `Prismatic: Execution Results`
+#### `Prismatic: Config Wizard`
+Displays the Config Wizard to edit configuration values for your integration instance.
+
+<img width="1600" height="1536" alt="Image" src="https://github.com/user-attachments/assets/39f3c767-48a1-4001-b218-d00e9ce001bc" />
+
+#### `Prismatic: Focus on Execution Results View`
 Displays the results of the Code-Native Integration (CNI) test. This includes the executions, step results (onTrigger and onExecution), and step outputs & logs.
+
+<img width="2189" height="725" alt="Image" src="https://github.com/user-attachments/assets/7e148ee9-980b-41cc-ab04-8022d8b2e840" />
 
 ## Troubleshooting
 
