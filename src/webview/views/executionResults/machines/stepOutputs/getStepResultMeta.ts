@@ -20,7 +20,11 @@ interface GetStepResultMetaVariables {
 }
 
 const GET_STEP_RESULT_META = `
-  query GetStepResultMeta($executionId: ID!, $startedAt: DateTime, $endedAt: DateTime) {
+  query GetStepResultMeta(
+    $executionId: ID!, 
+    $startedAt: DateTime, 
+    $endedAt: DateTime
+  ) {
     stepResults(
       startedAt_Gte: $startedAt
       endedAt_Gte: $endedAt

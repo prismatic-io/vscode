@@ -22,7 +22,9 @@ interface GetIntegrationVariables {
 }
 
 const GET_INTEGRATION = `
-  query GetIntegration($integrationId: ID!) {
+  query GetIntegration(
+    $integrationId: ID!
+  ) {
     integration(id: $integrationId) {
       systemInstance {
         id

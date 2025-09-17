@@ -49,12 +49,12 @@ export const ExecutionResultsProvider = ({
 
   const { flowId } = useIntegrationContext();
 
-  const { startDate, endDate } = useMemo(() => {
+  const { startedDate, endedDate } = useMemo(() => {
     const now = new Date();
 
     return {
-      startDate: addHours(now, -24).toISOString(),
-      endDate: addHours(now, 1).toISOString(),
+      startedDate: addHours(now, -24).toISOString(),
+      endedDate: addHours(now, 1).toISOString(),
     };
   }, []);
 
@@ -63,8 +63,8 @@ export const ExecutionResultsProvider = ({
       limit: DEFAULT_LIMIT,
       accessToken,
       prismaticUrl,
-      startDate,
-      endDate,
+      startedDate,
+      endedDate,
     },
   });
 

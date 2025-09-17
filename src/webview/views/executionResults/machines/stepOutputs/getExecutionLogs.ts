@@ -24,21 +24,21 @@ type GetExecutionLogsQuery = {
 interface GetExecutionLogsVariables {
   after: string | null;
   executionId: string;
-  startDate: string;
+  startedDate: string;
 }
 
 const GET_EXECUTION_LOGS = `
   query getExecutionLogs(
     $after: String
     $executionId: ID!
-    $startDate: DateTime
+    $startedDate: DateTime
   ) {
     logs(
       after: $after
       executionResult: $executionId
       first: 100
       orderBy: { direction: ASC, field: TIMESTAMP }
-      timestamp_Gte: $startDate
+      timestamp_Gte: $startedDate
     ) {
       nodes {
         id
@@ -64,7 +64,7 @@ export interface GetExecutionLogsOutput {
 interface GetExecutionLogsInput {
   cursor: string | null;
   executionId: string;
-  startDate: string;
+  startedDate: string;
 }
 
 export const getExecutionLogs = fromPromise<
@@ -88,7 +88,7 @@ export const getExecutionLogs = fromPromise<
       after,
       executionId: input.executionId,
       prismaticUrl: input.prismaticUrl,
-      startDate: input.startDate,
+      startedDate: input.startedDate,
     });
 
     if (response.errors?.length) {

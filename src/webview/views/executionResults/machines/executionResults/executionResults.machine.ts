@@ -15,8 +15,8 @@ interface ExecutionResultsInput {
   accessToken: string;
   limit: number;
   prismaticUrl: string;
-  startDate: string;
-  endDate: string;
+  startedDate: string;
+  endedDate: string;
 }
 
 interface ExecutionResultsContext {
@@ -265,8 +265,8 @@ export const executionResultsMachine = setup({
           limit: context["@input"].limit,
           accessToken: context["@input"].accessToken,
           prismaticUrl: context["@input"].prismaticUrl,
-          startDate: context["@input"].startDate,
-          endDate: context["@input"].endDate,
+          startedDate: context["@input"].startedDate,
+          endedDate: context["@input"].endedDate,
         }),
         onDone: {
           actions: [
