@@ -1,8 +1,8 @@
 import { findExecutablePath } from "./findExecutablePath";
 
-export async function findPrismPath(): Promise<string | null> {
+export async function findPrismExecutablePath(): Promise<string | null> {
   return findExecutablePath("prism", {
     npxFallback: "@prismatic-io/prism",
-    logPrefix: "findPrismPath",
+    logPrefix: "findPrismExecutablePath",
   });
 }

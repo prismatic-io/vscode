@@ -21,7 +21,11 @@ export const getWorkspaceJsonFile = ({
     const filePath = path.join(workspaceFolderPath, directory, fileName);
 
     if (!existsSync(filePath)) {
-      throw new Error();
+      return {
+        workspaceFolderPath,
+        filePath,
+        fileData: null,
+      };
     }
 
     const file = fs.readFileSync(filePath, "utf8");

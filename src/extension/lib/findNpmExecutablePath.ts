@@ -1,8 +1,8 @@
 import { findExecutablePath } from "./findExecutablePath";
 
-export async function findNpmPath(): Promise<string | null> {
+export async function findNpmExecutablePath(): Promise<string | null> {
   return findExecutablePath("npm", {
     npxFallback: "npm",
-    logPrefix: "findNpmPath",
+    logPrefix: "findNpmExecutablePath",
   });
 }

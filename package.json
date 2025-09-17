@@ -4,7 +4,7 @@
   "publisher": "prismatic",
   "private": true,
   "description": "This extension improves the developer experience around Code-Native Integrations (CNI) by enabling test execution, integration imports, instance configuration (including config variables, debug mode, and trigger payloads), and inspection of execution results—all directly within the IDE.",
-  "version": "0.0.24",
+  "version": "0.0.25",
   "icon": "resources/prismatic.png",
   "galleryBanner": {
     "color": "#101017",
@@ -42,7 +42,7 @@
   "license": "MIT",
   "main": "extension/extension.js",
   "activationEvents": [
-    "workspaceContains:**/.spectral/*"
+    "workspaceContains:.spectral/*"
   ],
   "contributes": {
     "commands": [
