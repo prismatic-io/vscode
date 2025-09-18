@@ -36,11 +36,26 @@ type GetExecutionResultsQuery = {
 interface GetExecutionResultsVariables {
   limit: number;
   flowId: string | null;
+  startedDate: string;
+  endedDate: string;
 }
 
 const GET_EXECUTION_RESULTS = `
-  query GetExecutionResults($limit: Int!, $instanceId: ID, $flowId: ID, $startDate: DateTime, $endDate: DateTime) {
-    executionResults(first: $limit, instance: $instanceId, flow: $flowId, startedAt_Gte: $startDate, startedAt_Lte: $endDate, orderBy: { field: STARTED_AT, direction: DESC }) {
+  query getExecutionResults(
+    $cursor: String
+    $endedDate: DateTime
+    $flowId: ID
+    $limit: Int
+    $startedDate: DateTime
+  ) {
+    executionResults(
+      after: $cursor
+      first: $limit
+      flowConfig_Flow: $flowId
+      orderBy: { field: STARTED_AT, direction: DESC }
+      startedAt_Gte: $startedDate
+      startedAt_Lte: $endedDate
+    ) {
       nodes {
         id
         invokeType
@@ -72,8 +87,8 @@ export interface GetExecutionResultsOutput {
 interface GetExecutionResultsInput {
   limit: number;
   flowId: string | null;
-  startDate: string;
-  endDate: string;
+  startedDate: string;
+  endedDate: string;
 }
 
 export const getExecutionResults = fromPromise<
@@ -92,6 +107,8 @@ export const getExecutionResults = fromPromise<
     accessToken: input.accessToken,
     prismaticUrl: input.prismaticUrl,
     flowId: input.flowId,
+    startedDate: input.startedDate,
+    endedDate: input.endedDate,
   });
 
   if (response.errors) {

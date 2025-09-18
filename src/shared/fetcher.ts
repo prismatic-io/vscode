@@ -5,22 +5,25 @@ let prismaticUrl: string | undefined;
 
 export const fetcher = async <T, V>(
   query: string,
-  variables: GraphQLVariables<V>,
+  variablesBase: GraphQLVariables<V>,
 ): Promise<GraphQLResponse<T>> => {
-  const response = await fetch(
-    `${prismaticUrl || variables.prismaticUrl}/api`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken || variables.accessToken}`,
-      },
-      body: JSON.stringify({
-        query,
-        variables,
-      }),
+  const {
+    accessToken: variableAccessToken,
+    prismaticUrl: variablePrismaticUrl,
+    ...variables
+  } = variablesBase;
+
+  const response = await fetch(`${prismaticUrl || variablePrismaticUrl}/api`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken || variableAccessToken}`,
     },
-  );
+    body: JSON.stringify({
+      query,
+      variables,
+    }),
+  });
 
   if (!response.ok) {
     throw new Error("Failed to fetch data");

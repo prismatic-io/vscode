@@ -208,7 +208,7 @@ export const stepOutputsMachine = setup({
                   accessToken: context["@input"].accessToken,
                   prismaticUrl: context["@input"].prismaticUrl,
                   executionId: context["@input"].executionResultId,
-                  startDate: context["@input"].executionStartedAt,
+                  startedDate: context["@input"].executionStartedAt,
                 }),
                 onDone: {
                   actions: [
