@@ -2,7 +2,40 @@
 
 An extension for VSCode & Cursor that improves the developer experience around Code-Native Integrations (CNI) by enabling test execution, integration imports, instance configuration, and inspection of execution results directly within the IDE.
 
-## Purpose
+## What is Prismatic?
+
+Prismatic is the leading embedded iPaaS, enabling B2B SaaS teams to ship product integrations faster and with less dev time. The only embedded iPaaS that empowers both developers and non-developers with tools for the complete integration lifecycle, Prismatic includes low-code and code-native building options, deployment and management tooling, and self-serve customer tools.
+
+Prismatic's unparalleled versatility lets teams deliver any integration from simple to complex in one powerful platform. SaaS companies worldwide, from startups to Fortune 500s, trust Prismatic to help connect their products to the other products their customers use.
+
+With Prismatic, you can:
+
+- Build [integrations](https://prismatic.io/docs/integrations/) using our [intuitive low-code designer](https://prismatic.io/docs/integrations/low-code-integration-designer/) or [code-native](https://prismatic.io/docs/integrations/code-native/) approach in your preferred IDE
+- Leverage pre-built [connectors](https://prismatic.io/docs/components/) for common integration tasks, or develop custom connectors using our TypeScript SDK
+- Embed a native [integration marketplace](https://prismatic.io/docs/embed/) in your product for customer self-service
+- Configure and deploy customer-specific integration instances with powerful configuration tools
+- Support customers efficiently with comprehensive [logging, monitoring, and alerting](https://prismatic.io/docs/monitor-instances/)
+- Run integrations in a secure, scalable infrastructure designed for B2B SaaS
+- Customize the platform to fit your product, industry, and development workflows
+
+## Who uses Prismatic?
+
+Prismatic is built for B2B software companies that need to provide integrations to their customers. Whether you're a growing SaaS startup or an established enterprise, Prismatic's platform scales with your integration needs.
+
+Our platform is particularly powerful for teams serving specialized vertical markets. We provide the flexibility and tools to build exactly the integrations your customers need, regardless of the systems you're connecting to or how unique your integration requirements may be.
+
+## What kind of integrations can you build using Prismatic?
+
+Prismatic supports integrations of any complexity - from simple data syncs to sophisticated, industry-specific solutions. Teams use it to build integrations between any type of system, whether modern SaaS or legacy with standard or custom protocols. Here are some example use cases:
+
+- Connect your product with customers' ERPs, CRMs, and other business systems
+- Process data from multiple sources with customer-specific transformation requirements
+- Automate workflows with customizable triggers, actions, and schedules
+- Handle complex authentication flows and data mapping scenarios
+
+For information on the Prismatic platform, check out our [website](https://prismatic.io/) and [docs](https://prismatic.io/docs/).
+
+## Extension Purpose
 
 The main intent of this extension is to offer:
 
@@ -73,15 +106,15 @@ Displays the results of the Code-Native Integration (CNI) test. This includes th
 
 ### Available Webviews
 
-#### `Prismatic: Config Wizard`
-Displays the Config Wizard to edit configuration values for your integration instance.
-
-<img width="1600" height="1536" alt="Image" src="https://github.com/user-attachments/assets/39f3c767-48a1-4001-b218-d00e9ce001bc" />
-
 #### `Prismatic: Focus on Execution Results View`
 Displays the results of the Code-Native Integration (CNI) test. This includes the executions, step results (onTrigger and onExecution), and step outputs & logs.
 
 <img width="2189" height="725" alt="Image" src="https://github.com/user-attachments/assets/7e148ee9-980b-41cc-ab04-8022d8b2e840" />
+
+#### `Prismatic: Config Wizard`
+Displays the Config Wizard to edit configuration values for your integration instance.
+
+<img width="1600" height="1536" alt="Image" src="https://github.com/user-attachments/assets/39f3c767-48a1-4001-b218-d00e9ce001bc" />
 
 ## Troubleshooting
 
