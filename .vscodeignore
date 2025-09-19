@@ -46,3 +46,6 @@ logs/
 .temp/
 tmp/
 temp/
+
+# Marketplace Images
+resources/marketplace-*.png
