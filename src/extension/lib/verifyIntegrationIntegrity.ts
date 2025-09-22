@@ -3,6 +3,8 @@ import { log } from "@/extension";
 import { getWorkspaceJsonFile } from "@/extension/lib/getWorkspaceJsonFile";
 import { getIntegration } from "@/extension/machines/integrationsFlowsTest/getIntegration";
 import { StateManager } from "@/extension/StateManager";
+import { IntegrationDiscovery } from "@/extension/lib/IntegrationDiscovery";
+import * as path from "path";
 
 /**
  * Verifies that the current integration ID exists and is accessible in Prismatic.
@@ -50,6 +52,7 @@ export const verifyIntegrationIntegrity = async (): Promise<void> => {
 
 /**
  * Synchronizes the integration ID between workspace state and the .spectral/prism.json file.
+ * Now supports multi-integration workspaces by checking the active integration.
  * @returns Promise that resolves to the current integration ID, or undefined if none found
  */
 export const syncIntegrationId = async (): Promise<string | undefined> => {
@@ -57,8 +60,27 @@ export const syncIntegrationId = async (): Promise<string | undefined> => {
   const stateManager = StateManager.getInstance();
   const workspaceState = await stateManager.getWorkspaceState();
 
-  // step 2. check if integrationId is in .spectral/prism.json file
+  // step 2. get the active integration
+  const activeIntegration = await IntegrationDiscovery.getActiveIntegration();
+
+  if (!activeIntegration) {
+    // No active integration, return workspace state ID
+    return workspaceState?.integrationId;
+  }
+
+  // step 3. check if integrationId is in the active integration's .spectral/prism.json file
+  const prismJsonPath = activeIntegration.hasPrismJson
+    ? path.join(activeIntegration.spectralPath, "prism.json")
+    : null;
+
+  if (!prismJsonPath) {
+    // No prism.json file in active integration
+    return workspaceState?.integrationId;
+  }
+
+  // Read the prism.json file from the active integration
   const { fileData } = getWorkspaceJsonFile({
+    workspaceFolderPath: activeIntegration.path,
     directory: ".spectral",
     fileName: "prism.json",
   });
@@ -73,7 +95,7 @@ export const syncIntegrationId = async (): Promise<string | undefined> => {
 
     log(
       "INFO",
-      `Integration ID is out of sync, updating workspace state...
+      `Integration ID is out of sync for ${activeIntegration.name}, updating workspace state...
     - Workspace: ${workspaceState?.integrationId}
     - File: ${fileData.integrationId} (new)
     `,
@@ -82,6 +104,7 @@ export const syncIntegrationId = async (): Promise<string | undefined> => {
     // if not in sync, update workspace state
     await stateManager.updateWorkspaceState({
       integrationId: fileIntegrationId,
+      activeIntegrationPath: activeIntegration.path,
     });
 
     return fileIntegrationId;

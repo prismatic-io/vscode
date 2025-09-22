@@ -1,8 +1,13 @@
 import type { MessageType } from "@type/messages";
-import type { GlobalState, WorkspaceState } from "@type/state";
+import type { GlobalState, WorkspaceState, IntegrationData } from "@type/state";
 import { produce } from "immer";
 import type * as vscode from "vscode";
 import { CONFIG } from "../../config";
+import { log } from "@/extension";
+import {
+  IntegrationDiscovery,
+  type SpectralFolderInfo,
+} from "@/extension/lib/IntegrationDiscovery";
 
 const GLOBAL_STATE_KEY = "prismatic-global-state";
 
@@ -21,6 +26,9 @@ const DEFAULT_WORKSPACE_STATE: WorkspaceState = {
   integrationId: undefined,
   systemInstanceId: undefined,
   flowId: undefined,
+  integration: undefined,
+  activeIntegrationPath: undefined,
+  discoveredIntegrations: undefined,
 };
 
 export class StateManager {
@@ -207,6 +215,329 @@ export class StateManager {
   private async clearAllState(): Promise<void> {
     await this.globalState.update(GLOBAL_STATE_KEY, undefined);
     await this.workspaceState.update(WORKSPACE_STATE_KEY, undefined);
+  }
+
+  /**
+   * Loads integration data from the API and stores it in workspace state.
+   * @returns The loaded integration data or null if not found
+   */
+  public async loadIntegrationData(): Promise<IntegrationData | null> {
+    try {
+      const workspaceState = await this.getWorkspaceState();
+      const globalState = await this.getGlobalState();
+
+      if (!workspaceState?.integrationId) {
+        log("INFO", "[StateManager] No integration ID found, skipping load");
+        return null;
+      }
+
+      if (!globalState?.accessToken || !globalState?.prismaticUrl) {
+        log(
+          "WARN",
+          "[StateManager] Missing auth credentials, cannot load integration",
+        );
+        return null;
+      }
+
+      log(
+        "INFO",
+        `[StateManager] Loading integration data for ID: ${workspaceState.integrationId}`,
+      );
+
+      // Fetch integration data using the same query as TreeDataProvider
+      const { fetcher } = await import("@/shared/fetcher");
+
+      const GET_INTEGRATION = `
+        query GetIntegration($integrationId: ID!) {
+          integration(id: $integrationId) {
+            category
+            versionNumber
+            labels
+            description
+            name
+            configPages
+            systemInstance {
+              id
+              configState
+              flowConfigs {
+                nodes {
+                  flow {
+                    id
+                    name
+                    stableKey
+                    isSynchronous
+                    description
+                    usesFifoQueue
+                    schemas
+                    testUrl
+                    testPayload
+                  }
+                }
+              }
+            }
+          }
+        }
+      `;
+
+      const response = await fetcher<
+        {
+          integration: {
+            name: string;
+            description?: string;
+            versionNumber?: string;
+            category?: string;
+            labels?: string[];
+            configPages?: string;
+            systemInstance: {
+              id: string;
+              configState: string;
+              flowConfigs: {
+                nodes: Array<{
+                  flow: {
+                    id: string;
+                    name: string;
+                    stableKey: string;
+                    isSynchronous?: boolean;
+                    description?: string;
+                    usesFifoQueue?: boolean;
+                    schemas?: any;
+                    testUrl?: string;
+                    testPayload?: string;
+                  };
+                }>;
+              };
+            };
+          };
+        },
+        { accessToken: string; prismaticUrl: string; integrationId: string }
+      >(GET_INTEGRATION, {
+        accessToken: globalState.accessToken,
+        prismaticUrl: globalState.prismaticUrl,
+        integrationId: workspaceState.integrationId,
+      });
+
+      if (response.errors || !response.data?.integration) {
+        log(
+          "ERROR",
+          `[StateManager] Failed to load integration: ${response.errors?.[0]?.message || "Not found"}`,
+        );
+        return null;
+      }
+
+      const integration = response.data.integration;
+
+      // Parse configPages JSON string
+      let configPages = undefined;
+      if (integration.configPages) {
+        try {
+          configPages = JSON.parse(integration.configPages);
+        } catch (error) {
+          log("WARN", `[StateManager] Failed to parse configPages: ${error}`);
+        }
+      }
+
+      const integrationData: IntegrationData = {
+        id: workspaceState.integrationId,
+        name: integration.name,
+        description: integration.description,
+        versionNumber: integration.versionNumber,
+        category: integration.category,
+        labels: integration.labels,
+        configPages: configPages,
+        systemInstance: integration.systemInstance,
+      };
+
+      // Store in workspace state
+      await this.updateWorkspaceState({
+        integration: integrationData,
+        systemInstanceId: integration.systemInstance?.id,
+      });
+
+      return integrationData;
+    } catch (error) {
+      log("ERROR", `[StateManager] Error loading integration data: ${error}`);
+      return null;
+    }
+  }
+
+  /**
+   * Refreshes the integration data by fetching from the API again.
+   * @returns The refreshed integration data or null if not found
+   */
+  public async refreshIntegrationData(): Promise<IntegrationData | null> {
+    log("INFO", "[StateManager] Refreshing integration data");
+    return this.loadIntegrationData();
+  }
+
+  /**
+   * Gets the current integration data from workspace state.
+   * @returns The cached integration data or undefined if not loaded
+   */
+  public async getIntegration(): Promise<IntegrationData | undefined> {
+    const workspaceState = await this.getWorkspaceState();
+    return workspaceState?.integration;
+  }
+
+  /**
+   * Sets the active integration and ensures all related state is synchronized.
+   * This is the single source of truth for active integration management.
+   * @param integration - The integration to set as active, or undefined to clear
+   */
+  public async setActiveIntegration(
+    integration: SpectralFolderInfo | undefined,
+  ): Promise<void> {
+    log(
+      "INFO",
+      `[StateManager] Setting active integration: ${integration?.name || "none"}`,
+    );
+
+    if (!integration) {
+      // Clear active integration
+      await this.updateWorkspaceState({
+        integrationId: undefined,
+        systemInstanceId: undefined,
+        flowId: undefined,
+        integration: undefined,
+        activeIntegrationPath: undefined,
+      });
+      return;
+    }
+
+    // Validate the integration has necessary data
+    if (!integration.hasPrismJson || !integration.integrationId) {
+      log(
+        "WARN",
+        `[StateManager] Cannot set integration without prism.json or integrationId: ${integration.name}`,
+      );
+      // Still update the path so UI can show import prompt
+      await this.updateWorkspaceState({
+        activeIntegrationPath: integration.path,
+        integrationId: undefined,
+        systemInstanceId: undefined,
+        flowId: undefined,
+        integration: undefined,
+      });
+      return;
+    }
+
+    // Update workspace state with new active integration
+    await this.updateWorkspaceState({
+      activeIntegrationPath: integration.path,
+      integrationId: integration.integrationId,
+    });
+
+    // Load the full integration data from API
+    await this.loadIntegrationData();
+
+    // Validate consistency after loading
+    await this.validateIntegrationConsistency();
+  }
+
+  /**
+   * Gets the current active integration based on workspace state.
+   * @returns The active integration or undefined if none is active
+   */
+  public async getActiveIntegration(): Promise<SpectralFolderInfo | undefined> {
+    const workspaceState = await this.getWorkspaceState();
+    if (!workspaceState?.activeIntegrationPath) {
+      return undefined;
+    }
+
+    // Find the integration by path
+    const integrations = await IntegrationDiscovery.findAllIntegrations();
+    const activeIntegration = integrations.find(
+      (i) => i.path === workspaceState.activeIntegrationPath,
+    );
+
+    if (!activeIntegration) {
+      log(
+        "WARN",
+        `[StateManager] Active integration path not found: ${workspaceState.activeIntegrationPath}`,
+      );
+      // Clear invalid state
+      await this.updateWorkspaceState({
+        activeIntegrationPath: undefined,
+        integrationId: undefined,
+        integration: undefined,
+      });
+      return undefined;
+    }
+
+    return activeIntegration;
+  }
+
+  /**
+   * Validates that the current integration state is consistent.
+   * Checks that integrationId, activeIntegrationPath, and loaded data all match.
+   */
+  private async validateIntegrationConsistency(): Promise<void> {
+    const workspaceState = await this.getWorkspaceState();
+    if (!workspaceState) {
+      return;
+    }
+
+    const { integrationId, activeIntegrationPath, integration } =
+      workspaceState;
+
+    // No active integration is valid
+    if (!integrationId && !activeIntegrationPath && !integration) {
+      return;
+    }
+
+    // All three should be present or absent together
+    const hasId = !!integrationId;
+    const hasPath = !!activeIntegrationPath;
+    const hasData = !!integration;
+
+    if (hasId !== hasPath || hasId !== hasData) {
+      log(
+        "ERROR",
+        `[StateManager] Integration state inconsistency detected:
+        - integrationId: ${hasId ? integrationId : "missing"}
+        - activeIntegrationPath: ${hasPath ? activeIntegrationPath : "missing"}
+        - integration data: ${hasData ? "loaded" : "missing"}`,
+      );
+
+      // If we have a path, try to restore consistency
+      if (hasPath) {
+        const activeIntegration = await this.getActiveIntegration();
+        if (activeIntegration) {
+          await this.setActiveIntegration(activeIntegration);
+        }
+      } else {
+        // Clear all integration state
+        await this.setActiveIntegration(undefined);
+      }
+    }
+
+    // Validate that loaded integration data matches the ID
+    if (integration && integrationId && integration.id !== integrationId) {
+      log(
+        "ERROR",
+        `[StateManager] Integration ID mismatch:
+        - Expected: ${integrationId}
+        - Loaded: ${integration.id}`,
+      );
+      // Reload the correct data
+      await this.loadIntegrationData();
+    }
+  }
+
+  /**
+   * Synchronizes the integration state with the file system.
+   * Called when file system changes are detected.
+   */
+  public async syncIntegrationState(): Promise<void> {
+    log(
+      "INFO",
+      "[StateManager] Synchronizing integration state with file system",
+    );
+
+    const activeIntegration = await this.getActiveIntegration();
+    if (activeIntegration) {
+      // Re-set to ensure consistency
+      await this.setActiveIntegration(activeIntegration);
+    }
   }
 
   /**

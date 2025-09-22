@@ -44,7 +44,7 @@ node --version  # Should show 22.11.0
 # Build for production
 npm run build:prod
 
-# Start development mode with watch
+# Start develepment mode with watch
 npm run watch
 
 # Run type checking

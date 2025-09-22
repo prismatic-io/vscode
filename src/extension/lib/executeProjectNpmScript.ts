@@ -12,10 +12,12 @@ const execAsync = promisify(exec);
 
 export const executeProjectNpmScript = async (
   scriptName: string,
+  projectPath?: string,
 ): Promise<{ stdout: string; stderr: string }> => {
   const { workspaceFolderPath, fileData: packageFileData } =
     getWorkspaceJsonFile({
       fileName: "package.json",
+      workspaceFolderPath: projectPath,
     });
 
   if (!packageFileData) {

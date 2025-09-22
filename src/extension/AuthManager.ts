@@ -47,11 +47,6 @@ export class AuthManager {
    */
   public async isLoggedIn(): Promise<boolean> {
     try {
-      // First check if we have tokens stored locally
-      if (!(await this.hasTokens())) {
-        return false;
-      }
-
       // Then verify the CLI login status
       const result = await this.prismCLIManager.me();
       return !result.includes("Error: You are not logged");
@@ -214,8 +209,11 @@ export class AuthManager {
    * @throws {Error} If authentication fails
    */
   public async performInitialAuthFlow(): Promise<void> {
+    const isLoggedIn = await this.isLoggedIn();
     try {
-      if (!(await this.isLoggedIn())) {
+      if (isLoggedIn) {
+        await this.fetchAndStoreTokens();
+      } else {
         const loginAction = "Login to Prismatic";
 
         const response = await vscode.window.showInformationMessage(

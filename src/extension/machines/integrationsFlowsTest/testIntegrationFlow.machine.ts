@@ -1,8 +1,9 @@
 import * as vscode from "vscode";
 import { type ActorRefFrom, assign, setup } from "xstate";
 import { log } from "@/extension";
-import { getIntegration, InstanceConfigState } from "./getIntegration";
+import { InstanceConfigState } from "./getIntegration";
 import { testIntegrationFlow } from "./testIntegrationFlow";
+import type { IntegrationData } from "@type/state";
 
 type TestIntegrationFlowInput = {};
 
@@ -13,6 +14,8 @@ interface TestIntegrationFlowContext {
   systemInstanceId: string | null;
   accessToken: string | null;
   prismaticUrl: string | null;
+  testPayload: string | null;
+  integration: IntegrationData | null;
   "@input": TestIntegrationFlowInput;
 }
 
@@ -22,6 +25,8 @@ type TestIntegrationFlowEvents = {
   flowId?: string;
   accessToken: string;
   prismaticUrl: string;
+  testPayload?: string;
+  integration?: IntegrationData;
 };
 
 type TestIntegrationFlowTags = "idle" | "testing";
@@ -43,11 +48,16 @@ export const testIntegrationFlowMachine = setup({
     },
   },
   guards: {
-    isFullyConfigured: ({ context }) =>
-      context.configState === InstanceConfigState.FULLY_CONFIGURED,
+    isFullyConfigured: ({ context }) => {
+      // First check if we have integration data
+      if (context.integration?.systemInstance?.configState) {
+        return context.integration.systemInstance.configState === "FULLY_CONFIGURED";
+      }
+      // Fall back to context.configState for backwards compatibility
+      return context.configState === InstanceConfigState.FULLY_CONFIGURED;
+    },
   },
   actors: {
-    getIntegration,
     testIntegrationFlow,
   },
 }).createMachine({
@@ -61,6 +71,8 @@ export const testIntegrationFlowMachine = setup({
       systemInstanceId: null,
       accessToken: null,
       prismaticUrl: null,
+      testPayload: null,
+      integration: null,
       "@input": input,
     };
 
@@ -77,6 +89,12 @@ export const testIntegrationFlowMachine = setup({
               flowId: event.flowId,
               accessToken: event.accessToken,
               prismaticUrl: event.prismaticUrl,
+              testPayload: event.testPayload || null,
+              integration: event.integration || null,
+              configState: event.integration?.systemInstance?.configState
+                ? event.integration.systemInstance.configState as InstanceConfigState
+                : null,
+              systemInstanceId: event.integration?.systemInstance?.id || null,
             })),
           ],
           target: "#testIntegrationFlow.TESTING_INTEGRATION",
@@ -91,39 +109,12 @@ export const testIntegrationFlowMachine = setup({
         integrationId: null,
         prismaticUrl: null,
         systemInstanceId: null,
+        testPayload: null,
+        integration: null,
       }),
       tags: "testing",
-      initial: "LOADING_INTEGRATION",
+      initial: "CHECKING_CONFIGURATION",
       states: {
-        LOADING_INTEGRATION: {
-          entry: ({ context }) =>
-            log("INFO", `Fetching integration: ${context.integrationId}`),
-          invoke: {
-            id: "getIntegration",
-            src: "getIntegration",
-            input: ({ context }) => ({
-              accessToken: context.accessToken!,
-              prismaticUrl: context.prismaticUrl!,
-              integrationId: context.integrationId!,
-            }),
-            onDone: {
-              actions: [
-                assign(({ context, event }) => ({
-                  configState: event.output.configState,
-                  systemInstanceId: event.output.systemInstanceId,
-                  flowId: context.flowId || event.output.initialFlow?.id,
-                })),
-              ],
-              target:
-                "#testIntegrationFlow.TESTING_INTEGRATION.CHECKING_CONFIGURATION",
-            },
-            onError: {
-              actions: ({ event }) =>
-                log("ERROR", `Error fetching integration. ${event.error}`),
-              target: "#testIntegrationFlow.WAITING_FOR_TEST",
-            },
-          },
-        },
         CHECKING_CONFIGURATION: {
           entry: ({ context }) =>
             log("INFO", `Checking config state: ${context.configState}`),
@@ -159,6 +150,7 @@ export const testIntegrationFlowMachine = setup({
               accessToken: context.accessToken!,
               prismaticUrl: context.prismaticUrl!,
               flowId: context.flowId!,
+              payload: context.testPayload,
             }),
             onDone: {
               actions: [

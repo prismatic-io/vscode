@@ -1,5 +1,6 @@
 import { fromPromise } from "xstate";
 import { fetcher } from "@/shared/fetcher";
+import { log } from "@/extension";
 import type { GraphQLVariables } from "@/types/graphql";
 
 export enum InstanceConfigState {

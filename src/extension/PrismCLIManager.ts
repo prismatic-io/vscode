@@ -3,6 +3,7 @@ import { promisify } from "node:util";
 import { StateManager } from "@extension/StateManager";
 import * as vscode from "vscode";
 import { findPrismExecutablePath } from "@/extension/lib/findPrismExecutablePath";
+import { IntegrationDiscovery } from "@/extension/lib/IntegrationDiscovery";
 
 const execAsync = promisify(exec);
 
@@ -49,12 +50,14 @@ export class PrismCLIManager {
    * Executes a Prismatic CLI command.
    * @param {string} command - The command to execute
    * @param {boolean} fromWorkspace - Whether to execute the command from the workspace
+   * @param {string} [integrationPath] - Optional specific integration path to use
    * @returns {Promise<{stdout: string, stderr: string}>} A promise that resolves to an object containing stdout and stderr
    * @throws {Error} If CLI is not installed or command execution fails
    */
   public async executeCommand(
     command: string,
     fromWorkspace = false,
+    integrationPath?: string,
   ): Promise<{ stdout: string; stderr: string }> {
     const globalState = await this.stateManager.getGlobalState();
 
@@ -64,9 +67,17 @@ export class PrismCLIManager {
       );
     }
 
-    const cwd = fromWorkspace
-      ? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
-      : undefined;
+    // Determine the working directory
+    let cwd: string | undefined;
+    if (integrationPath) {
+      cwd = integrationPath;
+    } else if (fromWorkspace) {
+      // Use active integration path if available
+      const activeIntegration = await IntegrationDiscovery.getActiveIntegration();
+      cwd = activeIntegration?.path || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    } else {
+      cwd = undefined;
+    }
 
     try {
       const { stdout, stderr } = await execAsync(
@@ -210,10 +221,23 @@ export class PrismCLIManager {
 
   /**
    * Imports an integration into Prismatic from the current project.
+   * @param {string} [integrationPath] - Optional specific integration path to use
    * @returns {Promise<string>} A promise that resolves to the integration ID
    */
-  public async integrationsImport(): Promise<string> {
-    const { stdout } = await this.executeCommand("integrations:import", true);
+  public async integrationsImport(integrationPath?: string): Promise<string> {
+    const { stdout } = await this.executeCommand("integrations:import", true, integrationPath);
+
+    return stdout.trim();
+  }
+
+  /**
+   * Initializes a new integration with the given name.
+   * @param {string} name - The name of the integration to initialize
+   * @returns {Promise<string>} A promise that resolves to the initialization output
+   * @throws {Error} If the initialization process fails
+   */
+  public async integrationsInit(name: string): Promise<string> {
+    const { stdout } = await this.executeCommand(`integrations:init "${name}"`, true);
 
     return stdout.trim();
   }

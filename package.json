@@ -50,6 +50,7 @@
         "command": "prismatic.configWizard",
         "title": "Config Wizard",
         "category": "Prismatic",
+        "icon": "$(settings-more-action)",
         "enablement": "prismatic.workspaceEnabled"
       },
       {
@@ -77,10 +78,18 @@
         "enablement": "prismatic.workspaceEnabled"
       },
       {
+        "command": "prismatic.integrations.init",
+        "title": "Initialize New Integration",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled",
+        "icon": "$(add)"
+      },
+      {
         "command": "prismatic.integrations.import",
         "title": "Import Integration",
         "category": "Prismatic",
-        "enablement": "prismatic.workspaceEnabled"
+        "enablement": "prismatic.workspaceEnabled",
+        "icon": "$(cloud-upload)"
       },
       {
         "command": "prismatic.integrations.test",
@@ -93,9 +102,93 @@
         "title": "Prismatic URL",
         "category": "Prismatic",
         "enablement": "prismatic.workspaceEnabled"
+      },
+      {
+        "command": "prismatic.integration.refresh",
+        "title": "Refresh Integration",
+        "category": "Prismatic",
+        "icon": "$(refresh)",
+        "enablement": "prismatic.workspaceEnabled"
+      },
+      {
+        "command": "prismatic.flows.testFlow",
+        "title": "Test Flow",
+        "category": "Prismatic",
+        "icon": "$(play)",
+        "enablement": "prismatic.workspaceEnabled"
+      },
+      {
+        "command": "prismatic.flows.copyWebhookUrl",
+        "title": "Copy Webhook URL",
+        "category": "Prismatic",
+        "icon": "$(copy)",
+        "enablement": "prismatic.workspaceEnabled"
+      },
+      {
+        "command": "prismatic.flows.openInEditor",
+        "title": "Open Flow Definition",
+        "category": "Prismatic",
+        "icon": "$(go-to-file)",
+        "enablement": "prismatic.workspaceEnabled"
+      },
+      {
+        "command": "prismatic.flows.viewDetails",
+        "title": "View Flow Details",
+        "category": "Prismatic",
+        "icon": "$(info)",
+        "enablement": "prismatic.workspaceEnabled"
+      },
+      {
+        "command": "prismatic.flows.testPayload",
+        "title": "View/Edit Test Payload",
+        "category": "Prismatic",
+        "icon": "$(code)",
+        "enablement": "prismatic.workspaceEnabled"
+      },
+      {
+        "command": "prismatic.integration.openInBrowser",
+        "title": "Open in Prismatic",
+        "category": "Prismatic",
+        "icon": "$(link)",
+        "enablement": "prismatic.workspaceEnabled"
+      },
+      {
+        "command": "prismatic.configPages.openInEditor",
+        "title": "Open Config Page Definition",
+        "category": "Prismatic",
+        "icon": "$(go-to-file)",
+        "enablement": "prismatic.workspaceEnabled"
+      },
+      {
+        "command": "prismatic.integration.switchTo",
+        "title": "Switch to Integration",
+        "category": "Prismatic",
+        "icon": "$(arrow-swap)",
+        "enablement": "prismatic.workspaceEnabled && prismatic.multipleIntegrations"
+      },
+      {
+        "command": "prismatic.integration.quickSwitch",
+        "title": "Quick Switch Integration",
+        "category": "Prismatic",
+        "icon": "$(list-selection)",
+        "enablement": "prismatic.workspaceEnabled && prismatic.multipleIntegrations"
       }
     ],
     "views": {
+      "prismatic": [
+        {
+          "id": "prismatic.integration",
+          "name": "Integrations",
+          "icon": "resources/prismatic.svg",
+          "contextualTitle": "Integrations"
+        },
+        {
+          "id": "prismatic.integrationDetails",
+          "name": "Integration Details",
+          "icon": "resources/prismatic.svg",
+          "contextualTitle": "Integration Details"
+        }
+      ],
       "executionResults": [
         {
           "type": "webview",
@@ -106,7 +199,26 @@
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "prismatic.integration",
+        "contents": "Welcome to Prismatic!\n\nGet started by creating a new integration or importing an existing one.\n\n[$(add) Initialize New Integration](command:prismatic.integrations.init)\n\n[$(cloud-download) Import Existing Integration](command:prismatic.integrations.import)\n\n[$(book) View Documentation](https://prismatic.io/docs/code-native-integrations-quickstart/)",
+        "when": "!prismatic.hasIntegrations"
+      },
+      {
+        "view": "prismatic.integration",
+        "contents": "No integrations found in this workspace.\n\n[$(add) Initialize New Integration](command:prismatic.integrations.init)\n\nCreate a new Prismatic integration in this workspace.",
+        "when": "prismatic.hasIntegrations && !prismatic.multipleIntegrations && !prismatic.hasActiveIntegration"
+      }
+    ],
     "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "prismatic",
+          "title": "Prismatic",
+          "icon": "resources/prismatic.svg"
+        }
+      ],
       "panel": [
         {
           "id": "executionResults",
@@ -119,12 +231,96 @@
     "menus": {
       "view/title": [
         {
-          "command": "prismatic.integrations.import",
-          "when": "view == executionResults.webview && prismatic.workspaceEnabled"
+          "command": "prismatic.integration.refresh",
+          "when": "view == prismatic.integration && prismatic.workspaceEnabled",
+          "group": "navigation@2"
         },
         {
-          "command": "prismatic.integrations.test",
-          "when": "view == executionResults.webview && prismatic.testCommandEnabled && prismatic.workspaceEnabled"
+          "command": "prismatic.integration.refresh",
+          "when": "view == prismatic.integrationDetails && prismatic.workspaceEnabled",
+          "group": "navigation@1"
+        },
+        {
+          "command": "prismatic.integrations.import",
+          "when": "view == prismatic.integrationDetails && prismatic.workspaceEnabled",
+          "group": "navigation@2"
+        },
+        {
+          "command": "prismatic.configWizard",
+          "when": "view == prismatic.integrationDetails && prismatic.workspaceEnabled",
+          "group": "navigation@3"
+        },
+        {
+          "command": "prismatic.integration.openInBrowser",
+          "when": "view == prismatic.integrationDetails && prismatic.workspaceEnabled",
+          "group": "navigation@4"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "prismatic.integration.switchTo",
+          "when": "view == prismatic.integration && viewItem == integrationImported && prismatic.multipleIntegrations",
+          "group": "1_primary@1"
+        },
+        {
+          "command": "prismatic.integration.switchTo",
+          "when": "view == prismatic.integration && viewItem == integrationNotImported && prismatic.multipleIntegrations",
+          "group": "1_primary@1"
+        },
+        {
+          "command": "prismatic.integrations.import",
+          "when": "view == prismatic.integration && viewItem == integrationNotImported",
+          "group": "1_primary@2"
+        },
+        {
+          "command": "prismatic.configWizard",
+          "when": "view == prismatic.integrationDetails && viewItem == status && prismatic.workspaceEnabled",
+          "group": "1_primary@1"
+        },
+        {
+          "command": "prismatic.flows.testFlow",
+          "when": "view == prismatic.integrationDetails && viewItem == flow && prismatic.workspaceEnabled",
+          "group": "1_primary@1"
+        },
+        {
+          "command": "prismatic.flows.testPayload",
+          "when": "view == prismatic.integrationDetails && viewItem == flow && prismatic.workspaceEnabled",
+          "group": "1_primary@2"
+        },
+        {
+          "command": "prismatic.flows.copyWebhookUrl",
+          "when": "view == prismatic.integrationDetails && viewItem == flow && prismatic.workspaceEnabled",
+          "group": "1_primary@3"
+        },
+        {
+          "command": "prismatic.flows.openInEditor",
+          "when": "view == prismatic.integrationDetails && viewItem == flow && prismatic.workspaceEnabled",
+          "group": "2_navigation@1"
+        },
+        {
+          "command": "prismatic.flows.viewDetails",
+          "when": "view == prismatic.integrationDetails && viewItem == flow && prismatic.workspaceEnabled",
+          "group": "3_info@1"
+        },
+        {
+          "command": "prismatic.configWizard",
+          "when": "view == prismatic.integrationDetails && viewItem == status && prismatic.workspaceEnabled",
+          "group": "inline"
+        },
+        {
+          "command": "prismatic.flows.testFlow",
+          "when": "view == prismatic.integrationDetails && viewItem == flow && prismatic.workspaceEnabled",
+          "group": "inline"
+        },
+        {
+          "command": "prismatic.flows.testPayload",
+          "when": "view == prismatic.integrationDetails && viewItem == flow && prismatic.workspaceEnabled",
+          "group": "inline"
+        },
+        {
+          "command": "prismatic.flows.copyWebhookUrl",
+          "when": "view == prismatic.integrationDetails && viewItem == flow && prismatic.workspaceEnabled",
+          "group": "inline"
         }
       ]
     }

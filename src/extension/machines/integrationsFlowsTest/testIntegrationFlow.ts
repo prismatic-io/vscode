@@ -68,6 +68,7 @@ export type TestIntegrationFlowOutput = {};
 
 interface TestIntegrationFlowInput {
   flowId: string;
+  payload?: string | null;
 }
 
 export const testIntegrationFlow = fromPromise<
@@ -80,11 +81,13 @@ export const testIntegrationFlow = fromPromise<
 
   const response = await fetcher<
     TestIntegrationFlowQuery,
-    GraphQLVariables<TestIntegrationFlowVariables>
+    GraphQLVariables<TestIntegrationFlowVariables & { payload?: string; contentType?: string }>
   >(TEST_INTEGRATION_FLOW, {
     accessToken: input.accessToken,
     prismaticUrl: input.prismaticUrl,
     flowId: input.flowId,
+    payload: input.payload || undefined,
+    contentType: input.payload ? "application/json" : undefined,
   });
 
   if (response.errors) {
