@@ -1,4 +1,6 @@
 import { exec, spawn } from "node:child_process";
+import * as os from "node:os";
+import path from "node:path";
 import { promisify } from "node:util";
 import { StateManager } from "@extension/StateManager";
 import * as vscode from "vscode";
@@ -8,12 +10,19 @@ const execAsync = promisify(exec);
 
 export class PrismCLIManager {
   private static instance: PrismCLIManager | null = null;
-  private prismPath: string;
   private stateManager: StateManager;
+  private watcher: vscode.FileSystemWatcher | undefined;
+  private prismPath: string;
+  private prismConfigPath = path.join(
+    os.homedir(),
+    ".config",
+    "prism",
+    "config.yml",
+  );
 
-  private constructor(prismPath: string) {
+  private constructor(prismPath: string, stateManager: StateManager) {
     this.prismPath = prismPath;
-    this.stateManager = StateManager.getInstance();
+    this.stateManager = stateManager;
   }
 
   /**
@@ -23,7 +32,9 @@ export class PrismCLIManager {
   public static async getInstance(): Promise<PrismCLIManager> {
     if (!PrismCLIManager.instance) {
       const prismPath = await PrismCLIManager.initializePrismPath();
-      PrismCLIManager.instance = new PrismCLIManager(prismPath);
+      const stateManager = StateManager.getInstance();
+
+      PrismCLIManager.instance = new PrismCLIManager(prismPath, stateManager);
     }
 
     return PrismCLIManager.instance;
@@ -219,9 +230,46 @@ export class PrismCLIManager {
   }
 
   /**
+   * Monitors the Prismatic configuration file for changes.
+   * Sets up a file system watcher to listen for changes in the config file.
+   * @param onConfigChange Callback for when config file changes or is created
+   * @param onConfigDelete Callback for when config file is deleted
+   */
+  public monitorPrismConfig(
+    onConfigChange: () => Promise<void>,
+    onConfigDelete: () => Promise<void>,
+  ): void {
+    const prismConfigDir = path.dirname(this.prismConfigPath);
+    const configFileName = path.basename(this.prismConfigPath);
+
+    this.watcher = vscode.workspace.createFileSystemWatcher(
+      new vscode.RelativePattern(prismConfigDir, configFileName),
+    );
+
+    this.watcher.onDidChange(async (uri) => {
+      if (uri.fsPath === this.prismConfigPath) {
+        await onConfigChange();
+      }
+    });
+
+    this.watcher.onDidCreate(async (uri) => {
+      if (uri.fsPath === this.prismConfigPath) {
+        await onConfigChange();
+      }
+    });
+
+    this.watcher.onDidDelete(async (uri) => {
+      if (uri.fsPath === this.prismConfigPath) {
+        await onConfigDelete();
+      }
+    });
+  }
+
+  /**
    * Disposes of the PrismCLIManager instance.
    */
   public dispose(): void {
     PrismCLIManager.instance = null;
+    this.watcher?.dispose();
   }
 }
