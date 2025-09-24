@@ -11,9 +11,15 @@ export interface ExecutionResultsErrorMessage {
   };
 }
 
+export interface ExecutionResultsRefetchMessage {
+  type: "executionResults.refetch";
+  payload: string;
+}
+
 export type ExecutionResultsMessage =
   | ExecutionResultsExampleMessage
-  | ExecutionResultsErrorMessage;
+  | ExecutionResultsErrorMessage
+  | ExecutionResultsRefetchMessage;
 
 export enum InstanceExecutionResultInvokeType {
   CROSS_FLOW = "CROSS_FLOW",

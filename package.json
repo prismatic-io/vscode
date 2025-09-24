@@ -95,6 +95,13 @@
         "title": "Prismatic URL",
         "category": "Prismatic",
         "enablement": "prismatic.workspaceEnabled"
+      },
+      {
+        "command": "prismatic.executionResults.refetch",
+        "title": "Refresh Execution Results",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled",
+        "icon": "$(refresh)"
       }
     ],
     "views": {
@@ -129,6 +136,11 @@
           "command": "prismatic.integrations.import",
           "when": "view == executionResults.webview && prismatic.workspaceEnabled",
           "group": "navigation@2"
+        },
+        {
+          "command": "prismatic.executionResults.refetch",
+          "when": "view == executionResults.webview && prismatic.workspaceEnabled",
+          "group": "navigation@3"
         }
       ]
     }

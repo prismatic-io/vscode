@@ -241,7 +241,9 @@ export const executionResultsMachine = setup({
     IDLE: {
       tags: "idle",
       on: {
-        FETCH: "INITIALIZING",
+        FETCH: {
+          target: "INITIALIZING",
+        },
       },
     },
     INITIALIZING: {
