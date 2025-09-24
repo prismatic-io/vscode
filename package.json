@@ -77,6 +77,13 @@
         "enablement": "prismatic.workspaceEnabled"
       },
       {
+        "command": "prismatic.integrations.openInBrowser",
+        "title": "Open Integration in Browser",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled",
+        "icon": "$(globe)"
+      },
+      {
         "command": "prismatic.integrations.import",
         "title": "Import Integration",
         "category": "Prismatic",
@@ -133,14 +140,19 @@
           "group": "navigation@1"
         },
         {
-          "command": "prismatic.integrations.import",
+          "command": "prismatic.executionResults.refetch",
           "when": "view == executionResults.webview && prismatic.workspaceEnabled",
           "group": "navigation@2"
         },
-        {
-          "command": "prismatic.executionResults.refetch",
+         {
+          "command": "prismatic.integrations.import",
           "when": "view == executionResults.webview && prismatic.workspaceEnabled",
           "group": "navigation@3"
+        },
+        {
+          "command": "prismatic.integrations.openInBrowser",
+          "when": "view == executionResults.webview && prismatic.workspaceEnabled",
+          "group": "navigation@4"
         }
       ]
     }

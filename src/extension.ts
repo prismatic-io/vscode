@@ -177,6 +177,49 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(prismRefreshTokenCommand);
 
     /**
+     * This command is used to open the integration in browser.
+     */
+    const integrationOpenInBrowserCommand = vscode.commands.registerCommand(
+      "prismatic.integrations.openInBrowser",
+      async () => {
+        outputChannel.show(true);
+
+        log("INFO", "Starting integration open in browser...");
+
+        try {
+          const workspaceState = await stateManager.getWorkspaceState();
+          const globalState = await stateManager.getGlobalState();
+
+          if (!workspaceState?.integrationId) {
+            throw new Error(
+              "No integration ID found. Please import an integration first.",
+            );
+          }
+
+          const prismaticUrl = globalState?.prismaticUrl ?? CONFIG.prismaticUrl;
+
+          if (!prismaticUrl) {
+            throw new Error(
+              "No Prismatic URL found. Please set the Prismatic URL first.",
+            );
+          }
+
+          // open the integration in browser
+          vscode.env.openExternal(
+            vscode.Uri.parse(
+              `${prismaticUrl}/integrations/${workspaceState.integrationId}/`,
+            ),
+          );
+
+          log("SUCCESS", "Integration opened in browser successfully!", true);
+        } catch (error) {
+          log("ERROR", String(error), true);
+        }
+      },
+    );
+    context.subscriptions.push(integrationOpenInBrowserCommand);
+
+    /**
      * command: prism integrations:import
      * This command is used to import the integration into Prismatic.
      */

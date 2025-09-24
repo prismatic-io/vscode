@@ -62,6 +62,9 @@ Logs out of your Prismatic account using your globally installed Prismatic CLI (
 #### `Prismatic: Prismatic URL`
 Sets your systems PRISMATIC_URL environment variable for your Prismatic CLI (Prism) then syncs it to the extension. This allows you to change your Prismatic stack environment.
 
+#### `Prismatic: Open Integration in Browser`
+Opens the Code-Native Integration (CNI) in the browser. This is useful for debugging and inspecting the integration from the Prismatic application.
+
 #### `Prismatic: Me`
 Displays details about the currently authenticated Prismatic user, including name, organization, and Prismatic stack environment information using your globally installed Prismatic CLI (Prism).
 
