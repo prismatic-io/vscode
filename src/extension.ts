@@ -347,6 +347,21 @@ export async function activate(context: vscode.ExtensionContext) {
     );
     context.subscriptions.push(prismPrismaticUrlCommand);
 
+    /**
+     * command: prismatic.executionResults.refetch
+     * This command is used to trigger a refetch of execution results in the webview.
+     */
+    const executionResultsRefetchCommand = vscode.commands.registerCommand(
+      "prismatic.executionResults.refetch",
+      async () => {
+        stateManager.notifyWebviews({
+          type: "executionResults.refetch",
+          payload: new Date().toISOString(),
+        });
+      },
+    );
+    context.subscriptions.push(executionResultsRefetchCommand);
+
     log("SUCCESS", "Extension initialization complete!");
   } catch (error) {
     console.error("Activation error:", error);

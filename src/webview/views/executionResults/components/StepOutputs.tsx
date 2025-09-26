@@ -9,7 +9,8 @@ import type { ExecutionLogs } from "@/webview/views/executionResults/types";
 export const StepOutputsContainer = () => {
   const { stepResult: selectedStepResult } = useExecutionResultsContext();
 
-  const { stepResultActorRef } = useExecutionResultsContext();
+  const { stepResultActorRef, isLoading: executionResultsIsLoading } =
+    useExecutionResultsContext();
 
   const stepOutputs = useConditionalSelector(
     stepResultActorRef,
@@ -39,7 +40,7 @@ export const StepOutputsContainer = () => {
     <StepOutputs
       stepOutputs={stepOutputs}
       stepLogs={stepLogs}
-      isLoading={isLoading}
+      isLoading={isLoading || executionResultsIsLoading}
       hasLoaded={hasLoaded}
       hasStepResult={Boolean(selectedStepResult)}
     />

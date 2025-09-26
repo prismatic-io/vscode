@@ -80,19 +80,28 @@
         "command": "prismatic.integrations.import",
         "title": "Import Integration",
         "category": "Prismatic",
-        "enablement": "prismatic.workspaceEnabled"
+        "enablement": "prismatic.workspaceEnabled",
+        "icon": "$(cloud-upload)"
       },
       {
         "command": "prismatic.integrations.test",
         "title": "Test Integration",
         "category": "Prismatic",
-        "enablement": "prismatic.testCommandEnabled && prismatic.workspaceEnabled"
+        "enablement": "prismatic.testCommandEnabled && prismatic.workspaceEnabled",
+        "icon": "$(play)"
       },
       {
         "command": "prismatic.prismaticUrl",
         "title": "Prismatic URL",
         "category": "Prismatic",
         "enablement": "prismatic.workspaceEnabled"
+      },
+      {
+        "command": "prismatic.executionResults.refetch",
+        "title": "Refresh Execution Results",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled",
+        "icon": "$(refresh)"
       }
     ],
     "views": {
@@ -119,12 +128,19 @@
     "menus": {
       "view/title": [
         {
-          "command": "prismatic.integrations.import",
-          "when": "view == executionResults.webview && prismatic.workspaceEnabled"
+          "command": "prismatic.integrations.test",
+          "when": "view == executionResults.webview && prismatic.testCommandEnabled && prismatic.workspaceEnabled",
+          "group": "navigation@1"
         },
         {
-          "command": "prismatic.integrations.test",
-          "when": "view == executionResults.webview && prismatic.testCommandEnabled && prismatic.workspaceEnabled"
+          "command": "prismatic.integrations.import",
+          "when": "view == executionResults.webview && prismatic.workspaceEnabled",
+          "group": "navigation@2"
+        },
+        {
+          "command": "prismatic.executionResults.refetch",
+          "when": "view == executionResults.webview && prismatic.workspaceEnabled",
+          "group": "navigation@3"
         }
       ]
     }

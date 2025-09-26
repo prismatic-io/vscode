@@ -13,6 +13,7 @@ import {
   useEffect,
   useMemo,
 } from "react";
+import { useWebviewMessage } from "@/webview/hooks/useWebviewMessage";
 import { useAuthContext } from "@/webview/providers/AuthProvider";
 import { useIntegrationContext } from "@/webview/providers/IntegrationProvider";
 import { executionResultsMachine } from "@/webview/views/executionResults/machines/executionResults/executionResults.machine";
@@ -48,6 +49,10 @@ export const ExecutionResultsProvider = ({
   const { accessToken, prismaticUrl } = useAuthContext();
 
   const { flowId } = useIntegrationContext();
+
+  const { message: refetchMessage } = useWebviewMessage(
+    "executionResults.refetch",
+  );
 
   const { startedDate, endedDate } = useMemo(() => {
     const now = new Date();
@@ -118,8 +123,16 @@ export const ExecutionResultsProvider = ({
   );
 
   const refetch = useCallback(() => {
-    executionResultsMachineActorRef.send({ type: "FETCH" });
+    executionResultsMachineActorRef.send({
+      type: "FETCH",
+    });
   }, [executionResultsMachineActorRef]);
+
+  useEffect(() => {
+    if (refetchMessage) {
+      refetch();
+    }
+  }, [refetchMessage, refetch]);
 
   const isLoading = useSelector(executionResultsMachineActorRef, (state) =>
     state.hasTag("loading"),

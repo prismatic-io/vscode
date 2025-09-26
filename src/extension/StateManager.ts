@@ -111,7 +111,7 @@ export class StateManager {
    * Notifies all registered webviews of a state change.
    * @param message - The message to send to all webviews
    */
-  private notifyWebviews(message: MessageType) {
+  public notifyWebviews(message: MessageType) {
     for (const webview of this.webviews) {
       webview.postMessage(message);
     }
