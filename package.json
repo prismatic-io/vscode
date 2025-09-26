@@ -50,7 +50,8 @@
         "command": "prismatic.configWizard",
         "title": "Config Wizard",
         "category": "Prismatic",
-        "enablement": "prismatic.workspaceEnabled"
+        "enablement": "prismatic.workspaceEnabled",
+        "icon": "$(settings)"
       },
       {
         "command": "prismatic.me",
@@ -145,14 +146,19 @@
           "group": "navigation@2"
         },
          {
-          "command": "prismatic.integrations.import",
+          "command": "prismatic.configWizard",
           "when": "view == executionResults.webview && prismatic.workspaceEnabled",
           "group": "navigation@3"
+        },
+         {
+          "command": "prismatic.integrations.import",
+          "when": "view == executionResults.webview && prismatic.workspaceEnabled",
+          "group": "navigation@4"
         },
         {
           "command": "prismatic.integrations.openInBrowser",
           "when": "view == executionResults.webview && prismatic.workspaceEnabled",
-          "group": "navigation@4"
+          "group": "navigation@5"
         }
       ]
     }
