@@ -12,8 +12,8 @@ export class AuthManager {
     prismCLIManager: PrismCLIManager,
     stateManager: StateManager,
   ) {
-    this.prismCLIManager = prismCLIManager;
     this.stateManager = stateManager;
+    this.prismCLIManager = prismCLIManager;
   }
 
   /**
@@ -25,6 +25,7 @@ export class AuthManager {
     if (!AuthManager.instance) {
       const prismCLIManager = await PrismCLIManager.getInstance();
       const stateManager = StateManager.getInstance();
+
       AuthManager.instance = new AuthManager(prismCLIManager, stateManager);
     }
 
@@ -47,13 +48,8 @@ export class AuthManager {
    */
   public async isLoggedIn(): Promise<boolean> {
     try {
-      // First check if we have tokens stored locally
-      if (!(await this.hasTokens())) {
-        return false;
-      }
-
-      // Then verify the CLI login status
       const result = await this.prismCLIManager.me();
+
       return !result.includes("Error: You are not logged");
     } catch {
       return false;
@@ -68,6 +64,7 @@ export class AuthManager {
   public async login(): Promise<string> {
     try {
       const result = await this.prismCLIManager.login();
+
       await this.fetchAndStoreTokens();
       return result;
     } catch (error) {
@@ -86,6 +83,7 @@ export class AuthManager {
   public async logout(): Promise<string> {
     try {
       const result = await this.prismCLIManager.logout();
+
       await this.clearTokens();
       return result;
     } catch (error) {
@@ -210,12 +208,15 @@ export class AuthManager {
   /**
    * Performs the complete initial authentication flow during extension activation.
    * Checks if user is logged in, prompts for login if needed, and fetches tokens.
+   * Also starts monitoring the prism config file for changes.
    * @returns {Promise<void>}
    * @throws {Error} If authentication fails
    */
   public async performInitialAuthFlow(): Promise<void> {
     try {
+      // Check if user is logged in
       if (!(await this.isLoggedIn())) {
+        // Prompt user to login
         const loginAction = "Login to Prismatic";
 
         const response = await vscode.window.showInformationMessage(
@@ -231,7 +232,25 @@ export class AuthManager {
         log("INFO", "Logging in...");
         await this.login();
         log("SUCCESS", "Successfully logged in!");
+      } else {
+        // Fetch and store tokens if user is already logged in
+        this.fetchAndStoreTokens();
       }
+
+      // Start monitoring Prism Config file for changes
+      log("INFO", "Starting Prism Config monitoring...");
+      this.prismCLIManager.monitorPrismConfig(
+        // On Prism Config change
+        async () => {
+          log("INFO", "Prism Config changed, fetching and storing tokens...");
+          await this.fetchAndStoreTokens();
+        },
+        // On Prism Config delete
+        async () => {
+          log("INFO", "Prism Config deleted, clearing tokens...");
+          await this.clearTokens();
+        },
+      );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);

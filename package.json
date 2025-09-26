@@ -4,7 +4,7 @@
   "publisher": "prismatic",
   "private": true,
   "description": "This extension improves the developer experience around Code-Native Integrations (CNI) by enabling test execution, integration imports, instance configuration (including config variables, debug mode, and trigger payloads), and inspection of execution results—all directly within the IDE.",
-  "version": "0.0.28",
+  "version": "0.0.29",
   "icon": "resources/prismatic.png",
   "galleryBanner": {
     "color": "#101017",
@@ -50,7 +50,8 @@
         "command": "prismatic.configWizard",
         "title": "Config Wizard",
         "category": "Prismatic",
-        "enablement": "prismatic.workspaceEnabled"
+        "enablement": "prismatic.workspaceEnabled",
+        "icon": "$(settings)"
       },
       {
         "command": "prismatic.me",
@@ -145,14 +146,19 @@
           "group": "navigation@2"
         },
          {
-          "command": "prismatic.integrations.import",
+          "command": "prismatic.configWizard",
           "when": "view == executionResults.webview && prismatic.workspaceEnabled",
           "group": "navigation@3"
+        },
+         {
+          "command": "prismatic.integrations.import",
+          "when": "view == executionResults.webview && prismatic.workspaceEnabled",
+          "group": "navigation@4"
         },
         {
           "command": "prismatic.integrations.openInBrowser",
           "when": "view == executionResults.webview && prismatic.workspaceEnabled",
-          "group": "navigation@4"
+          "group": "navigation@5"
         }
       ]
     }
