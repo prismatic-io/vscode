@@ -13,6 +13,9 @@ interface TestIntegrationFlowContext {
   systemInstanceId: string | null;
   accessToken: string | null;
   prismaticUrl: string | null;
+  payload?: string;
+  contentType?: string;
+  headers?: string;
   "@input": TestIntegrationFlowInput;
 }
 
@@ -22,6 +25,9 @@ type TestIntegrationFlowEvents = {
   flowId?: string;
   accessToken: string;
   prismaticUrl: string;
+  payload?: string;
+  contentType?: string;
+  headers?: string;
 };
 
 type TestIntegrationFlowTags = "idle" | "testing";
@@ -77,6 +83,9 @@ export const testIntegrationFlowMachine = setup({
               flowId: event.flowId,
               accessToken: event.accessToken,
               prismaticUrl: event.prismaticUrl,
+              payload: event.payload,
+              contentType: event.contentType,
+              headers: event.headers,
             })),
           ],
           target: "#testIntegrationFlow.TESTING_INTEGRATION",
@@ -159,6 +168,9 @@ export const testIntegrationFlowMachine = setup({
               accessToken: context.accessToken!,
               prismaticUrl: context.prismaticUrl!,
               flowId: context.flowId!,
+              payload: context.payload,
+              headers: context.headers,
+              contentType: context.contentType,
             }),
             onDone: {
               actions: [
