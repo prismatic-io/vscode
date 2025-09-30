@@ -296,8 +296,6 @@ export async function activate(context: vscode.ExtensionContext) {
     const integrationFlowTestCommand = vscode.commands.registerCommand(
       "prismatic.integrations.test",
       async () => {
-        outputChannel.show(true);
-
         log("INFO", "Starting integration test...");
 
         try {
@@ -319,14 +317,18 @@ export async function activate(context: vscode.ExtensionContext) {
             throw new Error("No test integration actor available.");
           }
 
+          if (!workspaceState.flow) {
+            throw new Error("No flow selected. Please select a flow first.");
+          }
+
           const selectedFlowPayload = await selectProjectFlowPayload(
-            workspaceState.flowId,
+            workspaceState.flow.stableKey,
           );
 
           testIntegrationFlowActor.send({
             type: "TEST_INTEGRATION",
             integrationId: workspaceState.integrationId,
-            flowId: workspaceState.flowId,
+            flowId: workspaceState.flow.id,
             accessToken,
             prismaticUrl: globalState?.prismaticUrl ?? CONFIG.prismaticUrl,
             ...(selectedFlowPayload
@@ -424,23 +426,23 @@ export async function activate(context: vscode.ExtensionContext) {
     const flowPayloadCreateCommand = vscode.commands.registerCommand(
       "prismatic.flows.createPayload",
       async () => {
-        outputChannel.show(true);
-
         log("INFO", "Starting payload creation...");
 
         try {
           const workspaceState = await stateManager.getWorkspaceState();
 
-          if (!workspaceState?.flowId) {
+          if (!workspaceState?.flow) {
             throw new Error("No flow selected. Please select a flow first.");
           }
 
-          const filePath = await createFlowPayload(workspaceState.flowId);
+          const filePath = await createFlowPayload(
+            workspaceState.flow.stableKey,
+          );
 
           if (filePath) {
             log(
               "SUCCESS",
-              `Payload created successfully for flow: ${workspaceState.flowId}`,
+              `Payload created successfully for flow: ${workspaceState.flow.name}`,
               true,
             );
           }

@@ -196,7 +196,7 @@ export const getWorkspaceFolders = (): vscode.Uri[] => {
   const folders = vscode.workspace.workspaceFolders;
 
   if (!folders) {
-    throw [];
+    return [];
   }
 
   return folders.map((folder) => folder.uri);
@@ -218,4 +218,180 @@ export const pathsToUris = (paths: string[]): vscode.Uri[] => {
  */
 export const urisToPaths = (uris: vscode.Uri[]): string[] => {
   return uris.map((uri) => uri.fsPath);
+};
+
+/**
+ * Function to get directories with a specific pattern using VS Code APIs
+ * @param pattern - Pattern to match
+ * @param maxResults - Maximum number of results (default: 1000)
+ * @param exclude - Exclude pattern (optional)
+ * @returns Promise<Array of directory URIs>[]
+ */
+export const getDirectoriesWithPattern = async (
+  pattern: string,
+  maxResults = 1000,
+  exclude?: string,
+): Promise<vscode.Uri[]> => {
+  const allMatches = await findFilesWithGlob(pattern, exclude, maxResults);
+
+  const uniqueProjectPaths = new Set<string>();
+
+  for (const fileUri of allMatches) {
+    const targetDirName = pattern.includes("**/")
+      ? pattern.split("**/")[1].split("/")[0]
+      : pattern.split("/").pop()?.replace("**", "") || "";
+
+    if (targetDirName && fileUri.fsPath.includes(`/${targetDirName}/`)) {
+      const targetDirPath = `${fileUri.fsPath.split(`/${targetDirName}/`)[0]}/${targetDirName}`;
+      const projectPath = path.dirname(targetDirPath);
+
+      uniqueProjectPaths.add(projectPath);
+    }
+  }
+
+  return Array.from(uniqueProjectPaths).map((projectPath) =>
+    vscode.Uri.file(projectPath),
+  );
+};
+
+/**
+ * Get Spectral projects by searching for directories with the ".spectral" pattern
+ * @returns Promise<Array of project information objects>
+ */
+export const getProjectsBySpectralDirectory = async (): Promise<
+  { uri: vscode.Uri; fsPath: string; fileName: string }[]
+> => {
+  return (await getDirectoriesWithPattern("**/.spectral/**")).map((uri) => ({
+    uri,
+    fsPath: uri.fsPath,
+    fileName: path.basename(uri.fsPath),
+  }));
+};
+
+/**
+ * Generic function to find projects by searching for files with specific export patterns
+ * @param filePattern - Glob pattern for files to search
+ * @param exportPatterns - Array of patterns to match in file content
+ * @param nameExtractionRegex - Regex to extract project name from file content
+ * @param maxResults - Maximum number of files to search
+ * @returns Promise<Array of project information objects>
+ */
+export const getProjectsByExport = async (
+  filePattern: string,
+  exportPatterns: string[],
+  nameExtractionRegex: RegExp,
+  maxResults = 1000,
+): Promise<
+  {
+    uri: vscode.Uri;
+    fsPath: string;
+    fileName: string;
+    projectName: string;
+    projectPath: string;
+  }[]
+> => {
+  // Search for files matching the pattern
+  const files = await findFilesWithGlob(filePattern, undefined, maxResults);
+
+  const projects: {
+    uri: vscode.Uri;
+    fsPath: string;
+    fileName: string;
+    projectName: string;
+    projectPath: string;
+  }[] = [];
+
+  for (const fileUri of files) {
+    try {
+      // Read the file content
+      const fileContent = await vscode.workspace.fs.readFile(fileUri);
+      const content = Buffer.from(fileContent).toString("utf-8");
+
+      // Check if the file contains any of the export patterns
+      const hasMatchingExport = exportPatterns.some((pattern) =>
+        content.includes(pattern),
+      );
+
+      if (hasMatchingExport) {
+        // Extract project name using the provided regex
+        const nameMatch = content.match(nameExtractionRegex);
+        const projectName = nameMatch
+          ? nameMatch[1]
+          : path.basename(path.dirname(fileUri.fsPath));
+
+        // Find the project root directory (look for package.json or go up directories)
+        let projectPath = path.dirname(fileUri.fsPath);
+        let currentPath = projectPath;
+
+        // Walk up the directory tree to find the project root
+        while (currentPath !== path.dirname(currentPath)) {
+          try {
+            const packageJsonPath = path.join(currentPath, "package.json");
+            const packageJsonUri = vscode.Uri.file(packageJsonPath);
+            await vscode.workspace.fs.stat(packageJsonUri);
+            projectPath = currentPath;
+            break;
+          } catch {
+            // package.json not found, go up one level
+            currentPath = path.dirname(currentPath);
+          }
+        }
+
+        projects.push({
+          uri: fileUri,
+          fsPath: fileUri.fsPath,
+          fileName: path.basename(fileUri.fsPath),
+          projectName,
+          projectPath,
+        });
+      }
+    } catch (error) {
+      // Skip files that can't be read
+      console.warn(`Could not read file ${fileUri.fsPath}:`, error);
+    }
+  }
+
+  return projects;
+};
+
+/**
+ * Find CNI projects by searching for files with "default export integration"
+ * @returns Promise<Array of project information objects>
+ */
+export const getCNIProjectsByExport = async (): Promise<
+  {
+    uri: vscode.Uri;
+    fsPath: string;
+    fileName: string;
+    projectName: string;
+    projectPath: string;
+  }[]
+> => {
+  return getProjectsByExport(
+    "**/*.{ts,js}",
+    ["default export integration", "export default integration"],
+    /name:\s*["']([^"']+)["']/,
+    1000,
+  );
+};
+
+/**
+ * Find component projects by searching for files with "export default component"
+ * @returns Promise<Array of project information objects>
+ */
+export const getComponentProjectsByExport = async (): Promise<
+  {
+    uri: vscode.Uri;
+    fsPath: string;
+    fileName: string;
+    projectName: string;
+    projectPath: string;
+  }[]
+> => {
+  return getProjectsByExport(
+    "**/*.{ts,js}",
+    ["export default component"],
+    /label:\s*["']([^"']+)["']/,
+    1000,
+  );
 };

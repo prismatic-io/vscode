@@ -44,7 +44,7 @@ export const verifyIntegrationIntegrity = async (): Promise<void> => {
 
     await stateManager.updateWorkspaceState({
       integrationId: undefined,
-      flowId: undefined,
+      flow: undefined,
     });
   }
 };

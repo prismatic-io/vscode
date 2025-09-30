@@ -11,17 +11,17 @@ import type { FlowPayload } from "@/types/flows";
 
 /**
  * Select a Flow payload from the project
- * @param flowId - The flow ID to get the payload for
+ * @param stableKey - The flow stable key to get the payload for
  * @returns {Promise<FlowPayload | null>} The Flow payload
  */
 export const selectProjectFlowPayload = async (
-  flowId?: string,
+  stableKey?: string,
 ): Promise<FlowPayload | null> => {
-  if (!flowId) {
+  if (!stableKey) {
     return null;
   }
 
-  const flowPayloads = await getProjectFlowPayloads(flowId);
+  const flowPayloads = await getProjectFlowPayloads(stableKey);
 
   if (flowPayloads.length === 0) {
     return null;
@@ -54,7 +54,7 @@ export const selectProjectFlowPayload = async (
   );
 
   return getWorkspaceJsonFile<FlowPayload>({
-    directory: `${SPECTRAL_DIR}/${FLOW_DIR}/${flowId}/${FLOW_PAYLOADS_DIR}`,
+    directory: `${SPECTRAL_DIR}/${FLOW_DIR}/${stableKey}/${FLOW_PAYLOADS_DIR}`,
     fileName: selectedFlowPayload.payload.fileName,
   }).fileData;
 };

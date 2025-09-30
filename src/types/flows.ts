@@ -3,3 +3,9 @@ export interface FlowPayload {
   data: Record<string, unknown> | string;
   contentType: "application/json" | "application/xml" | "application/csv";
 }
+
+export interface Flow {
+  id: string;
+  name: string;
+  stableKey: string;
+}

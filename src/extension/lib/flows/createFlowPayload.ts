@@ -12,11 +12,11 @@ import { getWorkspacePath } from "@/extension/lib/getWorkspacePath";
 
 /**
  * Create a new flow payload file
- * @param flowId - The flow ID to create the payload for
+ * @param stableKey - The flow stable key to create the payload for
  * @returns {Promise<string | null>} The path to the created file or null if cancelled
  */
 export const createFlowPayload = async (
-  flowId: string,
+  stableKey: string,
 ): Promise<string | null> => {
   const workspacePath = getWorkspacePath();
 
@@ -24,7 +24,7 @@ export const createFlowPayload = async (
     workspacePath,
     SPECTRAL_DIR,
     FLOW_DIR,
-    flowId,
+    stableKey,
     FLOW_PAYLOADS_DIR,
   );
 

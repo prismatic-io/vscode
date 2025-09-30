@@ -17,6 +17,7 @@ type GetIntegrationQuery = {
     flows: {
       nodes: {
         id: string;
+        stableKey: string;
         name: string;
       }[];
     };
@@ -39,6 +40,7 @@ const GET_INTEGRATION = `
       flows {
         nodes {
           id
+          stableKey
           name
         }
       }
@@ -51,6 +53,7 @@ export interface GetIntegrationOutput {
   configState: InstanceConfigState | null;
   initialFlow: {
     id: string;
+    stableKey: string;
     name: string;
   } | null;
 }

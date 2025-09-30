@@ -13,12 +13,13 @@ interface FlowPayloadFile {
 
 /**
  * Get all flow payloads
+ * @param stableKey - The flow stable key to get the payloads for
  * @returns {FlowPayloadFile[]} The flow payloads
  */
 export const getProjectFlowPayloads = async (
-  flowId?: string,
+  stableKey?: string,
 ): Promise<FlowPayloadFile[]> => {
-  if (!flowId) {
+  if (!stableKey) {
     return [];
   }
 
@@ -26,7 +27,7 @@ export const getProjectFlowPayloads = async (
     getWorkspacePath(),
     SPECTRAL_DIR,
     FLOW_DIR,
-    flowId,
+    stableKey,
     FLOW_PAYLOADS_DIR,
   );
 

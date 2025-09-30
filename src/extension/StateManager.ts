@@ -20,7 +20,7 @@ const DEFAULT_WORKSPACE_STATE: WorkspaceState = {
   payload: undefined,
   integrationId: undefined,
   systemInstanceId: undefined,
-  flowId: undefined,
+  flow: undefined,
 };
 
 export class StateManager {

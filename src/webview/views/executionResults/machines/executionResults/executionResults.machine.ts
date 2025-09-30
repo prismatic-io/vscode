@@ -5,6 +5,7 @@ import type {
   StepResult,
 } from "@webview/views/executionResults/types";
 import { assign, setup } from "xstate";
+import type { Flow } from "@/types/flows";
 import { getExecutionResults } from "@/webview/views/executionResults/machines/executionResults/getExecutionResults";
 import {
   type StepOutputsActorRef,
@@ -21,7 +22,7 @@ interface ExecutionResultsInput {
 
 interface ExecutionResultsContext {
   executionResults: ExecutionResults;
-  flowId: string | null;
+  flow: Flow | null;
   executionResult: ExecutionResult | null;
   stepResult: StepResult | null;
   stepResultActorRef: StepOutputsActorRef | null;
@@ -35,8 +36,8 @@ type ExecutionResultsEvents =
       type: "FETCH";
     }
   | {
-      type: "SET_FLOW_ID";
-      flowId: string;
+      type: "SET_FLOW";
+      flow: Flow;
     }
   | {
       type: "SET_EXECUTION_RESULT";
@@ -78,9 +79,9 @@ export const executionResultsMachine = setup({
         };
       },
     ),
-    updateFlowId: assign((_, params: { flowId: string }) => {
+    updateFlow: assign((_, params: { flow: Flow }) => {
       return {
-        flowId: params.flowId,
+        flow: params.flow,
       };
     }),
     updateExecutionResult: assign(
@@ -159,7 +160,7 @@ export const executionResultsMachine = setup({
     ),
   },
   guards: {
-    hasFlowId: ({ context }) => Boolean(context.flowId),
+    hasFlow: ({ context }) => Boolean(context.flow),
   },
 }).createMachine({
   id: "executionResults",
@@ -167,7 +168,7 @@ export const executionResultsMachine = setup({
   context: ({ input }) => {
     const context: ExecutionResultsContext = {
       executionResults: [],
-      flowId: null,
+      flow: null,
       executionResult: null,
       stepResult: null,
       stepResultActorRef: null,
@@ -179,11 +180,11 @@ export const executionResultsMachine = setup({
     return context;
   },
   on: {
-    SET_FLOW_ID: {
+    SET_FLOW: {
       actions: [
         {
-          type: "updateFlowId",
-          params: ({ event }) => ({ flowId: event.flowId }),
+          type: "updateFlow",
+          params: ({ event }) => ({ flow: event.flow }),
         },
         {
           type: "updateExecutionResult",
@@ -251,7 +252,7 @@ export const executionResultsMachine = setup({
       always: [
         {
           target: "FETCHING",
-          guard: "hasFlowId",
+          guard: "hasFlow",
         },
         {
           target: "IDLE",
@@ -263,7 +264,7 @@ export const executionResultsMachine = setup({
       invoke: {
         src: "getExecutionResults",
         input: ({ context }) => ({
-          flowId: context.flowId,
+          flowId: context.flow?.id!,
           limit: context["@input"].limit,
           accessToken: context["@input"].accessToken,
           prismaticUrl: context["@input"].prismaticUrl,

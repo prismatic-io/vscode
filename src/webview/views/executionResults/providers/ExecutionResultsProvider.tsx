@@ -48,7 +48,7 @@ export const ExecutionResultsProvider = ({
 }: PropsWithChildren<{}>) => {
   const { accessToken, prismaticUrl } = useAuthContext();
 
-  const { flowId } = useIntegrationContext();
+  const { flow } = useIntegrationContext();
 
   const { message: refetchMessage } = useWebviewMessage(
     "executionResults.refetch",
@@ -74,13 +74,13 @@ export const ExecutionResultsProvider = ({
   });
 
   useEffect(() => {
-    if (flowId) {
+    if (flow) {
       executionResultsMachineActorRef.send({
-        type: "SET_FLOW_ID",
-        flowId,
+        type: "SET_FLOW",
+        flow,
       });
     }
-  }, [flowId, executionResultsMachineActorRef]);
+  }, [flow, executionResultsMachineActorRef]);
 
   const executionResults = useSelector(
     executionResultsMachineActorRef,

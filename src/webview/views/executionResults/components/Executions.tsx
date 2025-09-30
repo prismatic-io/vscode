@@ -6,8 +6,8 @@ import {
   UilTrash,
 } from "@iconscout/react-unicons";
 import { format } from "date-fns";
+import type { Flow } from "@/types/flows";
 import { LoadingSpinner } from "@/webview/components/LoadingSpinner";
-import type { IntegrationFlow } from "@/webview/machines/integration/integration.machine";
 import { useIntegrationContext } from "@/webview/providers/IntegrationProvider";
 import { PilWebhook } from "@/webview/views/executionResults/components/PilWebhook";
 import { UilArrowsLeftRight } from "@/webview/views/executionResults/components/UilArrowsLeftRight";
@@ -19,7 +19,7 @@ import {
 } from "@/webview/views/executionResults/types";
 
 export const ExecutionsContainer = () => {
-  const { flows, flowId, setFlowId } = useIntegrationContext();
+  const { flows, flow, setFlow } = useIntegrationContext();
 
   const {
     executionResults,
@@ -37,8 +37,8 @@ export const ExecutionsContainer = () => {
       isLoading={isLoading}
       hasLoaded={hasLoaded}
       flows={flows}
-      flowId={flowId}
-      setFlowId={setFlowId}
+      flow={flow}
+      setFlow={setFlow}
     />
   );
 };
@@ -49,9 +49,9 @@ interface ExecutionsProps {
   setExecutionResult: (executionResultId: string) => void;
   isLoading: boolean;
   hasLoaded: boolean;
-  flows: IntegrationFlow[];
-  flowId: string;
-  setFlowId: (flowId: string) => void;
+  flows: Flow[];
+  flow: Flow | null;
+  setFlow: (flowId: string) => void;
 }
 
 export const Executions = ({
@@ -61,8 +61,8 @@ export const Executions = ({
   isLoading,
   hasLoaded,
   flows,
-  flowId,
-  setFlowId,
+  flow,
+  setFlow,
 }: ExecutionsProps) => {
   return (
     <div className="column column--executions">
@@ -71,9 +71,9 @@ export const Executions = ({
         {flows.length > 1 ? (
           <>
             <select
-              value={flowId}
+              value={flow?.id}
               onChange={(e) => {
-                setFlowId(e.target.value);
+                setFlow(e.target.value);
               }}
               className="column__body__select"
             >
