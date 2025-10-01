@@ -24,6 +24,9 @@ type TestIntegrationFlowQuery = {
 
 interface TestIntegrationFlowVariables {
   flowId: string;
+  payload?: string;
+  contentType?: string;
+  headers?: string;
 }
 
 const TEST_INTEGRATION_FLOW = `
@@ -68,6 +71,9 @@ export type TestIntegrationFlowOutput = {};
 
 interface TestIntegrationFlowInput {
   flowId: string;
+  payload?: string;
+  contentType?: string;
+  headers?: string;
 }
 
 export const testIntegrationFlow = fromPromise<
@@ -85,6 +91,9 @@ export const testIntegrationFlow = fromPromise<
     accessToken: input.accessToken,
     prismaticUrl: input.prismaticUrl,
     flowId: input.flowId,
+    payload: input.payload,
+    contentType: input.contentType,
+    headers: input.headers,
   });
 
   if (response.errors) {

@@ -9,6 +9,8 @@ import { createActor } from "xstate";
 import { executeProjectNpmScript } from "@/extension/lib/executeProjectNpmScript";
 import { syncPrismaticUrl } from "@/extension/lib/syncPrismaticUrl";
 import { verifyIntegrationIntegrity } from "@/extension/lib/verifyIntegrationIntegrity";
+import { createFlowPayload } from "./extension/lib/flows/createFlowPayload";
+import { selectProjectFlowPayload } from "./extension/lib/flows/selectProjectFlowPayload";
 import {
   type TestIntegrationFlowMachineActorRef,
   testIntegrationFlowMachine,
@@ -26,7 +28,7 @@ let testIntegrationFlowActor: TestIntegrationFlowMachineActorRef | undefined;
 export async function activate(context: vscode.ExtensionContext) {
   try {
     /**
-     * Enable extension based on the workspace containing .spectral
+     * Enable extension based on the workspace containing SPECTRAL_DIR
      * this includes showing commands & views.
      */
     await vscode.commands.executeCommand(
@@ -294,8 +296,6 @@ export async function activate(context: vscode.ExtensionContext) {
     const integrationFlowTestCommand = vscode.commands.registerCommand(
       "prismatic.integrations.test",
       async () => {
-        outputChannel.show(true);
-
         log("INFO", "Starting integration test...");
 
         try {
@@ -304,8 +304,8 @@ export async function activate(context: vscode.ExtensionContext) {
           }
 
           const accessToken = await authManager.getAccessToken();
-          const workspaceState = await stateManager.getWorkspaceState();
           const globalState = await stateManager.getGlobalState();
+          const workspaceState = await stateManager.getWorkspaceState();
 
           if (!workspaceState?.integrationId) {
             throw new Error(
@@ -317,13 +317,27 @@ export async function activate(context: vscode.ExtensionContext) {
             throw new Error("No test integration actor available.");
           }
 
-          // send the test event with the integration ID
+          if (!workspaceState.flow) {
+            throw new Error("No flow selected. Please select a flow first.");
+          }
+
+          const selectedFlowPayload = await selectProjectFlowPayload(
+            workspaceState.flow.stableKey,
+          );
+
           testIntegrationFlowActor.send({
             type: "TEST_INTEGRATION",
             integrationId: workspaceState.integrationId,
-            flowId: workspaceState.flowId,
+            flowId: workspaceState.flow.id,
             accessToken,
             prismaticUrl: globalState?.prismaticUrl ?? CONFIG.prismaticUrl,
+            ...(selectedFlowPayload
+              ? {
+                  payload: JSON.stringify(selectedFlowPayload.data, null, 2),
+                  contentType: selectedFlowPayload.contentType,
+                  headers: JSON.stringify(selectedFlowPayload.headers),
+                }
+              : {}),
           });
         } catch (error) {
           log("ERROR", String(error), true);
@@ -404,6 +418,40 @@ export async function activate(context: vscode.ExtensionContext) {
       },
     );
     context.subscriptions.push(executionResultsRefetchCommand);
+
+    /**
+     * command: prismatic.flows.createPayload
+     * This command is used to create a new payload file for the selected flow.
+     */
+    const flowPayloadCreateCommand = vscode.commands.registerCommand(
+      "prismatic.flows.createPayload",
+      async () => {
+        log("INFO", "Starting payload creation...");
+
+        try {
+          const workspaceState = await stateManager.getWorkspaceState();
+
+          if (!workspaceState?.flow) {
+            throw new Error("No flow selected. Please select a flow first.");
+          }
+
+          const filePath = await createFlowPayload(
+            workspaceState.flow.stableKey,
+          );
+
+          if (filePath) {
+            log(
+              "SUCCESS",
+              `Payload created successfully for flow: ${workspaceState.flow.name}`,
+              true,
+            );
+          }
+        } catch (error) {
+          log("ERROR", String(error), true);
+        }
+      },
+    );
+    context.subscriptions.push(flowPayloadCreateCommand);
 
     log("SUCCESS", "Extension initialization complete!");
   } catch (error) {

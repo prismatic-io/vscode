@@ -7,7 +7,13 @@ export interface GlobalState {
 export interface WorkspaceState {
   integrationId: string | undefined;
   systemInstanceId: string | undefined;
-  flowId: string | undefined;
+  flow:
+    | {
+        id: string;
+        name: string;
+        stableKey: string;
+      }
+    | undefined;
   debugMode: boolean | undefined;
   headers: Record<string, string> | undefined;
   payload: string | undefined;

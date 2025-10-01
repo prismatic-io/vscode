@@ -1,7 +1,7 @@
 import { fromPromise } from "xstate";
 import { fetcher } from "@/shared/fetcher";
+import type { Flow } from "@/types/flows";
 import type { GraphQLVariables } from "@/types/graphql";
-import type { IntegrationFlow } from "@/webview/machines/integration/integration.machine";
 
 type GetIntegrationQuery = {
   integration: {
@@ -12,6 +12,7 @@ type GetIntegrationQuery = {
       nodes: {
         id: string;
         name: string;
+        stableKey: string;
       }[];
     };
   };
@@ -33,6 +34,7 @@ const GET_INTEGRATION = `
         nodes {
           id
           name
+          stableKey
         }
       }
     }
@@ -41,7 +43,7 @@ const GET_INTEGRATION = `
 
 export interface GetIntegrationOutput {
   systemInstanceId: string;
-  flows: IntegrationFlow[];
+  flows: Flow[];
 }
 
 interface GetIntegrationInput {
@@ -81,10 +83,14 @@ export const getIntegration = fromPromise<
         return acc;
       }
 
-      acc.push({ id: flow.id, name: flow.name });
+      acc.push({
+        id: flow.id,
+        name: flow.name,
+        stableKey: flow.stableKey,
+      });
 
       return acc;
-    }, [] as IntegrationFlow[]) ?? [];
+    }, [] as Flow[]) ?? [];
 
   const systemInstanceId = integration.systemInstance?.id;
 

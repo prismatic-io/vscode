@@ -53,6 +53,9 @@ Imports the Code-Native Integration (CNI) from your local project into the Prism
 #### `Prismatic: Test Integration`
 Executes a test for the Code-Native Integration (CNI). After the test is complete, it streams step outputs and logs for debugging.
 
+#### `Prismatic: Create Flow Payload`
+Generates a sample flow payload for testing purposes. This can be used to simulate real-world data inputs during integration testing.
+
 #### `Prismatic: Login`
 Logs in to your Prismatic account using your globally installed Prismatic CLI (Prism) then stores your authentication session.
 

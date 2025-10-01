@@ -1,10 +1,6 @@
 import { assign, setup } from "xstate";
+import type { Flow } from "@/types/flows";
 import { getIntegration } from "@/webview/machines/integration/getIntegration";
-
-export interface IntegrationFlow {
-  id: string;
-  name: string;
-}
 
 interface IntegrationInput {
   accessToken: string;
@@ -15,7 +11,7 @@ interface IntegrationContext {
   integrationId: string | null;
   systemInstanceId: string;
   flowId: string;
-  flows: IntegrationFlow[];
+  flows: Flow[];
   "@input": IntegrationInput;
 }
 
@@ -51,7 +47,7 @@ export const integrationMachine = setup({
         };
       },
     ),
-    updateFlows: assign((_, params: { flows: IntegrationFlow[] }) => {
+    updateFlows: assign((_, params: { flows: Flow[] }) => {
       return {
         flows: params.flows,
       };

@@ -8,11 +8,15 @@ interface GetWorkspaceJsonFileProps {
   fileName: string;
 }
 
-export const getWorkspaceJsonFile = ({
+export const getWorkspaceJsonFile = <T = Record<string, unknown>>({
   workspaceFolderPath = getWorkspacePath(),
   directory = "",
   fileName,
-}: GetWorkspaceJsonFileProps) => {
+}: GetWorkspaceJsonFileProps): {
+  workspaceFolderPath: string;
+  filePath: string;
+  fileData: T | null;
+} => {
   if (!workspaceFolderPath) {
     throw new Error("No workspace folder found.");
   }
@@ -29,7 +33,7 @@ export const getWorkspaceJsonFile = ({
     }
 
     const file = fs.readFileSync(filePath, "utf8");
-    const fileData = JSON.parse(file) as Record<string, unknown>;
+    const fileData = JSON.parse(file) as T;
 
     return {
       workspaceFolderPath,

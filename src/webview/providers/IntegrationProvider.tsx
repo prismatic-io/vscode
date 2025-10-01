@@ -7,28 +7,26 @@ import {
   useEffect,
   useMemo,
 } from "react";
+import type { Flow } from "@/types/flows";
 import { NoIntegration } from "@/webview/components/NoIntegration";
 import { useVSCodeState } from "@/webview/hooks/useVSCodeState";
-import {
-  type IntegrationFlow,
-  integrationMachine,
-} from "@/webview/machines/integration/integration.machine";
+import { integrationMachine } from "@/webview/machines/integration/integration.machine";
 import { useAuthContext } from "@/webview/providers/AuthProvider";
 
 const IntegrationContext = createContext<{
-  flowId: string;
-  flows: IntegrationFlow[];
+  flow: Flow | null;
+  flows: Flow[];
   isLoading: boolean;
   refetch: () => void;
   systemInstanceId: string;
-  setFlowId: (flowId: string) => void;
+  setFlow: (flowId: string) => void;
 }>({
-  flowId: "",
+  flow: null,
   flows: [],
   isLoading: false,
   refetch: () => {},
   systemInstanceId: "",
-  setFlowId: () => {},
+  setFlow: () => {},
 });
 
 export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
@@ -56,11 +54,17 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
     (state) => state.context.flows,
   );
 
-  const setFlowId = useCallback(
+  const setFlow = useCallback(
     (flowId: string) => {
-      updateWorkspaceState({ flowId });
+      const flow = flows.find((f) => f.id === flowId);
+
+      if (!flow) {
+        return;
+      }
+
+      updateWorkspaceState({ flow });
     },
-    [updateWorkspaceState],
+    [updateWorkspaceState, flows],
   );
 
   const refetch = useCallback(() => {
@@ -86,29 +90,29 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (
-      !workspaceState?.flowId ||
-      !flows.some((flow) => flow.id === workspaceState?.flowId)
+      !workspaceState?.flow ||
+      !flows.some((flow) => flow.id === workspaceState.flow?.id)
     ) {
-      updateWorkspaceState({ flowId: flows[0].id });
+      updateWorkspaceState({ flow: flows[0] });
     }
-  }, [workspaceState?.flowId, flows, updateWorkspaceState]);
+  }, [workspaceState?.flow, flows, updateWorkspaceState]);
 
   const value = useMemo(
     () => ({
       systemInstanceId,
       flows,
-      flowId: workspaceState?.flowId || "",
+      flow: workspaceState?.flow ?? null,
       refetch,
       isLoading,
-      setFlowId,
+      setFlow,
     }),
     [
       systemInstanceId,
       flows,
-      workspaceState?.flowId,
+      workspaceState?.flow,
       refetch,
       isLoading,
-      setFlowId,
+      setFlow,
     ],
   );
 

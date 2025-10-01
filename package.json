@@ -4,7 +4,7 @@
   "publisher": "prismatic",
   "private": true,
   "description": "This extension improves the developer experience around Code-Native Integrations (CNI) by enabling test execution, integration imports, instance configuration (including config variables, debug mode, and trigger payloads), and inspection of execution results—all directly within the IDE.",
-  "version": "0.0.29",
+  "version": "0.0.30",
   "icon": "resources/prismatic.png",
   "galleryBanner": {
     "color": "#101017",
@@ -110,6 +110,13 @@
         "category": "Prismatic",
         "enablement": "prismatic.workspaceEnabled",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "prismatic.flows.createPayload",
+        "title": "Create Flow Payload",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled",
+        "icon": "$(add)"
       }
     ],
     "views": {

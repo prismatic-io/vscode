@@ -3,6 +3,7 @@ import { log } from "@/extension";
 import { getWorkspaceJsonFile } from "@/extension/lib/getWorkspaceJsonFile";
 import { getIntegration } from "@/extension/machines/integrationsFlowsTest/getIntegration";
 import { StateManager } from "@/extension/StateManager";
+import { SPECTRAL_DIR } from "../constants";
 
 /**
  * Verifies that the current integration ID exists and is accessible in Prismatic.
@@ -43,13 +44,13 @@ export const verifyIntegrationIntegrity = async (): Promise<void> => {
 
     await stateManager.updateWorkspaceState({
       integrationId: undefined,
-      flowId: undefined,
+      flow: undefined,
     });
   }
 };
 
 /**
- * Synchronizes the integration ID between workspace state and the .spectral/prism.json file.
+ * Synchronizes the integration ID between workspace state and the SPECTRAL_DIR/prism.json file.
  * @returns Promise that resolves to the current integration ID, or undefined if none found
  */
 export const syncIntegrationId = async (): Promise<string | undefined> => {
@@ -57,9 +58,9 @@ export const syncIntegrationId = async (): Promise<string | undefined> => {
   const stateManager = StateManager.getInstance();
   const workspaceState = await stateManager.getWorkspaceState();
 
-  // step 2. check if integrationId is in .spectral/prism.json file
+  // step 2. check if integrationId is in SPECTRAL_DIR/prism.json file
   const { fileData } = getWorkspaceJsonFile({
-    directory: ".spectral",
+    directory: SPECTRAL_DIR,
     fileName: "prism.json",
   });
 
