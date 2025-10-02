@@ -45,6 +45,17 @@
     "workspaceContains:.spectral/*"
   ],
   "contributes": {
+    "configuration": {
+      "title": "Prismatic",
+      "properties": {
+        "prismatic.prismCliPath": {
+          "type": "string",
+          "scope": "machine-overridable",
+          "default": "",
+          "markdownDescription": "Path to the Prism CLI executable. If not specified, the extension will search for `prism` in your PATH and common installation locations (npm global, Homebrew, nvm, asdf, etc.).\n\nExamples:\n- `/usr/local/bin/prism`\n- `/opt/homebrew/bin/prism`\n- `${userHome}/.npm-global/bin/prism`"
+        }
+      }
+    },
     "commands": [
       {
         "command": "prismatic.configWizard",
