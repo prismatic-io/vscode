@@ -154,7 +154,7 @@ export class PrismCLIManager {
           if (code === 126) {
             reject(
               new Error(
-                "Prismatic CLI was found but could not be executed (exit code 126). Please check that it is installed correctly and is executable.",
+                `Prismatic CLI was found but could not be executed (exit code 126). Path: ${this.prismPath}. Please check that it is installed correctly and is executable.`,
               ),
             );
           } else if (code === 127) {
