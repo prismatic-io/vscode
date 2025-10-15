@@ -184,8 +184,6 @@ export async function activate(context: vscode.ExtensionContext) {
     const integrationOpenInBrowserCommand = vscode.commands.registerCommand(
       "prismatic.integrations.openInBrowser",
       async () => {
-        outputChannel.show(true);
-
         log("INFO", "Starting integration open in browser...");
 
         try {
@@ -494,10 +492,15 @@ export async function deactivate() {
 }
 
 export const log = (
-  level: "SUCCESS" | "WARN" | "ERROR" | "INFO",
+  level: "SUCCESS" | "WARN" | "ERROR" | "INFO" | "COMMAND",
   message: string,
   showMessage = false,
 ) => {
+  // Skip COMMAND logs in production
+  if (level === "COMMAND" && process.env.NODE_ENV === "production") {
+    return;
+  }
+
   const timestamp = new Date().toISOString();
   const emoji =
     level === "SUCCESS"
@@ -508,7 +511,9 @@ export const log = (
           ? "❌"
           : level === "INFO"
             ? "ℹ️"
-            : "";
+            : level === "COMMAND"
+              ? "🔧"
+              : "";
 
   outputChannel.appendLine(`[${timestamp}] ${emoji} [${level}] ${message}`);
 

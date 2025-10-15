@@ -4,7 +4,12 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { StateManager } from "@extension/StateManager";
 import * as vscode from "vscode";
-import { findPrismExecutablePath } from "@/extension/lib/findPrismExecutablePath";
+import {
+  buildExecCommand,
+  buildSpawnCommand,
+} from "@/extension/lib/buildCommand";
+import type { ExecutablePath } from "@/extension/lib/findExecutable";
+import { findPrismExecutable } from "@/extension/lib/findPrismExecutable";
 
 const execAsync = promisify(exec);
 
@@ -12,7 +17,7 @@ export class PrismCLIManager {
   private static instance: PrismCLIManager | null = null;
   private stateManager: StateManager;
   private watcher: vscode.FileSystemWatcher | undefined;
-  private prismPath: string;
+  private prismExecutable: ExecutablePath;
   private prismConfigPath = path.join(
     os.homedir(),
     ".config",
@@ -20,8 +25,11 @@ export class PrismCLIManager {
     "config.yml",
   );
 
-  private constructor(prismPath: string, stateManager: StateManager) {
-    this.prismPath = prismPath;
+  private constructor(
+    prismExecutable: ExecutablePath,
+    stateManager: StateManager,
+  ) {
+    this.prismExecutable = prismExecutable;
     this.stateManager = stateManager;
   }
 
@@ -31,29 +39,23 @@ export class PrismCLIManager {
    */
   public static async getInstance(): Promise<PrismCLIManager> {
     if (!PrismCLIManager.instance) {
-      const prismPath = await PrismCLIManager.initializePrismPath();
+      const prismExecutable = await findPrismExecutable();
+
+      if (!prismExecutable) {
+        throw new Error(
+          "Prismatic CLI is not properly installed. Please ensure @prismatic-io/prism is installed on your system. Run 'npm install -g @prismatic-io/prism' to install it.",
+        );
+      }
+
       const stateManager = StateManager.getInstance();
 
-      PrismCLIManager.instance = new PrismCLIManager(prismPath, stateManager);
-    }
-
-    return PrismCLIManager.instance;
-  }
-
-  /**
-   * Initializes the Prismatic CLI path.
-   * @returns {Promise<string>} A promise that resolves to the Prismatic CLI path
-   */
-  static async initializePrismPath(): Promise<string> {
-    const prismPath = await findPrismExecutablePath();
-
-    if (!prismPath) {
-      throw new Error(
-        "Prismatic CLI is not properly installed. Please ensure @prismatic-io/prism is installed on your system. Run 'npm install -g @prismatic-io/prism' to install it.",
+      PrismCLIManager.instance = new PrismCLIManager(
+        prismExecutable,
+        stateManager,
       );
     }
 
-    return prismPath;
+    return PrismCLIManager.instance;
   }
 
   /**
@@ -80,18 +82,17 @@ export class PrismCLIManager {
       : undefined;
 
     try {
-      const { stdout, stderr } = await execAsync(
-        `"${this.prismPath}" ${command}`,
-        {
-          cwd,
-          env: {
-            ...process.env,
-            PRISMATIC_URL: globalState.prismaticUrl,
-            // explicitly override DEBUG to prevent Node's require from dumping debug data when CNI projects set DEBUG=true via dotenv
-            DEBUG: "false",
-          },
+      const fullCommand = buildExecCommand(this.prismExecutable, [command]);
+
+      const { stdout, stderr } = await execAsync(fullCommand, {
+        cwd,
+        env: {
+          ...process.env,
+          PRISMATIC_URL: globalState.prismaticUrl,
+          // explicitly override DEBUG to prevent Node's require from dumping debug data when CNI projects set DEBUG=true via dotenv
+          DEBUG: "false",
         },
-      );
+      });
 
       return { stdout, stderr };
     } catch (error) {
@@ -113,7 +114,11 @@ export class PrismCLIManager {
     const globalState = await this.stateManager.getGlobalState();
 
     return new Promise((resolve, reject) => {
-      const loginProcess = spawn(this.prismPath, ["login"], {
+      const { command, args } = buildSpawnCommand(this.prismExecutable, [
+        "login",
+      ]);
+
+      const loginProcess = spawn(command, args, {
         stdio: ["pipe", "pipe", "pipe"],
         env: {
           ...process.env,
@@ -152,9 +157,10 @@ export class PrismCLIManager {
       loginProcess.on("close", (code) => {
         if (!loginComplete) {
           if (code === 126) {
+            const pathInfo = buildExecCommand(this.prismExecutable);
             reject(
               new Error(
-                `Prismatic CLI was found but could not be executed (exit code 126). Path: ${this.prismPath}. Please check that it is installed correctly and is executable.`,
+                `Prismatic CLI was found but could not be executed (exit code 126). Path: ${pathInfo}. Please check that it is installed correctly and is executable.`,
               ),
             );
           } else if (code === 127) {
