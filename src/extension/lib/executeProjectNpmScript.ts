@@ -1,6 +1,7 @@
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import { findNpmExecutablePath } from "@/extension/lib/findNpmExecutablePath";
+import { buildExecCommand } from "@/extension/lib/buildCommand";
+import { findNpmExecutable } from "@/extension/lib/findNpmExecutable";
 import { getWorkspaceJsonFile } from "@/extension/lib/getWorkspaceJsonFile";
 
 type ExecError = Error & {
@@ -24,10 +25,9 @@ export const executeProjectNpmScript = async (
     );
   }
 
-  const npmExecutablePath = await findNpmExecutablePath();
+  const npmExecutable = await findNpmExecutable();
 
-  // 3. check if npm is installed and accessible
-  if (!npmExecutablePath) {
+  if (!npmExecutable) {
     throw new Error(
       "npm is not found. Please ensure npm is installed and accessible. " +
         "You can install npm by running 'brew install node' (macOS) or visiting https://nodejs.org/",
@@ -35,17 +35,16 @@ export const executeProjectNpmScript = async (
   }
 
   try {
-    const { stdout, stderr } = await execAsync(
-      `"${npmExecutablePath}" run ${scriptName}`,
-      {
-        cwd: workspaceFolderPath,
-        env: {
-          ...process.env,
-          // explicitly override DEBUG to prevent Node's require from dumping debug data when CNI projects set DEBUG=true via dotenv
-          DEBUG: "false",
-        },
+    const fullCommand = buildExecCommand(npmExecutable, ["run", scriptName]);
+
+    const { stdout, stderr } = await execAsync(fullCommand, {
+      cwd: workspaceFolderPath,
+      env: {
+        ...process.env,
+        // explicitly override DEBUG to prevent Node's require from dumping debug data when CNI projects set DEBUG=true via dotenv
+        DEBUG: "false",
       },
-    );
+    });
 
     return { stdout, stderr };
   } catch (error) {
