@@ -90,7 +90,7 @@ export class PrismCLIManager {
           ...process.env,
           PRISMATIC_URL: globalState.prismaticUrl,
           // explicitly override DEBUG to prevent Node's require from dumping debug data when CNI projects set DEBUG=true via dotenv
-          DEBUG: "false",
+          DEBUG: undefined,
         },
       });
 
