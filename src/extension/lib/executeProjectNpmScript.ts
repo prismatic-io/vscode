@@ -42,7 +42,7 @@ export const executeProjectNpmScript = async (
       env: {
         ...process.env,
         // explicitly override DEBUG to prevent Node's require from dumping debug data when CNI projects set DEBUG=true via dotenv
-        DEBUG: "false",
+        DEBUG: undefined,
       },
     });
 
