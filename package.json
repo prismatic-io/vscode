@@ -4,7 +4,7 @@
   "publisher": "prismatic",
   "private": true,
   "description": "This extension improves the developer experience around Code-Native Integrations (CNI) by enabling test execution, integration imports, instance configuration (including config variables, debug mode, and trigger payloads), and inspection of execution results—all directly within the IDE.",
-  "version": "1.0.2",
+  "version": "1.1.2",
   "icon": "resources/prismatic.png",
   "galleryBanner": {
     "color": "#101017",
@@ -59,6 +59,12 @@
           "scope": "machine-overridable",
           "default": "",
           "markdownDescription": "Path to the npm executable. If not specified, the extension will search for `npm` in your PATH and common installation locations (Homebrew, nvm, asdf, etc.).\n\nExamples:\n- `/usr/local/bin/npm`\n- `/opt/homebrew/bin/npm`\n- `${userHome}/.npm-global/bin/npm`"
+        },
+        "prismatic.debugMode": {
+          "type": "string",
+          "enum": ["off", "basic", "verbose"],
+          "default": "off",
+          "markdownDescription": "Debug logging level for command execution.\n\n- **off**: No debug logging\n- **basic**: Logs command, working directory, and Node version\n- **verbose**: Logs command, working directory, Node version, and all environment variables"
         }
       }
     },

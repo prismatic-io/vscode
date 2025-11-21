@@ -1,3 +1,5 @@
+import { execSync } from "node:child_process";
+import * as vscode from "vscode";
 import { log } from "@/extension";
 import type { ExecutablePath } from "./findExecutable";
 
@@ -15,17 +17,9 @@ export function buildExecCommand(
   const allArgs = [...executable.args, ...additionalArgs];
 
   if (executable.isNpx) {
-    const command = `npx ${allArgs.join(" ")}`;
-
-    log("COMMAND", `buildExecCommand: Using npx: ${command}`);
-
-    return command;
+    return `npx ${allArgs.join(" ")}`;
   } else {
-    const command = `"${executable.command}" ${allArgs.join(" ")}`;
-
-    log("COMMAND", `buildExecCommand: Using direct executable: ${command}`);
-
-    return command;
+    return `"${executable.command}" ${allArgs.join(" ")}`;
   }
 }
 
@@ -43,28 +37,59 @@ export function buildSpawnCommand(
   const allArgs = [...executable.args, ...additionalArgs];
 
   if (executable.isNpx) {
-    const result = {
+    return {
       command: "npx",
       args: allArgs,
     };
-
-    log(
-      "COMMAND",
-      `buildSpawnCommand: Using npx: npx ${result.args.join(" ")}`,
-    );
-
-    return result;
   }
 
-  const result = {
+  return {
     command: executable.command,
     args: allArgs,
   };
+}
 
-  log(
-    "COMMAND",
-    `buildSpawnCommand: Using direct executable: ${result.command}`,
-  );
+export interface ExecLogOptions {
+  command: string;
+  cwd?: string;
+  env?: NodeJS.ProcessEnv;
+}
 
-  return result;
+/**
+ * Logs execution context for debugging purposes.
+ * Call this before execAsync to log command, node version, cwd, and env variables.
+ */
+export function logExecContext(options: ExecLogOptions): void {
+  const config = vscode.workspace.getConfiguration("prismatic");
+  const debugMode = config.get<string>("debugMode", "off");
+
+  if (debugMode === "off") {
+    return;
+  }
+
+  const { command, cwd, env } = options;
+  let nodeVersion: string;
+
+  try {
+    nodeVersion = execSync("node --version", {
+      encoding: "utf-8",
+      cwd,
+    }).trim();
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    nodeVersion = `not found \nERROR: ${errorMessage}`;
+  }
+
+  const debugInfo = [
+    `\nCOMMAND: ${command}`,
+    `CWD: ${cwd ?? "system"}`,
+    `NODE VERSION: ${nodeVersion}`,
+  ];
+
+  if (debugMode === "verbose") {
+    debugInfo.push(`ENV:\n${JSON.stringify(env ?? {}, null, 2)}`);
+  }
+
+  log("DEBUG", `${debugInfo.join("\n")}\n`);
 }

@@ -89,14 +89,41 @@ Displays the Config Wizard to edit configuration values for your integration ins
 
 ![Config Wizard](resources/marketplace-config-wizard.png)
 
+## Extension Settings
+
+Configure the extension through VS Code's settings (`Cmd+,` on Mac or `Ctrl+,` on Windows/Linux) and search for "Prismatic".
+
+### `prismatic.npmPath`
+
+Path to the npm executable. If not specified, the extension will search for `npm` in your PATH and common installation locations (Homebrew, nvm, asdf, etc.).
+
+Examples:
+- `/usr/local/bin/npm`
+- `/opt/homebrew/bin/npm`
+- `${userHome}/.npm-global/bin/npm`
+
+### `prismatic.debugMode`
+
+Debug logging level for command execution. Useful for troubleshooting CLI or environment issues.
+
+| Value | Description |
+|-------|-------------|
+| `off` | No debug logging (default) |
+| `basic` | Logs command, working directory, and Node version |
+| `verbose` | Logs command, working directory, Node version, and all environment variables |
+
+Debug output appears in the Prismatic output channel (View → Output → select "Prismatic" from dropdown).
+
 ## Troubleshooting
 
 If you encounter issues with the Prismatic CLI:
 
-1. Ensure the CLI is installed globally: `npm install -g @prismatic-io/prism`
-2. Verify the installation: `prism --version`
-3. Check your PATH environment variable includes the npm global bin directory
-4. Try reinstalling the extension
+1. Enable debug mode by setting `prismatic.debugMode` to `basic` or `verbose` in your VS Code settings
+2. Check the Prismatic output channel (View → Output → "Prismatic") for detailed logs
+3. Ensure the CLI is installed globally: `npm install -g @prismatic-io/prism`
+4. Verify the installation: `prism --version`
+5. Check your PATH environment variable includes the npm global bin directory
+6. Try reinstalling the extension
 
 ## What is Prismatic?
 

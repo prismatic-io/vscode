@@ -1,6 +1,6 @@
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import { buildExecCommand } from "@/extension/lib/buildCommand";
+import { buildExecCommand, logExecContext } from "@/extension/lib/buildCommand";
 import { findNpmExecutable } from "@/extension/lib/findNpmExecutable";
 import { getWorkspaceJsonFile } from "@/extension/lib/getWorkspaceJsonFile";
 
@@ -37,13 +37,17 @@ export const executeProjectNpmScript = async (
   try {
     const fullCommand = buildExecCommand(npmExecutable, ["run", scriptName]);
 
+    const execEnv = {
+      ...process.env,
+      // explicitly override DEBUG to prevent Node's require from dumping debug data when CNI projects set DEBUG=true via dotenv
+      DEBUG: undefined,
+    };
+
+    logExecContext({ command: fullCommand, cwd: workspaceFolderPath, env: execEnv });
+
     const { stdout, stderr } = await execAsync(fullCommand, {
       cwd: workspaceFolderPath,
-      env: {
-        ...process.env,
-        // explicitly override DEBUG to prevent Node's require from dumping debug data when CNI projects set DEBUG=true via dotenv
-        DEBUG: undefined,
-      },
+      env: execEnv,
     });
 
     return { stdout, stderr };
