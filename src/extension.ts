@@ -6,6 +6,7 @@ import { createExecutionResultsViewProvider } from "@webview/views/executionResu
 import { CONFIG } from "config";
 import * as vscode from "vscode";
 import { createActor } from "xstate";
+import { enableWorkspace } from "@/extension/lib/enableWorkspace";
 import { executeProjectNpmScript } from "@/extension/lib/executeProjectNpmScript";
 import { syncPrismaticUrl } from "@/extension/lib/syncPrismaticUrl";
 import { verifyIntegrationIntegrity } from "@/extension/lib/verifyIntegrationIntegrity";
@@ -31,11 +32,12 @@ export async function activate(context: vscode.ExtensionContext) {
      * Enable extension based on the workspace containing SPECTRAL_DIR
      * this includes showing commands & views.
      */
-    await vscode.commands.executeCommand(
-      "setContext",
-      "prismatic.workspaceEnabled",
-      true,
-    );
+    const isWorkspaceEnabled = await enableWorkspace();
+
+    // Early exit if not a Prismatic workspace
+    if (!isWorkspaceEnabled) {
+      return;
+    }
 
     /**
      * Create output channel
