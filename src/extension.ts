@@ -12,6 +12,7 @@ import { syncPrismaticUrl } from "@/extension/lib/syncPrismaticUrl";
 import { verifyIntegrationIntegrity } from "@/extension/lib/verifyIntegrationIntegrity";
 import { createFlowPayload } from "./extension/lib/flows/createFlowPayload";
 import { selectProjectFlowPayload } from "./extension/lib/flows/selectProjectFlowPayload";
+import { IntegrationsTreeDataProvider } from "./extension/IntegrationsTreeDataProvider";
 import {
   type TestIntegrationFlowMachineActorRef,
   testIntegrationFlowMachine,
@@ -25,6 +26,7 @@ let authManager: AuthManager;
 let stateManager: StateManager;
 let prismCLIManager: PrismCLIManager;
 let testIntegrationFlowActor: TestIntegrationFlowMachineActorRef | undefined;
+let integrationsTreeDataProvider: IntegrationsTreeDataProvider | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
   try {
@@ -94,11 +96,46 @@ export async function activate(context: vscode.ExtensionContext) {
 
     /**
      * Register views
-     *   - settings
+     *   - integrations (Activity Bar sidebar)
      *   - execution results
      *   - config wizard
      */
     log("INFO", "Registering views...");
+
+    // Register Integrations TreeView (Activity Bar sidebar)
+    integrationsTreeDataProvider = new IntegrationsTreeDataProvider();
+    const integrationsTreeView = vscode.window.createTreeView(
+      "prismatic.integrationsView",
+      {
+        treeDataProvider: integrationsTreeDataProvider,
+        showCollapseAll: false,
+      },
+    );
+    context.subscriptions.push(integrationsTreeView);
+
+    // Watch for workspace folder changes
+    context.subscriptions.push(
+      vscode.workspace.onDidChangeWorkspaceFolders(() => {
+        integrationsTreeDataProvider?.refresh();
+      }),
+    );
+
+    // Watch for .spectral directory changes
+    const spectralWatcher = vscode.workspace.createFileSystemWatcher(
+      "**/.spectral",
+      false,
+      true,
+      false,
+    );
+    spectralWatcher.onDidCreate(() => {
+      integrationsTreeDataProvider?.refresh();
+      enableWorkspace();
+    });
+    spectralWatcher.onDidDelete(() => {
+      integrationsTreeDataProvider?.refresh();
+      enableWorkspace();
+    });
+    context.subscriptions.push(spectralWatcher);
 
     executionResultsViewProvider = createExecutionResultsViewProvider(context);
     context.subscriptions.push(executionResultsViewProvider);

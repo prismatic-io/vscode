@@ -142,7 +142,32 @@
         "icon": "$(add)"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "prismaticIntegrations",
+          "title": "Prismatic",
+          "icon": "resources/prismatic.svg"
+        }
+      ],
+      "panel": [
+        {
+          "id": "executionResults",
+          "title": "Prismatic",
+          "icon": "resources/prismatic.svg",
+          "when": "prismatic.workspaceEnabled"
+        }
+      ]
+    },
     "views": {
+      "prismaticIntegrations": [
+        {
+          "id": "prismatic.integrationsView",
+          "name": "Integrations",
+          "icon": "resources/prismatic.svg",
+          "contextualTitle": "Prismatic Integrations"
+        }
+      ],
       "executionResults": [
         {
           "type": "webview",
@@ -153,16 +178,12 @@
         }
       ]
     },
-    "viewsContainers": {
-      "panel": [
-        {
-          "id": "executionResults",
-          "title": "Prismatic",
-          "icon": "resources/prismatic.svg",
-          "when": "prismatic.workspaceEnabled"
-        }
-      ]
-    },
+    "viewsWelcome": [
+      {
+        "view": "prismatic.integrationsView",
+        "contents": "No integrations detected.\n\n[Learn more about Prismatic integrations](https://prismatic.io/docs)"
+      }
+    ],
     "menus": {
       "view/title": [
         {
