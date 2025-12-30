@@ -1,6 +1,10 @@
 import { assign, setup } from "xstate";
 import type { Flow } from "@/types/flows";
-import { getIntegration } from "@/webview/machines/integration/getIntegration";
+import {
+  type Connection,
+  type InstanceConfigState,
+  getIntegration,
+} from "@/webview/machines/integration/getIntegration";
 
 interface IntegrationInput {
   accessToken: string;
@@ -10,6 +14,8 @@ interface IntegrationInput {
 interface IntegrationContext {
   integrationId: string | null;
   systemInstanceId: string;
+  configState: InstanceConfigState | null;
+  connections: Connection[];
   flowId: string;
   flows: Flow[];
   "@input": IntegrationInput;
@@ -47,9 +53,21 @@ export const integrationMachine = setup({
         };
       },
     ),
+    updateConfigState: assign(
+      (_, params: { configState: InstanceConfigState | null }) => {
+        return {
+          configState: params.configState,
+        };
+      },
+    ),
     updateFlows: assign((_, params: { flows: Flow[] }) => {
       return {
         flows: params.flows,
+      };
+    }),
+    updateConnections: assign((_, params: { connections: Connection[] }) => {
+      return {
+        connections: params.connections,
       };
     }),
   },
@@ -68,6 +86,8 @@ export const integrationMachine = setup({
     const context: IntegrationContext = {
       integrationId: null,
       systemInstanceId: "",
+      configState: null,
+      connections: [],
       flowId: "",
       flows: [],
       "@input": input,
@@ -139,6 +159,22 @@ export const integrationMachine = setup({
               params: ({ event }) => {
                 return {
                   systemInstanceId: event.output.systemInstanceId,
+                };
+              },
+            },
+            {
+              type: "updateConfigState",
+              params: ({ event }) => {
+                return {
+                  configState: event.output.configState,
+                };
+              },
+            },
+            {
+              type: "updateConnections",
+              params: ({ event }) => {
+                return {
+                  connections: event.output.connections,
                 };
               },
             },

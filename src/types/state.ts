@@ -5,6 +5,7 @@ export interface GlobalState {
 }
 
 export interface WorkspaceState {
+  activeIntegrationPath: string | undefined;
   integrationId: string | undefined;
   systemInstanceId: string | undefined;
   flow:

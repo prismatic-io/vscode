@@ -140,6 +140,11 @@
         "category": "Prismatic",
         "enablement": "prismatic.workspaceEnabled",
         "icon": "$(add)"
+      },
+      {
+        "command": "prismatic.integrations.select",
+        "title": "Select Integration",
+        "category": "Prismatic"
       }
     ],
     "viewsContainers": {
@@ -166,6 +171,13 @@
           "name": "Integrations",
           "icon": "resources/prismatic.svg",
           "contextualTitle": "Prismatic Integrations"
+        },
+        {
+          "type": "webview",
+          "id": "integrationDetails.webview",
+          "name": "Details",
+          "icon": "resources/prismatic.svg",
+          "contextualTitle": "Integration Details"
         }
       ],
       "executionResults": [
@@ -196,12 +208,12 @@
           "when": "view == executionResults.webview && prismatic.workspaceEnabled",
           "group": "navigation@2"
         },
-         {
+        {
           "command": "prismatic.configWizard",
           "when": "view == executionResults.webview && prismatic.workspaceEnabled",
           "group": "navigation@3"
         },
-         {
+        {
           "command": "prismatic.integrations.import",
           "when": "view == executionResults.webview && prismatic.workspaceEnabled",
           "group": "navigation@4"
@@ -210,6 +222,28 @@
           "command": "prismatic.integrations.openInBrowser",
           "when": "view == executionResults.webview && prismatic.workspaceEnabled",
           "group": "navigation@5"
+        },
+        {
+          "command": "prismatic.configWizard",
+          "when": "view == integrationDetails.webview && prismatic.workspaceEnabled",
+          "group": "navigation@1"
+        },
+        {
+          "command": "prismatic.integrations.import",
+          "when": "view == integrationDetails.webview && prismatic.workspaceEnabled",
+          "group": "navigation@2"
+        },
+        {
+          "command": "prismatic.integrations.openInBrowser",
+          "when": "view == integrationDetails.webview && prismatic.workspaceEnabled",
+          "group": "navigation@3"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "prismatic.integrations.select",
+          "when": "view == prismatic.integrationsView && viewItem == integrationItem",
+          "group": "navigation"
         }
       ]
     }

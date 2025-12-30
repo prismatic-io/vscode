@@ -3,10 +3,37 @@ import { fetcher } from "@/shared/fetcher";
 import type { Flow } from "@/types/flows";
 import type { GraphQLVariables } from "@/types/graphql";
 
+export enum InstanceConfigState {
+  FULLY_CONFIGURED = "FULLY_CONFIGURED",
+  NEEDS_INSTANCE_CONFIGURATION = "NEEDS_INSTANCE_CONFIGURATION",
+  NEEDS_USER_LEVEL_CONFIGURATION = "NEEDS_USER_LEVEL_CONFIGURATION",
+}
+
+export interface Connection {
+  id: string;
+  label: string;
+  status: string;
+}
+
 type GetIntegrationQuery = {
   integration: {
     systemInstance: {
       id: string;
+      configState: InstanceConfigState | null;
+      configVariables: {
+        nodes: {
+          id: string;
+          status: string;
+          requiredConfigVariable: {
+            key: string;
+            dataType: string;
+            connection: {
+              key: string;
+              label: string;
+            } | null;
+          };
+        }[];
+      };
     };
     flows: {
       nodes: {
@@ -29,6 +56,21 @@ const GET_INTEGRATION = `
     integration(id: $integrationId) {
       systemInstance {
         id
+        configState
+        configVariables {
+          nodes {
+            id
+            status
+            requiredConfigVariable {
+              key
+              dataType
+              connection {
+                key
+                label
+              }
+            }
+          }
+        }
       }
       flows {
         nodes {
@@ -43,6 +85,8 @@ const GET_INTEGRATION = `
 
 export interface GetIntegrationOutput {
   systemInstanceId: string;
+  configState: InstanceConfigState | null;
+  connections: Connection[];
   flows: Flow[];
 }
 
@@ -93,9 +137,30 @@ export const getIntegration = fromPromise<
     }, [] as Flow[]) ?? [];
 
   const systemInstanceId = integration.systemInstance?.id;
+  const configState = integration.systemInstance?.configState ?? null;
+
+  const connections =
+    integration.systemInstance?.configVariables?.nodes?.reduce(
+      (acc, configVar) => {
+        if (
+          configVar?.requiredConfigVariable?.dataType?.toLowerCase() ===
+          "connection"
+        ) {
+          acc.push({
+            id: configVar.id,
+            label: configVar.requiredConfigVariable.key,
+            status: configVar.status,
+          });
+        }
+        return acc;
+      },
+      [] as Connection[],
+    ) ?? [];
 
   return {
     systemInstanceId,
+    configState,
+    connections,
     flows,
   };
 });

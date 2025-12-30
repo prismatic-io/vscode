@@ -7,21 +7,41 @@ import { SPECTRAL_DIR } from "@/extension/constants";
  * Represents a .spectral directory as a tree item
  */
 export class IntegrationItem extends vscode.TreeItem {
+  public readonly integrationPath: string;
+
   constructor(
     public readonly workspaceFolder: vscode.WorkspaceFolder,
     public readonly spectralPath: string,
+    isActive = false,
   ) {
     // Use the parent directory name as the label (the integration name)
     const integrationName = path.basename(path.dirname(spectralPath));
     super(integrationName, vscode.TreeItemCollapsibleState.None);
 
+    // Store integration path (parent of .spectral)
+    this.integrationPath = path.dirname(spectralPath);
+
     // Show relative path from workspace root as description
-    const relativePath = path.relative(workspaceFolder.uri.fsPath, spectralPath);
+    const relativePath = path.relative(
+      workspaceFolder.uri.fsPath,
+      spectralPath,
+    );
     this.description = path.dirname(relativePath);
 
     this.tooltip = spectralPath;
-    this.iconPath = new vscode.ThemeIcon("folder");
     this.contextValue = "integrationItem";
+
+    // Show checkmark for active integration, folder for inactive
+    this.iconPath = isActive
+      ? new vscode.ThemeIcon("check", new vscode.ThemeColor("charts.green"))
+      : new vscode.ThemeIcon("folder");
+
+    // Click to select
+    this.command = {
+      command: "prismatic.integrations.select",
+      title: "Select Integration",
+      arguments: [this],
+    };
   }
 }
 
@@ -35,6 +55,23 @@ export class IntegrationsTreeDataProvider
     IntegrationItem | undefined | void
   >();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+
+  private _activeIntegrationPath: string | undefined;
+
+  /**
+   * Set the active integration path and refresh the tree
+   */
+  setActiveIntegration(integrationPath: string): void {
+    this._activeIntegrationPath = integrationPath;
+    this.refresh();
+  }
+
+  /**
+   * Get the active integration path
+   */
+  getActiveIntegration(): string | undefined {
+    return this._activeIntegrationPath;
+  }
 
   /**
    * Refresh the tree view
@@ -63,7 +100,9 @@ export class IntegrationsTreeDataProvider
     for (const folder of workspaceFolders) {
       const spectralPaths = this.findSpectralDirectories(folder.uri.fsPath);
       for (const spectralPath of spectralPaths) {
-        integrations.push(new IntegrationItem(folder, spectralPath));
+        const integrationPath = path.dirname(spectralPath);
+        const isActive = integrationPath === this._activeIntegrationPath;
+        integrations.push(new IntegrationItem(folder, spectralPath, isActive));
       }
     }
     return integrations;

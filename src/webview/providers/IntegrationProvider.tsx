@@ -10,22 +10,27 @@ import {
 import type { Flow } from "@/types/flows";
 import { NoIntegration } from "@/webview/components/NoIntegration";
 import { useVSCodeState } from "@/webview/hooks/useVSCodeState";
+import type { Connection } from "@/webview/machines/integration/getIntegration";
 import { integrationMachine } from "@/webview/machines/integration/integration.machine";
 import { useAuthContext } from "@/webview/providers/AuthProvider";
 
 const IntegrationContext = createContext<{
   flow: Flow | null;
   flows: Flow[];
+  connections: Connection[];
   isLoading: boolean;
   refetch: () => void;
   systemInstanceId: string;
+  configState: string | null;
   setFlow: (flowId: string) => void;
 }>({
   flow: null,
   flows: [],
+  connections: [],
   isLoading: false,
   refetch: () => {},
   systemInstanceId: "",
+  configState: null,
   setFlow: () => {},
 });
 
@@ -52,6 +57,16 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
   const flows = useSelector(
     integrationMachineActorRef,
     (state) => state.context.flows,
+  );
+
+  const configState = useSelector(
+    integrationMachineActorRef,
+    (state) => state.context.configState,
+  );
+
+  const connections = useSelector(
+    integrationMachineActorRef,
+    (state) => state.context.connections,
   );
 
   const setFlow = useCallback(
@@ -100,6 +115,8 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
   const value = useMemo(
     () => ({
       systemInstanceId,
+      configState,
+      connections,
       flows,
       flow: workspaceState?.flow ?? null,
       refetch,
@@ -108,6 +125,8 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
     }),
     [
       systemInstanceId,
+      configState,
+      connections,
       flows,
       workspaceState?.flow,
       refetch,

@@ -3,6 +3,7 @@ import { PrismCLIManager } from "@extension/PrismCLIManager";
 import { StateManager } from "@extension/StateManager";
 import { createConfigWizardPanel } from "@webview/views/configWizard/ViewProvider";
 import { createExecutionResultsViewProvider } from "@webview/views/executionResults/ViewProvider";
+import { createIntegrationDetailsViewProvider } from "@webview/views/integrationDetails/ViewProvider";
 import { CONFIG } from "config";
 import * as vscode from "vscode";
 import { createActor } from "xstate";
@@ -10,9 +11,13 @@ import { enableWorkspace } from "@/extension/lib/enableWorkspace";
 import { executeProjectNpmScript } from "@/extension/lib/executeProjectNpmScript";
 import { syncPrismaticUrl } from "@/extension/lib/syncPrismaticUrl";
 import { verifyIntegrationIntegrity } from "@/extension/lib/verifyIntegrationIntegrity";
+import path from "node:path";
 import { createFlowPayload } from "./extension/lib/flows/createFlowPayload";
 import { selectProjectFlowPayload } from "./extension/lib/flows/selectProjectFlowPayload";
-import { IntegrationsTreeDataProvider } from "./extension/IntegrationsTreeDataProvider";
+import {
+  IntegrationItem,
+  IntegrationsTreeDataProvider,
+} from "./extension/IntegrationsTreeDataProvider";
 import {
   type TestIntegrationFlowMachineActorRef,
   testIntegrationFlowMachine,
@@ -20,6 +25,7 @@ import {
 
 // Disposables
 let executionResultsViewProvider: vscode.Disposable | undefined;
+let integrationDetailsViewProvider: vscode.Disposable | undefined;
 let configWizardPanel: vscode.Disposable | undefined;
 let outputChannel: vscode.OutputChannel;
 let authManager: AuthManager;
@@ -137,8 +143,35 @@ export async function activate(context: vscode.ExtensionContext) {
     });
     context.subscriptions.push(spectralWatcher);
 
+    // Auto-select first integration if none active, or restore previous selection
+    const currentWorkspaceState = await stateManager.getWorkspaceState();
+    if (!currentWorkspaceState?.activeIntegrationPath) {
+      const integrations = integrationsTreeDataProvider.getChildren();
+      if (integrations.length > 0) {
+        await stateManager.updateWorkspaceState({
+          activeIntegrationPath: integrations[0].integrationPath,
+        });
+        integrationsTreeDataProvider.setActiveIntegration(
+          integrations[0].integrationPath,
+        );
+        log(
+          "INFO",
+          `Auto-selected integration: ${path.basename(integrations[0].integrationPath)}`,
+        );
+      }
+    } else {
+      // Restore previous selection in tree view
+      integrationsTreeDataProvider.setActiveIntegration(
+        currentWorkspaceState.activeIntegrationPath,
+      );
+    }
+
     executionResultsViewProvider = createExecutionResultsViewProvider(context);
     context.subscriptions.push(executionResultsViewProvider);
+
+    integrationDetailsViewProvider =
+      createIntegrationDetailsViewProvider(context);
+    context.subscriptions.push(integrationDetailsViewProvider);
 
     configWizardPanel = createConfigWizardPanel(context);
     context.subscriptions.push(configWizardPanel);
@@ -490,6 +523,44 @@ export async function activate(context: vscode.ExtensionContext) {
     );
     context.subscriptions.push(flowPayloadCreateCommand);
 
+    /**
+     * command: prismatic.integrations.select
+     * This command is used to select an active integration from the tree.
+     */
+    const selectIntegrationCommand = vscode.commands.registerCommand(
+      "prismatic.integrations.select",
+      async (item?: IntegrationItem) => {
+        if (!item) {
+          log("WARN", "No integration item provided for selection");
+          return;
+        }
+
+        log("INFO", `Selecting integration: ${item.integrationPath}`);
+
+        try {
+          // Switch active integration (resets state)
+          await stateManager.switchActiveIntegration(item.integrationPath);
+
+          // Update tree view to show new selection
+          integrationsTreeDataProvider?.setActiveIntegration(
+            item.integrationPath,
+          );
+
+          // Re-verify integration integrity for the new path
+          await verifyIntegrationIntegrity();
+
+          log(
+            "SUCCESS",
+            `Switched to: ${path.basename(item.integrationPath)}`,
+            true,
+          );
+        } catch (error) {
+          log("ERROR", `Failed to select integration: ${String(error)}`, true);
+        }
+      },
+    );
+    context.subscriptions.push(selectIntegrationCommand);
+
     log("SUCCESS", "Extension initialization complete!");
   } catch (error) {
     console.error("Activation error:", error);
@@ -521,6 +592,7 @@ export async function deactivate() {
 
     // Dispose of views
     executionResultsViewProvider?.dispose();
+    integrationDetailsViewProvider?.dispose();
     configWizardPanel?.dispose();
 
     // Dispose of output channel

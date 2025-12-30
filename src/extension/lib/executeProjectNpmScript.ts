@@ -2,6 +2,7 @@ import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { buildExecCommand, logExecContext } from "@/extension/lib/buildCommand";
 import { findNpmExecutable } from "@/extension/lib/findNpmExecutable";
+import { getActiveIntegrationPath } from "@/extension/lib/getActiveIntegrationPath";
 import { getWorkspaceJsonFile } from "@/extension/lib/getWorkspaceJsonFile";
 
 type ExecError = Error & {
@@ -14,14 +15,17 @@ const execAsync = promisify(exec);
 export const executeProjectNpmScript = async (
   scriptName: string,
 ): Promise<{ stdout: string; stderr: string }> => {
+  const integrationPath = getActiveIntegrationPath();
+
   const { workspaceFolderPath, fileData: packageFileData } =
     getWorkspaceJsonFile({
+      workspaceFolderPath: integrationPath,
       fileName: "package.json",
     });
 
   if (!packageFileData) {
     throw new Error(
-      `No package.json found in the workspace. Please ensure it exists in project directory.`,
+      `No package.json found in the active integration. Please ensure it exists in: ${integrationPath}`,
     );
   }
 
