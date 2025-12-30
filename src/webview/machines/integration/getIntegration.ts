@@ -24,6 +24,10 @@ export interface Connection {
   oauth2Type: string | null;
   scopes: string | null;
   inputs: ConnectionInput[];
+  isTestCredential: boolean;
+  scopedConfigVariableId: string | null;
+  variableScope: string | null;
+  managedBy: string | null;
 }
 
 type GetIntegrationQuery = {
@@ -58,6 +62,25 @@ type GetIntegrationQuery = {
                 }[];
               };
             } | null;
+            scopedConfigVariable: {
+              id: string;
+              status: string;
+              variableScope: string;
+              managedBy: string;
+              customerConfigVariables: {
+                nodes: {
+                  id: string;
+                  status: string;
+                  inputs: {
+                    nodes: {
+                      name: string;
+                      value: string | null;
+                      hasValue: boolean;
+                    }[];
+                  };
+                }[];
+              };
+            } | null;
           };
         }[];
       };
@@ -67,6 +90,10 @@ type GetIntegrationQuery = {
         id: string;
         name: string;
         stableKey: string;
+        isSynchronous: boolean;
+        usesFifoQueue: boolean;
+        endpointSecurityType: string;
+        testUrl: string;
       }[];
     };
   };
@@ -111,6 +138,25 @@ const GET_INTEGRATION = `
                   }
                 }
               }
+              scopedConfigVariable {
+                id
+                status
+                variableScope
+                managedBy
+                customerConfigVariables(isTest: true) {
+                  nodes {
+                    id
+                    status
+                    inputs {
+                      nodes {
+                        name
+                        value
+                        hasValue
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         }
@@ -120,6 +166,10 @@ const GET_INTEGRATION = `
           id
           name
           stableKey
+          isSynchronous
+          usesFifoQueue
+          endpointSecurityType
+          testUrl
         }
       }
     }
@@ -174,6 +224,10 @@ export const getIntegration = fromPromise<
         id: flow.id,
         name: flow.name,
         stableKey: flow.stableKey,
+        isSynchronous: flow.isSynchronous,
+        usesFifoQueue: flow.usesFifoQueue,
+        endpointSecurityType: flow.endpointSecurityType,
+        testUrl: flow.testUrl,
       });
 
       return acc;
@@ -191,33 +245,57 @@ export const getIntegration = fromPromise<
         ) {
           const connection = configVar.requiredConfigVariable.connection;
 
-          // Get scopes from inputs
-          const scopesInput = configVar.inputs?.nodes?.find(
-            (i) => i.name === "scopes",
+          // Check if we have customer config from scoped config variable
+          const customerConfig =
+            configVar.requiredConfigVariable.scopedConfigVariable?.customerConfigVariables?.nodes?.[0];
+          const hasCustomerConfig = !!customerConfig;
+
+          // Use customer data if available, otherwise fall back to instance data
+          const effectiveStatus = hasCustomerConfig
+            ? customerConfig.status
+            : configVar.status;
+          // customerConfigVariables doesn't have authorizeUrl, use instance authorizeUrl
+          const effectiveAuthorizeUrl = configVar.authorizeUrl;
+          const effectiveInputs = hasCustomerConfig
+            ? customerConfig.inputs?.nodes
+            : configVar.inputs?.nodes;
+
+          // Get scopes from the effective inputs source
+          const scopesInput = effectiveInputs?.find(
+            (i: { name: string }) => i.name === "scopes",
           );
 
-          // Map inputs with their hasValue status
+          // Map inputs with their hasValue status using the effective inputs
           const inputs =
-            configVar.inputs?.nodes?.map((input) => {
-              const fieldDef = connection?.inputs?.nodes?.find(
-                (f) => f.key === input.name,
-              );
-              return {
-                name: input.name,
-                label: fieldDef?.label ?? input.name,
-                hasValue: input.hasValue,
-                type: fieldDef?.type ?? "STRING",
-              };
-            }) ?? [];
+            effectiveInputs?.map(
+              (input: { name: string; value: string | null; hasValue: boolean }) => {
+                const fieldDef = connection?.inputs?.nodes?.find(
+                  (f) => f.key === input.name,
+                );
+                return {
+                  name: input.name,
+                  label: fieldDef?.label ?? input.name,
+                  hasValue: input.hasValue,
+                  type: fieldDef?.type ?? "STRING",
+                };
+              },
+            ) ?? [];
+
+          const scopedConfigVar =
+            configVar.requiredConfigVariable.scopedConfigVariable;
 
           acc.push({
             id: configVar.id,
             label: configVar.requiredConfigVariable.key,
-            status: configVar.status,
-            authorizationUrl: configVar.authorizeUrl ?? null,
+            status: effectiveStatus,
+            authorizationUrl: effectiveAuthorizeUrl ?? null,
             oauth2Type: connection?.oauth2Type ?? null,
             scopes: scopesInput?.value ?? null,
             inputs,
+            isTestCredential: hasCustomerConfig,
+            scopedConfigVariableId: scopedConfigVar?.id ?? null,
+            variableScope: scopedConfigVar?.variableScope ?? null,
+            managedBy: scopedConfigVar?.managedBy ?? null,
           });
         }
         return acc;

@@ -1,3 +1,4 @@
+import { MessageHandlerManager } from "@extension/MessageHandlerManager";
 import { useActorRef, useSelector } from "@xstate/react";
 import type { ReactNode } from "react";
 import {
@@ -7,6 +8,8 @@ import {
   useEffect,
   useMemo,
 } from "react";
+
+const messageHandlerManager = new MessageHandlerManager();
 import type { Flow } from "@/types/flows";
 import { NoIntegration } from "@/webview/components/NoIntegration";
 import { useVSCodeState } from "@/webview/hooks/useVSCodeState";
@@ -124,13 +127,31 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [workspaceState?.flow, flows, updateWorkspaceState]);
 
+  // Notify extension when flows are loaded for the Test Payloads tree view
+  useEffect(() => {
+    if (flows.length > 0) {
+      messageHandlerManager.postMessage({
+        type: "integrationDetails.flowsLoaded",
+        payload: { flows },
+      });
+    }
+  }, [flows]);
+
+  // Look up the full flow object from flows array based on stored flow id
+  const currentFlow = useMemo(() => {
+    if (!workspaceState?.flow?.id) {
+      return null;
+    }
+    return flows.find((f) => f.id === workspaceState.flow?.id) ?? null;
+  }, [workspaceState?.flow?.id, flows]);
+
   const value = useMemo(
     () => ({
       systemInstanceId,
       configState,
       connections,
       flows,
-      flow: workspaceState?.flow ?? null,
+      flow: currentFlow,
       refetch,
       isLoading,
       setFlow,
@@ -140,7 +161,7 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
       configState,
       connections,
       flows,
-      workspaceState?.flow,
+      currentFlow,
       refetch,
       isLoading,
       setFlow,

@@ -15,6 +15,11 @@ import path from "node:path";
 import { createFlowPayload } from "./extension/lib/flows/createFlowPayload";
 import { selectProjectFlowPayload } from "./extension/lib/flows/selectProjectFlowPayload";
 import {
+  FlowItem,
+  FlowPayloadsTreeDataProvider,
+} from "./extension/FlowPayloadsTreeDataProvider";
+import type { Flow } from "./types/flows";
+import {
   IntegrationItem,
   IntegrationsTreeDataProvider,
 } from "./extension/IntegrationsTreeDataProvider";
@@ -33,6 +38,7 @@ let stateManager: StateManager;
 let prismCLIManager: PrismCLIManager;
 let testIntegrationFlowActor: TestIntegrationFlowMachineActorRef | undefined;
 let integrationsTreeDataProvider: IntegrationsTreeDataProvider | undefined;
+let flowPayloadsTreeDataProvider: FlowPayloadsTreeDataProvider | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
   try {
@@ -143,6 +149,17 @@ export async function activate(context: vscode.ExtensionContext) {
     });
     context.subscriptions.push(spectralWatcher);
 
+    // Register Flow Payloads TreeView
+    flowPayloadsTreeDataProvider = new FlowPayloadsTreeDataProvider();
+    const flowPayloadsTreeView = vscode.window.createTreeView(
+      "prismatic.flowPayloadsView",
+      {
+        treeDataProvider: flowPayloadsTreeDataProvider,
+        showCollapseAll: true,
+      },
+    );
+    context.subscriptions.push(flowPayloadsTreeView);
+
     // Auto-select first integration if none active, or restore previous selection
     const currentWorkspaceState = await stateManager.getWorkspaceState();
     if (!currentWorkspaceState?.activeIntegrationPath) {
@@ -154,6 +171,9 @@ export async function activate(context: vscode.ExtensionContext) {
         integrationsTreeDataProvider.setActiveIntegration(
           integrations[0].integrationPath,
         );
+        flowPayloadsTreeDataProvider.setActiveIntegrationPath(
+          integrations[0].integrationPath,
+        );
         log(
           "INFO",
           `Auto-selected integration: ${path.basename(integrations[0].integrationPath)}`,
@@ -162,6 +182,9 @@ export async function activate(context: vscode.ExtensionContext) {
     } else {
       // Restore previous selection in tree view
       integrationsTreeDataProvider.setActiveIntegration(
+        currentWorkspaceState.activeIntegrationPath,
+      );
+      flowPayloadsTreeDataProvider.setActiveIntegrationPath(
         currentWorkspaceState.activeIntegrationPath,
       );
     }
@@ -520,8 +543,15 @@ export async function activate(context: vscode.ExtensionContext) {
             throw new Error("No flow selected. Please select a flow first.");
           }
 
+          if (!workspaceState?.activeIntegrationPath) {
+            throw new Error(
+              "No active integration. Please select an integration first.",
+            );
+          }
+
           const filePath = await createFlowPayload(
             workspaceState.flow.stableKey,
+            workspaceState.activeIntegrationPath,
           );
 
           if (filePath) {
@@ -530,6 +560,8 @@ export async function activate(context: vscode.ExtensionContext) {
               `Payload created successfully for flow: ${workspaceState.flow.name}`,
               true,
             );
+            // Refresh the flow payloads tree view
+            flowPayloadsTreeDataProvider?.refresh();
           }
         } catch (error) {
           log("ERROR", String(error), true);
@@ -561,6 +593,14 @@ export async function activate(context: vscode.ExtensionContext) {
             item.integrationPath,
           );
 
+          // Update flow payloads tree view with new integration path
+          flowPayloadsTreeDataProvider?.setActiveIntegrationPath(
+            item.integrationPath,
+          );
+
+          // Clear flows when switching integrations (will be repopulated by webview)
+          flowPayloadsTreeDataProvider?.setFlows([]);
+
           // Re-verify integration integrity for the new path
           await verifyIntegrationIntegrity();
 
@@ -575,6 +615,111 @@ export async function activate(context: vscode.ExtensionContext) {
       },
     );
     context.subscriptions.push(selectIntegrationCommand);
+
+    /**
+     * command: prismatic.integrations.revealInExplorer
+     * This command is used to reveal the integration directory in the file explorer.
+     */
+    const revealInExplorerCommand = vscode.commands.registerCommand(
+      "prismatic.integrations.revealInExplorer",
+      async (item?: IntegrationItem) => {
+        if (!item) {
+          log("WARN", "No integration item provided for reveal");
+          return;
+        }
+
+        try {
+          const uri = vscode.Uri.file(item.integrationPath);
+          await vscode.commands.executeCommand("revealInExplorer", uri);
+        } catch (error) {
+          log("ERROR", `Failed to reveal in explorer: ${String(error)}`, true);
+        }
+      },
+    );
+    context.subscriptions.push(revealInExplorerCommand);
+
+    /**
+     * command: prismatic.flowPayloads.setFlows
+     * This command is used to set the flows in the flow payloads tree view.
+     * Called from the webview when flows are loaded.
+     */
+    const setFlowsCommand = vscode.commands.registerCommand(
+      "prismatic.flowPayloads.setFlows",
+      (flows: Flow[]) => {
+        flowPayloadsTreeDataProvider?.setFlows(flows);
+      },
+    );
+    context.subscriptions.push(setFlowsCommand);
+
+    /**
+     * command: prismatic.flowPayloads.createPayload
+     * This command is used to create a new payload file for a specific flow.
+     * Called from the "+" button on flow items in the Test Payloads tree view.
+     */
+    const createPayloadFromFlowCommand = vscode.commands.registerCommand(
+      "prismatic.flowPayloads.createPayload",
+      async (item?: FlowItem) => {
+        log("INFO", "Starting payload creation from flow item...");
+
+        try {
+          const workspaceState = await stateManager.getWorkspaceState();
+
+          if (!workspaceState?.activeIntegrationPath) {
+            throw new Error(
+              "No active integration. Please select an integration first.",
+            );
+          }
+
+          if (!item) {
+            throw new Error("No flow item provided.");
+          }
+
+          const filePath = await createFlowPayload(
+            item.stableKey,
+            workspaceState.activeIntegrationPath,
+          );
+
+          if (filePath) {
+            log(
+              "SUCCESS",
+              `Payload created successfully for flow: ${item.flow.name}`,
+              true,
+            );
+            flowPayloadsTreeDataProvider?.refresh();
+          }
+        } catch (error) {
+          log("ERROR", String(error), true);
+        }
+      },
+    );
+    context.subscriptions.push(createPayloadFromFlowCommand);
+
+    /**
+     * command: prismatic.flowPayloads.testFlow
+     * This command is used to test a specific flow from the Test Payloads tree view.
+     * Called from the play button on flow items.
+     */
+    const testFlowFromTreeCommand = vscode.commands.registerCommand(
+      "prismatic.flowPayloads.testFlow",
+      async (item?: FlowItem) => {
+        if (!item) {
+          log("WARN", "No flow item provided for testing");
+          return;
+        }
+
+        log("INFO", `Testing flow: ${item.flow.name}`);
+
+        // Set this flow as the active flow in workspace state
+        await stateManager.updateWorkspaceState({ flow: item.flow });
+
+        // Execute the existing test command
+        await vscode.commands.executeCommand("prismatic.integrations.test");
+
+        // Focus the execution results panel
+        vscode.commands.executeCommand("executionResults.webview.focus");
+      },
+    );
+    context.subscriptions.push(testFlowFromTreeCommand);
 
     log("SUCCESS", "Extension initialization complete!");
   } catch (error) {

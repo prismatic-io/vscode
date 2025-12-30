@@ -1,3 +1,5 @@
+import type { Flow } from "@/types/flows";
+
 export interface IntegrationDetailsRefreshMessage {
   type: "integrationDetails.refresh";
   payload: string;
@@ -19,7 +21,15 @@ export interface IntegrationDetailsAuthenticateMessage {
   };
 }
 
+export interface IntegrationDetailsFlowsLoadedMessage {
+  type: "integrationDetails.flowsLoaded";
+  payload: {
+    flows: Flow[];
+  };
+}
+
 export type IntegrationDetailsMessage =
   | IntegrationDetailsRefreshMessage
   | IntegrationDetailsErrorMessage
-  | IntegrationDetailsAuthenticateMessage;
+  | IntegrationDetailsAuthenticateMessage
+  | IntegrationDetailsFlowsLoadedMessage;

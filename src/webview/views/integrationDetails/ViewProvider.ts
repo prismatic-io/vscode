@@ -25,6 +25,13 @@ export function createIntegrationDetailsViewProvider(
             );
             break;
           }
+          case "integrationDetails.flowsLoaded": {
+            vscode.commands.executeCommand(
+              "prismatic.flowPayloads.setFlows",
+              message.payload.flows,
+            );
+            break;
+          }
         }
       },
     });

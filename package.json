@@ -152,6 +152,27 @@
         "command": "prismatic.integrations.select",
         "title": "Select Integration",
         "category": "Prismatic"
+      },
+      {
+        "command": "prismatic.flowPayloads.createPayload",
+        "title": "Create Payload",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled",
+        "icon": "$(add)"
+      },
+      {
+        "command": "prismatic.flowPayloads.testFlow",
+        "title": "Test Flow",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled",
+        "icon": "$(play)"
+      },
+      {
+        "command": "prismatic.integrations.revealInExplorer",
+        "title": "Reveal in Explorer",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled",
+        "icon": "$(folder-opened)"
       }
     ],
     "viewsContainers": {
@@ -182,9 +203,15 @@
         {
           "type": "webview",
           "id": "integrationDetails.webview",
-          "name": "Details",
+          "name": "Development Instance",
           "icon": "resources/prismatic.svg",
-          "contextualTitle": "Integration Details"
+          "contextualTitle": "Development Instance"
+        },
+        {
+          "id": "prismatic.flowPayloadsView",
+          "name": "Test Payloads",
+          "icon": "resources/prismatic.svg",
+          "contextualTitle": "Flow Test Payloads"
         }
       ],
       "executionResults": [
@@ -256,6 +283,21 @@
           "command": "prismatic.integrations.select",
           "when": "view == prismatic.integrationsView && viewItem == integrationItem",
           "group": "navigation"
+        },
+        {
+          "command": "prismatic.integrations.revealInExplorer",
+          "when": "view == prismatic.integrationsView && viewItem == integrationItem",
+          "group": "inline"
+        },
+        {
+          "command": "prismatic.flowPayloads.testFlow",
+          "when": "view == prismatic.flowPayloadsView && viewItem == flowItem",
+          "group": "inline@1"
+        },
+        {
+          "command": "prismatic.flowPayloads.createPayload",
+          "when": "view == prismatic.flowPayloadsView && viewItem == flowItem",
+          "group": "inline@2"
         }
       ]
     }

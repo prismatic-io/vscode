@@ -88,14 +88,6 @@ const List = styled.ul`
   gap: 4px;
 `;
 
-const ListItem = styled.li`
-  padding: 6px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  background-color: var(--vscode-list-hoverBackground);
-  color: var(--vscode-foreground);
-`;
-
 const ConnectionCard = styled.div`
   border-radius: 4px;
   background-color: var(--vscode-list-hoverBackground);
@@ -138,6 +130,14 @@ const ConnectionDetails = styled.div`
   border-top: 1px solid var(--vscode-widget-border);
 `;
 
+const ConnectionTypeHeader = styled.div`
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--vscode-descriptionForeground);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+`;
+
 const AuthenticateButton = styled.button`
   display: inline-flex;
   align-items: center;
@@ -155,10 +155,6 @@ const AuthenticateButton = styled.button`
   }
 `;
 
-const ConnectionActiveText = styled.span`
-  color: var(--vscode-descriptionForeground);
-  font-size: 12px;
-`;
 
 const InfoMessage = styled.span`
   display: block;
@@ -185,6 +181,17 @@ const DetailValue = styled.span`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+`;
+
+const DetailLink = styled.a`
+  color: var(--vscode-textLink-foreground);
+  font-size: 11px;
+  text-decoration: none;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
 `;
 
 const WarningSection = styled.div`
@@ -217,6 +224,7 @@ const LoadingText = styled.div`
   font-size: 12px;
 `;
 
+
 const getConfigStateDisplay = (
   configState: string | null,
 ): { label: string; status: "success" | "warning" | "unknown" } => {
@@ -238,6 +246,7 @@ const getStatusDotColor = (
 ): "success" | "warning" | "error" => {
   if (status === "ERROR") return "error";
   if (hasMissingInputs) return "warning";
+  if (status !== "ACTIVE") return "warning";
   return "success";
 };
 
@@ -249,16 +258,13 @@ const formatOAuth2Type = (type: string | null): string => {
     .join(" ");
 };
 
-const truncateScopes = (scopes: string | null, maxLength = 50): string => {
-  if (!scopes) return "None";
-  if (scopes.length <= maxLength) return scopes;
-  return scopes.substring(0, maxLength) + "...";
-};
+
 
 export const App: React.FC = () => {
   const [expandedConnections, setExpandedConnections] = useState<Set<string>>(
     new Set(),
   );
+  const [expandedFlows, setExpandedFlows] = useState<Set<string>>(new Set());
   const { state: workspaceState } = useVSCodeState({
     scope: "workspace",
   });
@@ -284,6 +290,19 @@ export const App: React.FC = () => {
     });
   };
 
+  const toggleFlow = (id: string) => {
+    setExpandedFlows((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  
   const handleAuthenticate = useCallback((connection: Connection) => {
     if (connection.authorizationUrl) {
       messageHandler.postMessage({
@@ -299,12 +318,12 @@ export const App: React.FC = () => {
   return (
     <Container>
       <Section>
-        <SectionTitle>Active Integration</SectionTitle>
+        <SectionTitle>Integration</SectionTitle>
         <IntegrationName>{integrationName ?? "Loading..."}</IntegrationName>
       </Section>
 
       <Section>
-        <SectionTitle>System Instance</SectionTitle>
+        <SectionTitle>Dev Instance State</SectionTitle>
         <div>
           {isLoading ? (
             <LoadingText>Loading...</LoadingText>
@@ -347,22 +366,38 @@ export const App: React.FC = () => {
 
                     {isExpanded && (
                       <ConnectionDetails>
-                        {connection.oauth2Type && (
-                          <DetailRow>
-                            <DetailLabel>OAuth Type:</DetailLabel>
-                            <DetailValue>
-                              {formatOAuth2Type(connection.oauth2Type)}
-                            </DetailValue>
-                          </DetailRow>
-                        )}
-
-                        {connection.scopes && (
-                          <DetailRow>
-                            <DetailLabel>Scopes:</DetailLabel>
-                            <DetailValue title={connection.scopes}>
-                              {truncateScopes(connection.scopes)}
-                            </DetailValue>
-                          </DetailRow>
+                        {connection.scopedConfigVariableId ? (
+                          <>
+                            <ConnectionTypeHeader>
+                              {connection.variableScope} Scoped Connection
+                            </ConnectionTypeHeader>
+                            <DetailRow>
+                              <DetailLabel>Managed By:</DetailLabel>
+                              <DetailValue>{connection.managedBy}</DetailValue>
+                            </DetailRow>
+                            <DetailLink
+                              href={`https://app.prismatic.io/connections/scoped/${connection.scopedConfigVariableId}/`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ marginTop: "8px", display: "block" }}
+                            >
+                              View the connection here
+                            </DetailLink>
+                          </>
+                        ) : (
+                          <>
+                            <ConnectionTypeHeader>
+                              Instance Specific Connection
+                            </ConnectionTypeHeader>
+                            <DetailRow>
+                              <DetailLabel>OAuth:</DetailLabel>
+                              <DetailValue>
+                                {connection.oauth2Type
+                                  ? formatOAuth2Type(connection.oauth2Type)
+                                  : "No"}
+                              </DetailValue>
+                            </DetailRow>
+                          </>
                         )}
 
                         {missingInputs.length > 0 && (
@@ -376,17 +411,9 @@ export const App: React.FC = () => {
                           </WarningSection>
                         )}
 
-                        {connection.oauth2Type === "AUTHORIZATION_CODE" ? (
-                          connection.status === "ACTIVE" ? (
-                            <ConnectionActiveText
-                              style={{
-                                marginTop:
-                                  missingInputs.length > 0 ? "12px" : "8px",
-                              }}
-                            >
-                              Connection is active
-                            </ConnectionActiveText>
-                          ) : connection.authorizationUrl ? (
+                        {connection.oauth2Type === "AUTHORIZATION_CODE" &&
+                          connection.status !== "ACTIVE" &&
+                          connection.authorizationUrl && (
                             <AuthenticateButton
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -399,7 +426,11 @@ export const App: React.FC = () => {
                             >
                               Connect
                             </AuthenticateButton>
-                          ) : (
+                          )}
+
+                        {connection.oauth2Type === "AUTHORIZATION_CODE" &&
+                          connection.status !== "ACTIVE" &&
+                          !connection.authorizationUrl && (
                             <InfoMessage
                               style={{
                                 marginTop:
@@ -408,21 +439,19 @@ export const App: React.FC = () => {
                             >
                               Complete setup in the configuration wizard
                             </InfoMessage>
-                          )
-                        ) : missingInputs.length > 0 ? (
-                          <InfoMessage
-                            style={{
-                              marginTop: "12px",
-                            }}
-                          >
-                            Visit the configuration wizard to provide missing
-                            values
-                          </InfoMessage>
-                        ) : (
-                          <ConnectionActiveText style={{ marginTop: "8px" }}>
-                            Connection configured
-                          </ConnectionActiveText>
-                        )}
+                          )}
+
+                        {missingInputs.length > 0 &&
+                          connection.oauth2Type !== "AUTHORIZATION_CODE" && (
+                            <InfoMessage
+                              style={{
+                                marginTop: "12px",
+                              }}
+                            >
+                              Visit the configuration wizard to provide missing
+                              values
+                            </InfoMessage>
+                          )}
                       </ConnectionDetails>
                     )}
                   </ConnectionCard>
@@ -434,14 +463,55 @@ export const App: React.FC = () => {
       )}
 
       <Section>
-        <SectionTitle>Flows</SectionTitle>
+        <SectionTitle>Active Flows</SectionTitle>
         {isLoading ? (
           <LoadingText>Loading...</LoadingText>
         ) : (
           <List>
-            {flows.map((flow) => (
-              <ListItem key={flow.id}>{flow.name}</ListItem>
-            ))}
+            {flows.map((flow) => {
+              const isExpanded = expandedFlows.has(flow.id);
+              return (
+                <ConnectionCard key={flow.id}>
+                  <ConnectionHeader onClick={() => toggleFlow(flow.id)}>
+                    <Chevron $expanded={isExpanded}>▶</Chevron>
+                    <ConnectionLabel>{flow.name}</ConnectionLabel>
+                  </ConnectionHeader>
+                  {isExpanded && (
+                    <ConnectionDetails>
+                      <DetailRow>
+                        <DetailLabel>Synchronous:</DetailLabel>
+                        <DetailValue>
+                          {flow.isSynchronous ? "Yes" : "No"}
+                        </DetailValue>
+                      </DetailRow>
+                      <DetailRow>
+                        <DetailLabel>FIFO Queue:</DetailLabel>
+                        <DetailValue>
+                          {flow.usesFifoQueue ? "Yes" : "No"}
+                        </DetailValue>
+                      </DetailRow>
+                      <DetailRow>
+                        <DetailLabel>Security:</DetailLabel>
+                        <DetailValue>{flow.endpointSecurityType}</DetailValue>
+                      </DetailRow>
+                      {flow.testUrl && (
+                        <DetailRow style={{ flexWrap: "wrap" }}>
+                          <DetailLabel>Test URL:</DetailLabel>
+                          <DetailValue
+                            style={{
+                              whiteSpace: "normal",
+                              wordBreak: "break-all",
+                            }}
+                          >
+                            {flow.testUrl}
+                          </DetailValue>
+                        </DetailRow>
+                      )}
+                    </ConnectionDetails>
+                  )}
+                </ConnectionCard>
+              );
+            })}
           </List>
         )}
       </Section>

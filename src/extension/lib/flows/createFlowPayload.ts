@@ -8,20 +8,19 @@ import {
   FLOW_PAYLOADS_DIR,
   SPECTRAL_DIR,
 } from "@/extension/constants";
-import { getWorkspacePath } from "@/extension/lib/getWorkspacePath";
 
 /**
  * Create a new flow payload file
  * @param stableKey - The flow stable key to create the payload for
+ * @param integrationPath - The path to the active integration (parent of .spectral)
  * @returns {Promise<string | null>} The path to the created file or null if cancelled
  */
 export const createFlowPayload = async (
   stableKey: string,
+  integrationPath: string,
 ): Promise<string | null> => {
-  const workspacePath = getWorkspacePath();
-
   const payloadsDir = path.join(
-    workspacePath,
+    integrationPath,
     SPECTRAL_DIR,
     FLOW_DIR,
     stableKey,

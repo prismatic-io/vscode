@@ -4,8 +4,8 @@ import {
   FLOW_PAYLOADS_DIR,
   SPECTRAL_DIR,
 } from "@/extension/constants";
+import { getActiveIntegrationPath } from "@/extension/lib/getActiveIntegrationPath";
 import { getJsonFiles, pathsToUris } from "@/extension/lib/getFiles";
-import { getWorkspacePath } from "@/extension/lib/getWorkspacePath";
 
 interface FlowPayloadFile {
   fileName: string;
@@ -23,8 +23,10 @@ export const getProjectFlowPayloads = async (
     return [];
   }
 
+  const integrationPath = getActiveIntegrationPath();
+
   const payloadsDir = path.join(
-    getWorkspacePath(),
+    integrationPath,
     SPECTRAL_DIR,
     FLOW_DIR,
     stableKey,

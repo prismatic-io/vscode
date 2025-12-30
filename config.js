@@ -21,7 +21,7 @@ const CONFIG = {
       entryPoint: "src/webview/views/integrationDetails/index.tsx",
       outdir: "dist/integrationDetailsView",
       scriptPath: "dist/integrationDetailsView/index.js",
-      title: "Integration Details",
+      title: "Development Instance",
       viewType: "integrationDetails.webview",
     },
   },
