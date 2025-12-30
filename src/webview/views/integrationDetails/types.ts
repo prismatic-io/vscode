@@ -11,6 +11,15 @@ export interface IntegrationDetailsErrorMessage {
   };
 }
 
+export interface IntegrationDetailsAuthenticateMessage {
+  type: "integrationDetails.authenticate";
+  payload: {
+    connectionId: string;
+    authorizationUrl: string;
+  };
+}
+
 export type IntegrationDetailsMessage =
   | IntegrationDetailsRefreshMessage
-  | IntegrationDetailsErrorMessage;
+  | IntegrationDetailsErrorMessage
+  | IntegrationDetailsAuthenticateMessage;

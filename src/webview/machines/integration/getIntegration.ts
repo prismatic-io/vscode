@@ -9,10 +9,21 @@ export enum InstanceConfigState {
   NEEDS_USER_LEVEL_CONFIGURATION = "NEEDS_USER_LEVEL_CONFIGURATION",
 }
 
+export interface ConnectionInput {
+  name: string;
+  label: string;
+  hasValue: boolean;
+  type: string;
+}
+
 export interface Connection {
   id: string;
   label: string;
   status: string;
+  authorizationUrl: string | null;
+  oauth2Type: string | null;
+  scopes: string | null;
+  inputs: ConnectionInput[];
 }
 
 type GetIntegrationQuery = {
@@ -24,12 +35,28 @@ type GetIntegrationQuery = {
         nodes: {
           id: string;
           status: string;
+          authorizeUrl: string | null;
+          inputs: {
+            nodes: {
+              name: string;
+              value: string | null;
+              hasValue: boolean;
+            }[];
+          };
           requiredConfigVariable: {
             key: string;
             dataType: string;
             connection: {
               key: string;
               label: string;
+              oauth2Type: string | null;
+              inputs: {
+                nodes: {
+                  key: string;
+                  label: string;
+                  type: string;
+                }[];
+              };
             } | null;
           };
         }[];
@@ -61,12 +88,28 @@ const GET_INTEGRATION = `
           nodes {
             id
             status
+            authorizeUrl
+            inputs {
+              nodes {
+                name
+                value
+                hasValue
+              }
+            }
             requiredConfigVariable {
               key
               dataType
               connection {
                 key
                 label
+                oauth2Type
+                inputs {
+                  nodes {
+                    key
+                    label
+                    type
+                  }
+                }
               }
             }
           }
@@ -146,10 +189,35 @@ export const getIntegration = fromPromise<
           configVar?.requiredConfigVariable?.dataType?.toLowerCase() ===
           "connection"
         ) {
+          const connection = configVar.requiredConfigVariable.connection;
+
+          // Get scopes from inputs
+          const scopesInput = configVar.inputs?.nodes?.find(
+            (i) => i.name === "scopes",
+          );
+
+          // Map inputs with their hasValue status
+          const inputs =
+            configVar.inputs?.nodes?.map((input) => {
+              const fieldDef = connection?.inputs?.nodes?.find(
+                (f) => f.key === input.name,
+              );
+              return {
+                name: input.name,
+                label: fieldDef?.label ?? input.name,
+                hasValue: input.hasValue,
+                type: fieldDef?.type ?? "STRING",
+              };
+            }) ?? [];
+
           acc.push({
             id: configVar.id,
             label: configVar.requiredConfigVariable.key,
             status: configVar.status,
+            authorizationUrl: configVar.authorizeUrl ?? null,
+            oauth2Type: connection?.oauth2Type ?? null,
+            scopes: scopesInput?.value ?? null,
+            inputs,
           });
         }
         return acc;

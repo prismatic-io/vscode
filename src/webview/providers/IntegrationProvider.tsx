@@ -10,6 +10,7 @@ import {
 import type { Flow } from "@/types/flows";
 import { NoIntegration } from "@/webview/components/NoIntegration";
 import { useVSCodeState } from "@/webview/hooks/useVSCodeState";
+import { useWebviewMessage } from "@/webview/hooks/useWebviewMessage";
 import type { Connection } from "@/webview/machines/integration/getIntegration";
 import { integrationMachine } from "@/webview/machines/integration/integration.machine";
 import { useAuthContext } from "@/webview/providers/AuthProvider";
@@ -89,6 +90,17 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
   const isLoading = useSelector(integrationMachineActorRef, (state) =>
     state.hasTag("loading"),
   );
+
+  // Listen for refresh message from extension header button
+  const { message: refreshMessage } = useWebviewMessage(
+    "integrationDetails.refresh",
+  );
+
+  useEffect(() => {
+    if (refreshMessage) {
+      refetch();
+    }
+  }, [refreshMessage, refetch]);
 
   useEffect(() => {
     if (workspaceState?.integrationId) {

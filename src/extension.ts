@@ -490,6 +490,21 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(executionResultsRefetchCommand);
 
     /**
+     * command: prismatic.integrationDetails.refresh
+     * This command is used to trigger a refresh of integration details in the webview.
+     */
+    const integrationDetailsRefreshCommand = vscode.commands.registerCommand(
+      "prismatic.integrationDetails.refresh",
+      async () => {
+        stateManager.notifyWebviews({
+          type: "integrationDetails.refresh",
+          payload: new Date().toISOString(),
+        });
+      },
+    );
+    context.subscriptions.push(integrationDetailsRefreshCommand);
+
+    /**
      * command: prismatic.flows.createPayload
      * This command is used to create a new payload file for the selected flow.
      */

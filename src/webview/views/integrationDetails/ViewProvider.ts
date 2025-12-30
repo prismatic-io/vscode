@@ -19,6 +19,12 @@ export function createIntegrationDetailsViewProvider(
             vscode.window.showErrorMessage(message.payload.message);
             break;
           }
+          case "integrationDetails.authenticate": {
+            vscode.env.openExternal(
+              vscode.Uri.parse(message.payload.authorizationUrl),
+            );
+            break;
+          }
         }
       },
     });

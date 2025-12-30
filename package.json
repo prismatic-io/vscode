@@ -135,6 +135,13 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "prismatic.integrationDetails.refresh",
+        "title": "Refresh Integration Details",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled",
+        "icon": "$(refresh)"
+      },
+      {
         "command": "prismatic.flows.createPayload",
         "title": "Create Flow Payload",
         "category": "Prismatic",
@@ -224,19 +231,24 @@
           "group": "navigation@5"
         },
         {
-          "command": "prismatic.configWizard",
+          "command": "prismatic.integrationDetails.refresh",
           "when": "view == integrationDetails.webview && prismatic.workspaceEnabled",
           "group": "navigation@1"
         },
         {
-          "command": "prismatic.integrations.import",
+          "command": "prismatic.configWizard",
           "when": "view == integrationDetails.webview && prismatic.workspaceEnabled",
           "group": "navigation@2"
         },
         {
-          "command": "prismatic.integrations.openInBrowser",
+          "command": "prismatic.integrations.import",
           "when": "view == integrationDetails.webview && prismatic.workspaceEnabled",
           "group": "navigation@3"
+        },
+        {
+          "command": "prismatic.integrations.openInBrowser",
+          "when": "view == integrationDetails.webview && prismatic.workspaceEnabled",
+          "group": "navigation@4"
         }
       ],
       "view/item/context": [
