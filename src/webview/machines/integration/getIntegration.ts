@@ -19,6 +19,7 @@ export interface ConnectionInput {
 export interface Connection {
   id: string;
   label: string;
+  stableKey: string;
   status: string;
   authorizationUrl: string | null;
   oauth2Type: string | null;
@@ -28,6 +29,15 @@ export interface Connection {
   scopedConfigVariableId: string | null;
   variableScope: string | null;
   managedBy: string | null;
+  componentKey: string | null;
+  componentLabel: string | null;
+  connectionKey: string | null;
+  isInlineCNI: boolean;
+  onPremiseConnectionConfig: unknown | null;
+  scopedConnectionKey: string | null;
+  scopedConnectionLabel: string | null;
+  scopedComponentLabel: string | null;
+  scopedConnectionIsInlineCNI: boolean;
 }
 
 type GetIntegrationQuery = {
@@ -49,11 +59,18 @@ type GetIntegrationQuery = {
           };
           requiredConfigVariable: {
             key: string;
+            stableKey: string;
             dataType: string;
+            onPremiseConnectionConfig: unknown | null;
             connection: {
               key: string;
               label: string;
               oauth2Type: string | null;
+              component: {
+                key: string;
+                label: string;
+                forCodeNativeIntegration: boolean;
+              } | null;
               inputs: {
                 nodes: {
                   key: string;
@@ -67,10 +84,29 @@ type GetIntegrationQuery = {
               status: string;
               variableScope: string;
               managedBy: string;
+              key: string;
+              description: string | null;
+              connection: {
+                key: string;
+                label: string;
+                component: {
+                  key: string;
+                  label: string;
+                  forCodeNativeIntegration: boolean;
+                } | null;
+              } | null;
+              customer: {
+                id: string;
+                name: string;
+              } | null;
               customerConfigVariables: {
                 nodes: {
                   id: string;
+                  isTest: boolean;
                   status: string;
+                  customer: {
+                    id: string;
+                  } | null;
                   inputs: {
                     nodes: {
                       name: string;
@@ -125,11 +161,18 @@ const GET_INTEGRATION = `
             }
             requiredConfigVariable {
               key
+              stableKey
               dataType
+              onPremiseConnectionConfig
               connection {
                 key
                 label
                 oauth2Type
+                component {
+                  key
+                  label
+                  forCodeNativeIntegration
+                }
                 inputs {
                   nodes {
                     key
@@ -143,10 +186,29 @@ const GET_INTEGRATION = `
                 status
                 variableScope
                 managedBy
+                key
+                description
+                connection {
+                  key
+                  label
+                  component {
+                    key
+                    label
+                    forCodeNativeIntegration
+                  }
+                }
+                customer {
+                  id
+                  name
+                }
                 customerConfigVariables(isTest: true) {
                   nodes {
                     id
+                    isTest
                     status
+                    customer {
+                      id
+                    }
                     inputs {
                       nodes {
                         name
@@ -284,9 +346,12 @@ export const getIntegration = fromPromise<
           const scopedConfigVar =
             configVar.requiredConfigVariable.scopedConfigVariable;
 
+          const scopedConnection = scopedConfigVar?.connection;
+
           acc.push({
             id: configVar.id,
             label: configVar.requiredConfigVariable.key,
+            stableKey: configVar.requiredConfigVariable.stableKey,
             status: effectiveStatus,
             authorizationUrl: effectiveAuthorizeUrl ?? null,
             oauth2Type: connection?.oauth2Type ?? null,
@@ -296,6 +361,17 @@ export const getIntegration = fromPromise<
             scopedConfigVariableId: scopedConfigVar?.id ?? null,
             variableScope: scopedConfigVar?.variableScope ?? null,
             managedBy: scopedConfigVar?.managedBy ?? null,
+            componentKey: connection?.component?.key ?? null,
+            componentLabel: connection?.component?.label ?? null,
+            connectionKey: connection?.key ?? null,
+            isInlineCNI: connection?.component?.forCodeNativeIntegration ?? false,
+            onPremiseConnectionConfig:
+              configVar.requiredConfigVariable.onPremiseConnectionConfig ?? null,
+            scopedConnectionKey: scopedConnection?.key ?? null,
+            scopedConnectionLabel: scopedConnection?.label ?? null,
+            scopedComponentLabel: scopedConnection?.component?.label ?? null,
+            scopedConnectionIsInlineCNI:
+              scopedConnection?.component?.forCodeNativeIntegration ?? false,
           });
         }
         return acc;

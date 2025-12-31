@@ -1,6 +1,7 @@
 import { AuthManager } from "@extension/AuthManager";
 import { PrismCLIManager } from "@extension/PrismCLIManager";
 import { StateManager } from "@extension/StateManager";
+import { StatusBarManager } from "@extension/StatusBarManager";
 import { createConfigWizardPanel } from "@webview/views/configWizard/ViewProvider";
 import { createExecutionResultsViewProvider } from "@webview/views/executionResults/ViewProvider";
 import { createIntegrationDetailsViewProvider } from "@webview/views/integrationDetails/ViewProvider";
@@ -39,6 +40,7 @@ let prismCLIManager: PrismCLIManager;
 let testIntegrationFlowActor: TestIntegrationFlowMachineActorRef | undefined;
 let integrationsTreeDataProvider: IntegrationsTreeDataProvider | undefined;
 let flowPayloadsTreeDataProvider: FlowPayloadsTreeDataProvider | undefined;
+let statusBarManager: StatusBarManager | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
   try {
@@ -95,6 +97,16 @@ export async function activate(context: vscode.ExtensionContext) {
      * Perform initial auth flow
      */
     await authManager.performInitialAuthFlow();
+
+    /**
+     * Initialize Status Bar Manager
+     */
+    log("INFO", "Initializing Status Bar Manager...");
+    statusBarManager = await StatusBarManager.initialize(
+      authManager,
+      stateManager,
+      context,
+    );
 
     /**
      * Sync the prismatic url
@@ -229,6 +241,9 @@ export async function activate(context: vscode.ExtensionContext) {
         try {
           const result = await authManager.login();
 
+          // Update status bar after successful login
+          await statusBarManager?.updateUserStatusBar();
+
           log("SUCCESS", result, true);
         } catch (error) {
           log("ERROR", String(error), true);
@@ -246,6 +261,9 @@ export async function activate(context: vscode.ExtensionContext) {
       async () => {
         try {
           const result = await authManager.logout();
+
+          // Update status bar after logout
+          await statusBarManager?.updateUserStatusBar();
 
           log("SUCCESS", result, true);
         } catch (error) {
@@ -486,6 +504,9 @@ export async function activate(context: vscode.ExtensionContext) {
         try {
           const result = await authManager.login();
 
+          // Update status bar after re-login with new URL
+          await statusBarManager?.updateUserStatusBar();
+
           log("SUCCESS", result, true);
         } catch (error) {
           log("ERROR", String(error), true);
@@ -598,6 +619,9 @@ export async function activate(context: vscode.ExtensionContext) {
             item.integrationPath,
           );
 
+          // Update status bar with new integration
+          await statusBarManager?.updateIntegrationStatusBar();
+
           // Clear flows when switching integrations (will be repopulated by webview)
           flowPayloadsTreeDataProvider?.setFlows([]);
 
@@ -615,6 +639,69 @@ export async function activate(context: vscode.ExtensionContext) {
       },
     );
     context.subscriptions.push(selectIntegrationCommand);
+
+    /**
+     * command: prismatic.integrations.switch
+     * This command shows a quick pick to switch the active integration.
+     */
+    const switchIntegrationCommand = vscode.commands.registerCommand(
+      "prismatic.integrations.switch",
+      async () => {
+        try {
+          // Get all integrations from the tree data provider
+          const integrations = integrationsTreeDataProvider?.getChildren() ?? [];
+
+          if (integrations.length === 0) {
+            log("WARN", "No integrations found in workspace", true);
+            return;
+          }
+
+          // Build quick pick items
+          const items = integrations.map((integration) => ({
+            label: integration.label as string,
+            description: integration.description as string,
+            integration,
+          }));
+
+          const selected = await vscode.window.showQuickPick(items, {
+            placeHolder: "Select an integration to switch to",
+            title: "Switch Active Integration",
+          });
+
+          if (!selected) {
+            return; // User cancelled
+          }
+
+          // Switch to the selected integration (reuse existing logic)
+          await stateManager.switchActiveIntegration(
+            selected.integration.integrationPath,
+          );
+
+          integrationsTreeDataProvider?.setActiveIntegration(
+            selected.integration.integrationPath,
+          );
+
+          flowPayloadsTreeDataProvider?.setActiveIntegrationPath(
+            selected.integration.integrationPath,
+          );
+
+          await statusBarManager?.updateIntegrationStatusBar();
+
+          flowPayloadsTreeDataProvider?.setFlows([]);
+
+          await verifyIntegrationIntegrity();
+
+          log(
+            "SUCCESS",
+            `Switched to: ${path.basename(selected.integration.integrationPath)}`,
+            true,
+          );
+        } catch (error) {
+          log("ERROR", `Failed to switch integration: ${String(error)}`, true);
+        }
+      },
+    );
+    context.subscriptions.push(switchIntegrationCommand);
 
     /**
      * command: prismatic.integrations.revealInExplorer
@@ -746,6 +833,9 @@ export async function deactivate() {
 
     // Dispose of prism CLI
     prismCLIManager.dispose();
+
+    // Dispose of status bar manager
+    statusBarManager?.dispose();
 
     // Dispose of test integration flow actor
     testIntegrationFlowActor?.stop();

@@ -222,6 +222,11 @@ const WarningList = styled.ul`
 const LoadingText = styled.div`
   color: var(--vscode-descriptionForeground);
   font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
 `;
 
 
@@ -372,6 +377,35 @@ export const App: React.FC = () => {
                               {connection.variableScope} Scoped Connection
                             </ConnectionTypeHeader>
                             <DetailRow>
+                              <DetailLabel>Stable Key:</DetailLabel>
+                              <DetailValue>{connection.stableKey}</DetailValue>
+                            </DetailRow>
+                            {connection.scopedConnectionIsInlineCNI ? (
+                              <DetailRow>
+                                <DetailLabel>Component:</DetailLabel>
+                                <DetailValue>Inline CNI Connection</DetailValue>
+                              </DetailRow>
+                            ) : (
+                              <>
+                                {connection.scopedComponentLabel && (
+                                  <DetailRow>
+                                    <DetailLabel>Component:</DetailLabel>
+                                    <DetailValue>
+                                      {connection.scopedComponentLabel}
+                                    </DetailValue>
+                                  </DetailRow>
+                                )}
+                                {connection.scopedConnectionKey && (
+                                  <DetailRow>
+                                    <DetailLabel>Connection:</DetailLabel>
+                                    <DetailValue>
+                                      {connection.scopedConnectionKey}
+                                    </DetailValue>
+                                  </DetailRow>
+                                )}
+                              </>
+                            )}
+                            <DetailRow>
                               <DetailLabel>Managed By:</DetailLabel>
                               <DetailValue>{connection.managedBy}</DetailValue>
                             </DetailRow>
@@ -389,6 +423,35 @@ export const App: React.FC = () => {
                             <ConnectionTypeHeader>
                               Instance Scoped Connection
                             </ConnectionTypeHeader>
+                            <DetailRow>
+                              <DetailLabel>Stable Key:</DetailLabel>
+                              <DetailValue>{connection.stableKey}</DetailValue>
+                            </DetailRow>
+                            {connection.isInlineCNI ? (
+                              <DetailRow>
+                                <DetailLabel>Component:</DetailLabel>
+                                <DetailValue>Inline CNI Connection</DetailValue>
+                              </DetailRow>
+                            ) : (
+                              <>
+                                {connection.componentLabel && (
+                                  <DetailRow>
+                                    <DetailLabel>Component:</DetailLabel>
+                                    <DetailValue>
+                                      {connection.componentLabel}
+                                    </DetailValue>
+                                  </DetailRow>
+                                )}
+                                {connection.connectionKey && (
+                                  <DetailRow>
+                                    <DetailLabel>Connection:</DetailLabel>
+                                    <DetailValue>
+                                      {connection.connectionKey}
+                                    </DetailValue>
+                                  </DetailRow>
+                                )}
+                              </>
+                            )}
                             <DetailRow>
                               <DetailLabel>OAuth:</DetailLabel>
                               <DetailValue>
@@ -452,6 +515,19 @@ export const App: React.FC = () => {
                               values
                             </InfoMessage>
                           )}
+
+                        {connection.status === "ACTIVE" &&
+                          missingInputs.length === 0 &&
+                          !connection.scopedConfigVariableId && (
+                            <InfoMessage
+                              style={{
+                                marginTop: "8px",
+                              }}
+                            >
+                              Connection is active. Open the config wizard to
+                              modify or view.
+                            </InfoMessage>
+                          )}
                       </ConnectionDetails>
                     )}
                   </ConnectionCard>
@@ -479,7 +555,7 @@ export const App: React.FC = () => {
                   {isExpanded && (
                     <ConnectionDetails>
                       <DetailRow>
-                        <DetailLabel>Synchronols Trigger:</DetailLabel>
+                        <DetailLabel>Synchronous Trigger:</DetailLabel>
                         <DetailValue>
                           {flow.isSynchronous ? "Yes" : "No"}
                         </DetailValue>

@@ -17,7 +17,7 @@ const Container = styled(ContainerBase)`
   align-items: center;
   display: flex;
   height: 100%;
-  justify-content: flex-start;
+  justify-content: center;
   padding: 12px;
 `;
 

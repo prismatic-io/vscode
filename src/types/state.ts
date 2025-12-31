@@ -29,12 +29,3 @@ export const isGlobalState = (value: unknown): value is GlobalState => {
   );
 };
 
-export const isWorkspaceState = (value: unknown): value is WorkspaceState => {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "configWizard" in value &&
-    "executionResults" in value &&
-    "example" in value
-  );
-};

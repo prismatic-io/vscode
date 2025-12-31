@@ -31,11 +31,10 @@ export class IntegrationItem extends vscode.TreeItem {
     this.tooltip = spectralPath;
     this.contextValue = "integrationItem";
 
-    // Show checkmark for active integration, folder for inactive
+    // Show prismatic logo - green for active, default color for inactive
     this.iconPath = isActive
-      ? new vscode.ThemeIcon("check", new vscode.ThemeColor("charts.green"))
-      : new vscode.ThemeIcon("folder");
-
+      ? new vscode.ThemeIcon("prismatic-logo")
+      : ""
     // Click to select
     this.command = {
       command: "prismatic.integrations.select",

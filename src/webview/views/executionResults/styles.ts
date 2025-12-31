@@ -122,6 +122,10 @@ export const Grid = styled.div`
     font-size: ${({ theme }) => theme.typography.baseSize};
     margin: 0;
     padding: ${({ theme }) => theme.spacing.medium};
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
   }
 
   /* Executions */

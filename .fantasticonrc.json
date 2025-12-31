@@ -1,0 +1,10 @@
+{
+  "inputDir": "./resources/icons",
+  "outputDir": "./resources/fonts",
+  "fontTypes": ["woff2"],
+  "assetTypes": ["json"],
+  "name": "prismatic-icons",
+  "prefix": "prismatic",
+  "normalize": true,
+  "fontHeight": 1000
+}
