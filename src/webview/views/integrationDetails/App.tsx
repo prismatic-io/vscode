@@ -302,7 +302,7 @@ export const App: React.FC = () => {
     });
   };
 
-  
+
   const handleAuthenticate = useCallback((connection: Connection) => {
     if (connection.authorizationUrl) {
       messageHandler.postMessage({
@@ -387,7 +387,7 @@ export const App: React.FC = () => {
                         ) : (
                           <>
                             <ConnectionTypeHeader>
-                              Instance Specific Connection
+                              Instance Scoped Connection
                             </ConnectionTypeHeader>
                             <DetailRow>
                               <DetailLabel>OAuth:</DetailLabel>
@@ -463,7 +463,7 @@ export const App: React.FC = () => {
       )}
 
       <Section>
-        <SectionTitle>Active Flows</SectionTitle>
+        <SectionTitle>Deployed Flows</SectionTitle>
         {isLoading ? (
           <LoadingText>Loading...</LoadingText>
         ) : (
@@ -479,24 +479,24 @@ export const App: React.FC = () => {
                   {isExpanded && (
                     <ConnectionDetails>
                       <DetailRow>
-                        <DetailLabel>Synchronous:</DetailLabel>
+                        <DetailLabel>Synchronols Trigger:</DetailLabel>
                         <DetailValue>
                           {flow.isSynchronous ? "Yes" : "No"}
                         </DetailValue>
                       </DetailRow>
                       <DetailRow>
-                        <DetailLabel>FIFO Queue:</DetailLabel>
+                        <DetailLabel>Uses FIFO Queue:</DetailLabel>
                         <DetailValue>
                           {flow.usesFifoQueue ? "Yes" : "No"}
                         </DetailValue>
                       </DetailRow>
                       <DetailRow>
-                        <DetailLabel>Security:</DetailLabel>
+                        <DetailLabel>Endpoint Security:</DetailLabel>
                         <DetailValue>{flow.endpointSecurityType}</DetailValue>
                       </DetailRow>
                       {flow.testUrl && (
                         <DetailRow style={{ flexWrap: "wrap" }}>
-                          <DetailLabel>Test URL:</DetailLabel>
+                          <DetailLabel>Test Invoke URL:</DetailLabel>
                           <DetailValue
                             style={{
                               whiteSpace: "normal",

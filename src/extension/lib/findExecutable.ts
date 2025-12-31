@@ -35,7 +35,6 @@ export async function findExecutable(
         `${logPrefix}: npx package ${npxPackage} not available:`,
         error,
       );
-      return null;
     }
   }
 
