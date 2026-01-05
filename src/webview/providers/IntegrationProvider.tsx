@@ -1,4 +1,4 @@
-import { MessageHandlerManager } from "@extension/MessageHandlerManager";
+import { messageHandlerManager } from "@extension/MessageHandlerManager";
 import { useActorRef, useSelector } from "@xstate/react";
 import type { ReactNode } from "react";
 import {
@@ -8,15 +8,11 @@ import {
   useEffect,
   useMemo,
 } from "react";
-
-const messageHandlerManager = new MessageHandlerManager();
+import type { Connection } from "@/types/connections";
 import type { Flow } from "@/types/flows";
 import { NoIntegration } from "@/webview/components/NoIntegration";
 import { useVSCodeState } from "@/webview/hooks/useVSCodeState";
-import { useWebviewMessage } from "@/webview/hooks/useWebviewMessage";
-import type { Connection } from "@/webview/machines/integration/getIntegration";
 import { integrationMachine } from "@/webview/machines/integration/integration.machine";
-import { useAuthContext } from "@/webview/providers/AuthProvider";
 
 const IntegrationContext = createContext<{
   flow: Flow | null;
@@ -39,12 +35,6 @@ const IntegrationContext = createContext<{
 });
 
 export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
-  const { accessToken, prismaticUrl } = useAuthContext();
-
-  const integrationMachineActorRef = useActorRef(integrationMachine, {
-    input: { accessToken, prismaticUrl },
-  });
-
   const {
     state: workspaceState,
     updateState: updateWorkspaceState,
@@ -53,79 +43,112 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
     scope: "workspace",
   });
 
+  const integrationActorRef = useActorRef(integrationMachine);
+
+  // Read integration data from machine context
   const systemInstanceId = useSelector(
-    integrationMachineActorRef,
+    integrationActorRef,
     (state) => state.context.systemInstanceId,
   );
-
   const flows = useSelector(
-    integrationMachineActorRef,
+    integrationActorRef,
     (state) => state.context.flows,
   );
-
   const configState = useSelector(
-    integrationMachineActorRef,
+    integrationActorRef,
     (state) => state.context.configState,
   );
-
   const connections = useSelector(
-    integrationMachineActorRef,
+    integrationActorRef,
     (state) => state.context.connections,
   );
-
-  const setFlow = useCallback(
-    (flowId: string) => {
-      const flow = flows.find((f) => f.id === flowId);
-
-      if (!flow) {
-        return;
-      }
-
-      updateWorkspaceState({ flow });
-    },
-    [updateWorkspaceState, flows],
+  const flow = useSelector(
+    integrationActorRef,
+    (state) => state.context.flow,
   );
-
-  const refetch = useCallback(() => {
-    integrationMachineActorRef.send({ type: "FETCH" });
-  }, [integrationMachineActorRef]);
-
-  const isLoading = useSelector(integrationMachineActorRef, (state) =>
+  const isLoading = useSelector(integrationActorRef, (state) =>
     state.hasTag("loading"),
   );
 
-  // Listen for refresh message from extension header button
-  const { message: refreshMessage } = useWebviewMessage(
-    "integrationDetails.refresh",
-  );
-
-  useEffect(() => {
-    if (refreshMessage) {
-      refetch();
-    }
-  }, [refreshMessage, refetch]);
-
+  // Sync integration ID to machine
   useEffect(() => {
     if (workspaceState?.integrationId) {
-      integrationMachineActorRef.send({
+      integrationActorRef.send({
         type: "SET_INTEGRATION_ID",
         integrationId: workspaceState.integrationId,
       });
+    } else {
+      integrationActorRef.send({ type: "CLEAR" });
     }
-  }, [workspaceState?.integrationId, integrationMachineActorRef]);
+  }, [workspaceState?.integrationId, integrationActorRef]);
 
+  // Sync workspace state data to machine
+  useEffect(() => {
+    integrationActorRef.send({
+      type: "SYNC_DATA",
+      data: {
+        systemInstanceId: workspaceState?.systemInstanceId,
+        configState: workspaceState?.configState,
+        connections: workspaceState?.connections,
+        flows: workspaceState?.flows,
+      },
+    });
+  }, [
+    workspaceState?.systemInstanceId,
+    workspaceState?.configState,
+    workspaceState?.connections,
+    workspaceState?.flows,
+    integrationActorRef,
+  ]);
+
+  const setFlow = useCallback(
+    (flowId: string) => {
+      const selectedFlow = flows.find((f) => f.id === flowId);
+
+      if (!selectedFlow) {
+        return;
+      }
+
+      // Update machine state
+      integrationActorRef.send({ type: "SET_FLOW", flow: selectedFlow });
+
+      // Propagate to workspace state (syncs to execution panel)
+      updateWorkspaceState({ flow: selectedFlow });
+    },
+    [updateWorkspaceState, flows, integrationActorRef],
+  );
+
+  // Refetch triggers extension-level fetch via command
+  const refetch = useCallback(() => {
+    messageHandlerManager.postMessage({
+      type: "integrationDetails.refresh",
+      payload: new Date().toISOString(),
+    });
+  }, []);
+
+  // Sync incoming workspace state flow changes to machine (e.g., from execution panel)
+  useEffect(() => {
+    if (workspaceState?.flow && workspaceState.flow.id !== flow?.id) {
+      // Look up full flow object from flows array
+      const fullFlow = flows.find((f) => f.id === workspaceState.flow?.id);
+      if (fullFlow) {
+        integrationActorRef.send({ type: "SET_FLOW", flow: fullFlow });
+      }
+    }
+  }, [workspaceState?.flow, flow?.id, flows, integrationActorRef]);
+
+  // Auto-select first flow if none selected or current flow no longer exists
   useEffect(() => {
     if (flows.length === 0) {
       return;
     }
 
-    if (
-      !workspaceState?.flow ||
-      !flows.some((flow) => flow.id === workspaceState.flow?.id)
-    ) {
-      updateWorkspaceState({ flow: flows[0] });
+    if (!flow || !flows.some((f) => f.id === flow.id)) {
+      const firstFlow = flows[0];
+      integrationActorRef.send({ type: "SET_FLOW", flow: firstFlow });
+      updateWorkspaceState({ flow: firstFlow });
     }
-  }, [workspaceState?.flow, flows, updateWorkspaceState]);
+  }, [flow, flows, updateWorkspaceState, integrationActorRef]);
 
   // Notify extension when flows are loaded for the Test Payloads tree view
   useEffect(() => {
@@ -137,21 +160,13 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [flows]);
 
-  // Look up the full flow object from flows array based on stored flow id
-  const currentFlow = useMemo(() => {
-    if (!workspaceState?.flow?.id) {
-      return null;
-    }
-    return flows.find((f) => f.id === workspaceState.flow?.id) ?? null;
-  }, [workspaceState?.flow?.id, flows]);
-
   const value = useMemo(
     () => ({
       systemInstanceId,
       configState,
       connections,
       flows,
-      flow: currentFlow,
+      flow,
       refetch,
       isLoading,
       setFlow,
@@ -161,7 +176,7 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
       configState,
       connections,
       flows,
-      currentFlow,
+      flow,
       refetch,
       isLoading,
       setFlow,

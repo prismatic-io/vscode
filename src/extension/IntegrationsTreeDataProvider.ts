@@ -1,7 +1,6 @@
-import fs from "node:fs";
 import path from "node:path";
 import * as vscode from "vscode";
-import { SPECTRAL_DIR } from "@/extension/constants";
+import { findSpectralDirectories } from "@/extension/lib/findSpectralDirectories";
 
 /**
  * Represents a .spectral directory as a tree item
@@ -31,10 +30,10 @@ export class IntegrationItem extends vscode.TreeItem {
     this.tooltip = spectralPath;
     this.contextValue = "integrationItem";
 
-    // Show prismatic logo - green for active, default color for inactive
+    // Show green dot for active integration
     this.iconPath = isActive
-      ? new vscode.ThemeIcon("prismatic-logo")
-      : ""
+      ? new vscode.ThemeIcon("circle-filled", new vscode.ThemeColor("testing.iconPassed"))
+      : undefined;
     // Click to select
     this.command = {
       command: "prismatic.integrations.select",
@@ -97,7 +96,7 @@ export class IntegrationsTreeDataProvider
 
     const integrations: IntegrationItem[] = [];
     for (const folder of workspaceFolders) {
-      const spectralPaths = this.findSpectralDirectories(folder.uri.fsPath);
+      const spectralPaths = findSpectralDirectories(folder.uri.fsPath);
       for (const spectralPath of spectralPaths) {
         const integrationPath = path.dirname(spectralPath);
         const isActive = integrationPath === this._activeIntegrationPath;
@@ -105,59 +104,5 @@ export class IntegrationsTreeDataProvider
       }
     }
     return integrations;
-  }
-
-  /**
-   * Recursively find all .spectral directories within a root path
-   */
-  private findSpectralDirectories(
-    rootPath: string,
-    maxDepth = 5,
-  ): string[] {
-    const results: string[] = [];
-    this.searchForSpectral(rootPath, results, 0, maxDepth);
-    return results;
-  }
-
-  /**
-   * Recursive helper to search for .spectral directories
-   */
-  private searchForSpectral(
-    currentPath: string,
-    results: string[],
-    currentDepth: number,
-    maxDepth: number,
-  ): void {
-    if (currentDepth > maxDepth) return;
-
-    try {
-      const entries = fs.readdirSync(currentPath, { withFileTypes: true });
-
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue;
-
-        // Skip common directories that won't contain integrations
-        if (
-          entry.name === "node_modules" ||
-          entry.name === "dist" ||
-          entry.name === ".git" ||
-          entry.name === ".vscode"
-        ) {
-          continue;
-        }
-
-        const fullPath = path.join(currentPath, entry.name);
-
-        if (entry.name === SPECTRAL_DIR) {
-          results.push(fullPath);
-          // Don't recurse into .spectral directories
-        } else {
-          // Recurse into subdirectories
-          this.searchForSpectral(fullPath, results, currentDepth + 1, maxDepth);
-        }
-      }
-    } catch {
-      // Ignore permission errors or other access issues
-    }
   }
 }

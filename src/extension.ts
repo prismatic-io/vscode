@@ -7,7 +7,8 @@ import { createExecutionResultsViewProvider } from "@webview/views/executionResu
 import { createIntegrationDetailsViewProvider } from "@webview/views/integrationDetails/ViewProvider";
 import { CONFIG } from "config";
 import * as vscode from "vscode";
-import { createActor } from "xstate";
+import { createActor, toPromise } from "xstate";
+import { getIntegration } from "@/extension/machines/integrationsFlowsTest/getIntegration";
 import { enableWorkspace } from "@/extension/lib/enableWorkspace";
 import { executeProjectNpmScript } from "@/extension/lib/executeProjectNpmScript";
 import { syncPrismaticUrl } from "@/extension/lib/syncPrismaticUrl";
@@ -199,6 +200,10 @@ export async function activate(context: vscode.ExtensionContext) {
       flowPayloadsTreeDataProvider.setActiveIntegrationPath(
         currentWorkspaceState.activeIntegrationPath,
       );
+      // Set flows from workspace state (populated by verifyIntegrationIntegrity)
+      if (currentWorkspaceState.flows) {
+        flowPayloadsTreeDataProvider.setFlows(currentWorkspaceState.flows);
+      }
     }
 
     executionResultsViewProvider = createExecutionResultsViewProvider(context);
@@ -402,11 +407,14 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     /**
+     * command: prismatic.integrations.test
      * This command is used to run a test for the integration.
+     * - When called with a FlowItem (from tree view click): uses that flow directly
+     * - When called without arguments (from command palette or execution panel): uses the currently selected flow, or shows a quick pick if none selected
      */
     const integrationFlowTestCommand = vscode.commands.registerCommand(
       "prismatic.integrations.test",
-      async () => {
+      async (item?: FlowItem) => {
         log("INFO", "Starting integration test...");
 
         try {
@@ -416,7 +424,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
           const accessToken = await authManager.getAccessToken();
           const globalState = await stateManager.getGlobalState();
-          const workspaceState = await stateManager.getWorkspaceState();
+          let workspaceState = await stateManager.getWorkspaceState();
 
           if (!workspaceState?.integrationId) {
             throw new Error(
@@ -428,20 +436,55 @@ export async function activate(context: vscode.ExtensionContext) {
             throw new Error("No test integration actor available.");
           }
 
-          if (!workspaceState.flow) {
-            throw new Error("No flow selected. Please select a flow first.");
+          // Determine target flow
+          let targetFlow = item?.flow ?? workspaceState.flow;
+
+          // If no flow provided or selected, show quick pick
+          if (!targetFlow) {
+            const flows = workspaceState.flows ?? [];
+            if (flows.length === 0) {
+              throw new Error("No flows available for this integration.");
+            }
+
+            const items = flows.map((flow) => ({
+              label: flow.name,
+              description: flow.stableKey,
+              flow,
+            }));
+
+            const selected = await vscode.window.showQuickPick(items, {
+              placeHolder: "Select a flow to test",
+              title: "Select Flow",
+            });
+
+            if (!selected) {
+              return; // User cancelled
+            }
+            targetFlow = selected.flow;
           }
 
+          // Update workspace state with selected flow if it changed
+          if (item?.flow || !workspaceState.flow) {
+            await stateManager.updateWorkspaceState({ flow: targetFlow });
+            workspaceState = await stateManager.getWorkspaceState();
+          }
+
+          // Focus the execution results panel
+          vscode.commands.executeCommand("executionResults.webview.focus");
+
           const selectedFlowPayload = await selectProjectFlowPayload(
-            workspaceState.flow.stableKey,
+            targetFlow.stableKey,
           );
 
           testIntegrationFlowActor.send({
             type: "TEST_INTEGRATION",
-            integrationId: workspaceState.integrationId,
-            flowId: workspaceState.flow.id,
+            integrationId: workspaceState!.integrationId!,
+            flowId: targetFlow.id,
             accessToken,
             prismaticUrl: globalState?.prismaticUrl ?? CONFIG.prismaticUrl,
+            configState: workspaceState!.configState ?? null,
+            systemInstanceId: workspaceState!.systemInstanceId!,
+            flows: workspaceState!.flows ?? [],
             ...(selectedFlowPayload
               ? {
                   payload: JSON.stringify(selectedFlowPayload.data, null, 2),
@@ -535,120 +578,61 @@ export async function activate(context: vscode.ExtensionContext) {
 
     /**
      * command: prismatic.integrationDetails.refresh
-     * This command is used to trigger a refresh of integration details in the webview.
+     * This command is used to trigger a refresh of integration details.
+     * Fetches fresh data from the API and updates workspace state.
      */
     const integrationDetailsRefreshCommand = vscode.commands.registerCommand(
       "prismatic.integrationDetails.refresh",
       async () => {
-        stateManager.notifyWebviews({
-          type: "integrationDetails.refresh",
-          payload: new Date().toISOString(),
-        });
+        const workspaceState = await stateManager.getWorkspaceState();
+        const globalState = await stateManager.getGlobalState();
+
+        if (
+          workspaceState?.integrationId &&
+          globalState?.accessToken &&
+          globalState?.prismaticUrl
+        ) {
+          try {
+            const dataActor = createActor(getIntegration, {
+              input: {
+                integrationId: workspaceState.integrationId,
+                accessToken: globalState.accessToken,
+                prismaticUrl: globalState.prismaticUrl,
+              },
+            });
+            dataActor.start();
+            const result = await toPromise(dataActor);
+
+            await stateManager.updateWorkspaceState({
+              systemInstanceId: result.systemInstanceId,
+              configState: result.configState ?? undefined,
+              flows: result.flows,
+              connections: result.connections,
+            });
+
+            flowPayloadsTreeDataProvider?.setFlows(result.flows);
+          } catch (error) {
+            log("ERROR", `Failed to refresh integration details: ${error}`);
+          }
+        }
       },
     );
     context.subscriptions.push(integrationDetailsRefreshCommand);
 
-    /**
-     * command: prismatic.flows.createPayload
-     * This command is used to create a new payload file for the selected flow.
-     */
-    const flowPayloadCreateCommand = vscode.commands.registerCommand(
-      "prismatic.flows.createPayload",
-      async () => {
-        log("INFO", "Starting payload creation...");
-
-        try {
-          const workspaceState = await stateManager.getWorkspaceState();
-
-          if (!workspaceState?.flow) {
-            throw new Error("No flow selected. Please select a flow first.");
-          }
-
-          if (!workspaceState?.activeIntegrationPath) {
-            throw new Error(
-              "No active integration. Please select an integration first.",
-            );
-          }
-
-          const filePath = await createFlowPayload(
-            workspaceState.flow.stableKey,
-            workspaceState.activeIntegrationPath,
-          );
-
-          if (filePath) {
-            log(
-              "SUCCESS",
-              `Payload created successfully for flow: ${workspaceState.flow.name}`,
-              true,
-            );
-            // Refresh the flow payloads tree view
-            flowPayloadsTreeDataProvider?.refresh();
-          }
-        } catch (error) {
-          log("ERROR", String(error), true);
-        }
-      },
-    );
-    context.subscriptions.push(flowPayloadCreateCommand);
 
     /**
      * command: prismatic.integrations.select
-     * This command is used to select an active integration from the tree.
+     * This command is used to select an active integration.
+     * - When called with an IntegrationItem (from tree view click): switches directly to that integration
+     * - When called without arguments (from status bar or command palette): shows a quick pick to select
      */
     const selectIntegrationCommand = vscode.commands.registerCommand(
       "prismatic.integrations.select",
       async (item?: IntegrationItem) => {
-        if (!item) {
-          log("WARN", "No integration item provided for selection");
-          return;
-        }
+        let targetIntegration: IntegrationItem | undefined = item;
 
-        log("INFO", `Selecting integration: ${item.integrationPath}`);
-
-        try {
-          // Switch active integration (resets state)
-          await stateManager.switchActiveIntegration(item.integrationPath);
-
-          // Update tree view to show new selection
-          integrationsTreeDataProvider?.setActiveIntegration(
-            item.integrationPath,
-          );
-
-          // Update flow payloads tree view with new integration path
-          flowPayloadsTreeDataProvider?.setActiveIntegrationPath(
-            item.integrationPath,
-          );
-
-          // Update status bar with new integration
-          await statusBarManager?.updateIntegrationStatusBar();
-
-          // Clear flows when switching integrations (will be repopulated by webview)
-          flowPayloadsTreeDataProvider?.setFlows([]);
-
-          // Re-verify integration integrity for the new path
-          await verifyIntegrationIntegrity();
-
-          log(
-            "SUCCESS",
-            `Switched to: ${path.basename(item.integrationPath)}`,
-            true,
-          );
-        } catch (error) {
-          log("ERROR", `Failed to select integration: ${String(error)}`, true);
-        }
-      },
-    );
-    context.subscriptions.push(selectIntegrationCommand);
-
-    /**
-     * command: prismatic.integrations.switch
-     * This command shows a quick pick to switch the active integration.
-     */
-    const switchIntegrationCommand = vscode.commands.registerCommand(
-      "prismatic.integrations.switch",
-      async () => {
-        try {
-          // Get all integrations from the tree data provider
+        // If no item provided, show quick pick to select one
+        if (!targetIntegration) {
           const integrations = integrationsTreeDataProvider?.getChildren() ?? [];
 
           if (integrations.length === 0) {
@@ -656,7 +640,6 @@ export async function activate(context: vscode.ExtensionContext) {
             return;
           }
 
-          // Build quick pick items
           const items = integrations.map((integration) => ({
             label: integration.label as string,
             description: integration.description as string,
@@ -665,43 +648,57 @@ export async function activate(context: vscode.ExtensionContext) {
 
           const selected = await vscode.window.showQuickPick(items, {
             placeHolder: "Select an integration to switch to",
-            title: "Switch Active Integration",
+            title: "Select Integration",
           });
 
           if (!selected) {
             return; // User cancelled
           }
+          targetIntegration = selected.integration;
+        }
 
-          // Switch to the selected integration (reuse existing logic)
-          await stateManager.switchActiveIntegration(
-            selected.integration.integrationPath,
-          );
+        log("INFO", `Selecting integration: ${targetIntegration.integrationPath}`);
 
+        try {
+          // Switch active integration (resets state)
+          await stateManager.switchActiveIntegration(targetIntegration.integrationPath);
+
+          // Update tree view to show new selection
           integrationsTreeDataProvider?.setActiveIntegration(
-            selected.integration.integrationPath,
+            targetIntegration.integrationPath,
           );
 
+          // Update flow payloads tree view with new integration path
           flowPayloadsTreeDataProvider?.setActiveIntegrationPath(
-            selected.integration.integrationPath,
+            targetIntegration.integrationPath,
           );
 
+          // Update status bar with new integration
           await statusBarManager?.updateIntegrationStatusBar();
 
+          // Clear flows when switching integrations
           flowPayloadsTreeDataProvider?.setFlows([]);
 
+          // Re-verify integration integrity for the new path (also fetches integration data)
           await verifyIntegrationIntegrity();
+
+          // Set flows from newly fetched workspace state
+          const updatedState = await stateManager.getWorkspaceState();
+          if (updatedState?.flows) {
+            flowPayloadsTreeDataProvider?.setFlows(updatedState.flows);
+          }
 
           log(
             "SUCCESS",
-            `Switched to: ${path.basename(selected.integration.integrationPath)}`,
+            `Switched to: ${path.basename(targetIntegration.integrationPath)}`,
             true,
           );
         } catch (error) {
-          log("ERROR", `Failed to switch integration: ${String(error)}`, true);
+          log("ERROR", `Failed to select integration: ${String(error)}`, true);
         }
       },
     );
-    context.subscriptions.push(switchIntegrationCommand);
+    context.subscriptions.push(selectIntegrationCommand);
 
     /**
      * command: prismatic.integrations.revealInExplorer
@@ -739,14 +736,15 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(setFlowsCommand);
 
     /**
-     * command: prismatic.flowPayloads.createPayload
-     * This command is used to create a new payload file for a specific flow.
-     * Called from the "+" button on flow items in the Test Payloads tree view.
+     * command: prismatic.flows.createPayload
+     * This command is used to create a new payload file for a flow.
+     * When called with a FlowItem argument (from tree view), uses that flow.
+     * When called without arguments (from command palette), uses the active flow.
      */
     const createPayloadFromFlowCommand = vscode.commands.registerCommand(
-      "prismatic.flowPayloads.createPayload",
+      "prismatic.flows.createPayload",
       async (item?: FlowItem) => {
-        log("INFO", "Starting payload creation from flow item...");
+        log("INFO", "Starting payload creation...");
 
         try {
           const workspaceState = await stateManager.getWorkspaceState();
@@ -757,19 +755,23 @@ export async function activate(context: vscode.ExtensionContext) {
             );
           }
 
-          if (!item) {
-            throw new Error("No flow item provided.");
+          // Use provided FlowItem or fall back to active flow from workspace state
+          const stableKey = item?.stableKey ?? workspaceState?.flow?.stableKey;
+          const flowName = item?.flow.name ?? workspaceState?.flow?.name;
+
+          if (!stableKey) {
+            throw new Error("No flow selected. Please select a flow first.");
           }
 
           const filePath = await createFlowPayload(
-            item.stableKey,
+            stableKey,
             workspaceState.activeIntegrationPath,
           );
 
           if (filePath) {
             log(
               "SUCCESS",
-              `Payload created successfully for flow: ${item.flow.name}`,
+              `Payload created successfully for flow: ${flowName}`,
               true,
             );
             flowPayloadsTreeDataProvider?.refresh();
@@ -780,33 +782,6 @@ export async function activate(context: vscode.ExtensionContext) {
       },
     );
     context.subscriptions.push(createPayloadFromFlowCommand);
-
-    /**
-     * command: prismatic.flowPayloads.testFlow
-     * This command is used to test a specific flow from the Test Payloads tree view.
-     * Called from the play button on flow items.
-     */
-    const testFlowFromTreeCommand = vscode.commands.registerCommand(
-      "prismatic.flowPayloads.testFlow",
-      async (item?: FlowItem) => {
-        if (!item) {
-          log("WARN", "No flow item provided for testing");
-          return;
-        }
-
-        log("INFO", `Testing flow: ${item.flow.name}`);
-
-        // Set this flow as the active flow in workspace state
-        await stateManager.updateWorkspaceState({ flow: item.flow });
-
-        // Execute the existing test command
-        await vscode.commands.executeCommand("prismatic.integrations.test");
-
-        // Focus the execution results panel
-        vscode.commands.executeCommand("executionResults.webview.focus");
-      },
-    );
-    context.subscriptions.push(testFlowFromTreeCommand);
 
     log("SUCCESS", "Extension initialization complete!");
   } catch (error) {

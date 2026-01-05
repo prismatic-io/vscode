@@ -1,9 +1,7 @@
-import { MessageHandlerManager } from "@extension/MessageHandlerManager";
+import { messageHandlerManager } from "@extension/MessageHandlerManager";
 import type { MessageType } from "@type/messages";
 import type { GlobalState, WorkspaceState } from "@type/state";
 import { useCallback, useEffect, useState } from "react";
-
-const messageHandlerManager = new MessageHandlerManager();
 
 type StateValue<T> = T extends "global" ? GlobalState : WorkspaceState;
 

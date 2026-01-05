@@ -22,6 +22,10 @@ const DEFAULT_WORKSPACE_STATE: WorkspaceState = {
   integrationId: undefined,
   systemInstanceId: undefined,
   flow: undefined,
+  // Integration runtime data
+  configState: undefined,
+  flows: undefined,
+  connections: undefined,
 };
 
 export class StateManager {
@@ -223,6 +227,10 @@ export class StateManager {
       headers: undefined,
       payload: undefined,
       debugMode: undefined,
+      // Clear integration runtime data
+      configState: undefined,
+      flows: undefined,
+      connections: undefined,
     });
   }
 

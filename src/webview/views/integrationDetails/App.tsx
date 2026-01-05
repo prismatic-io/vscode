@@ -1,13 +1,11 @@
 import { useState, useCallback } from "react";
 import type React from "react";
-import { MessageHandlerManager } from "@extension/MessageHandlerManager";
+import { messageHandlerManager } from "@extension/MessageHandlerManager";
+import type { Connection } from "@/types/connections";
 import { useVSCodeState } from "@/webview/hooks/useVSCodeState";
 import { useIntegrationContext } from "@/webview/providers/IntegrationProvider";
-import type { Connection } from "@/webview/machines/integration/getIntegration";
 import type { IntegrationDetailsMessage } from "@/webview/views/integrationDetails/types";
 import styled from "styled-components";
-
-const messageHandler = new MessageHandlerManager();
 
 const Container = styled.div`
   padding: 12px;
@@ -229,6 +227,43 @@ const LoadingText = styled.div`
   text-align: center;
 `;
 
+// Active Flow UI components
+const FlowSelect = styled.select`
+  appearance: none;
+  width: 100%;
+  padding: 6px 32px 6px 8px;
+  background-color: var(--vscode-dropdown-background);
+  color: var(--vscode-dropdown-foreground);
+  border: 1px solid var(--vscode-dropdown-border);
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23888' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+
+  &:hover,
+  &:focus {
+    border-color: var(--vscode-focusBorder);
+    outline: none;
+  }
+`;
+
+const ActiveFlowCard = styled.div`
+  background-color: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 4px;
+  padding: 12px;
+`;
+
+const ActiveFlowName = styled.div`
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--vscode-foreground);
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--vscode-widget-border);
+`;
 
 const getConfigStateDisplay = (
   configState: string | null,
@@ -269,11 +304,10 @@ export const App: React.FC = () => {
   const [expandedConnections, setExpandedConnections] = useState<Set<string>>(
     new Set(),
   );
-  const [expandedFlows, setExpandedFlows] = useState<Set<string>>(new Set());
   const { state: workspaceState } = useVSCodeState({
     scope: "workspace",
   });
-  const { flows, connections, configState, isLoading } =
+  const { flows, flow, setFlow, connections, configState, isLoading } =
     useIntegrationContext();
 
   const integrationPath = workspaceState?.activeIntegrationPath;
@@ -295,22 +329,9 @@ export const App: React.FC = () => {
     });
   };
 
-  const toggleFlow = (id: string) => {
-    setExpandedFlows((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
-
-
   const handleAuthenticate = useCallback((connection: Connection) => {
     if (connection.authorizationUrl) {
-      messageHandler.postMessage({
+      messageHandlerManager.postMessage({
         type: "integrationDetails.authenticate",
         payload: {
           connectionId: connection.id,
@@ -539,58 +560,60 @@ export const App: React.FC = () => {
       )}
 
       <Section>
-        <SectionTitle>Deployed Flows</SectionTitle>
+        <SectionTitle>Active Flow</SectionTitle>
         {isLoading ? (
           <LoadingText>Loading...</LoadingText>
         ) : (
-          <List>
-            {flows.map((flow) => {
-              const isExpanded = expandedFlows.has(flow.id);
-              return (
-                <ConnectionCard key={flow.id}>
-                  <ConnectionHeader onClick={() => toggleFlow(flow.id)}>
-                    <Chevron $expanded={isExpanded}>▶</Chevron>
-                    <ConnectionLabel>{flow.name}</ConnectionLabel>
-                  </ConnectionHeader>
-                  {isExpanded && (
-                    <ConnectionDetails>
-                      <DetailRow>
-                        <DetailLabel>Synchronous Trigger:</DetailLabel>
-                        <DetailValue>
-                          {flow.isSynchronous ? "Yes" : "No"}
-                        </DetailValue>
-                      </DetailRow>
-                      <DetailRow>
-                        <DetailLabel>Uses FIFO Queue:</DetailLabel>
-                        <DetailValue>
-                          {flow.usesFifoQueue ? "Yes" : "No"}
-                        </DetailValue>
-                      </DetailRow>
-                      <DetailRow>
-                        <DetailLabel>Endpoint Security:</DetailLabel>
-                        <DetailValue>{flow.endpointSecurityType}</DetailValue>
-                      </DetailRow>
-                      {flow.testUrl && (
-                        <DetailRow style={{ flexWrap: "wrap" }}>
-                          <DetailLabel>Test Invoke URL:</DetailLabel>
-                          <DetailValue
-                            style={{
-                              whiteSpace: "normal",
-                              wordBreak: "break-all",
-                            }}
-                          >
-                            {flow.testUrl}
-                          </DetailValue>
-                        </DetailRow>
-                      )}
-                    </ConnectionDetails>
-                  )}
-                </ConnectionCard>
-              );
-            })}
-          </List>
+          <>
+            <FlowSelect
+              value={flow?.id ?? ""}
+              onChange={(e) => setFlow(e.target.value)}
+            >
+              {flows.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </FlowSelect>
+
+            {flow && (
+              <ActiveFlowCard>
+                <ActiveFlowName>{flow.name}</ActiveFlowName>
+                <DetailRow>
+                  <DetailLabel>Stable Key:</DetailLabel>
+                  <DetailValue>{flow.stableKey}</DetailValue>
+                </DetailRow>
+                <DetailRow>
+                  <DetailLabel>Synchronous:</DetailLabel>
+                  <DetailValue>{flow.isSynchronous ? "Yes" : "No"}</DetailValue>
+                </DetailRow>
+                <DetailRow>
+                  <DetailLabel>FIFO Queue:</DetailLabel>
+                  <DetailValue>{flow.usesFifoQueue ? "Yes" : "No"}</DetailValue>
+                </DetailRow>
+                <DetailRow>
+                  <DetailLabel>Security:</DetailLabel>
+                  <DetailValue>{flow.endpointSecurityType}</DetailValue>
+                </DetailRow>
+                {flow.testUrl && (
+                  <DetailRow style={{ flexWrap: "wrap" }}>
+                    <DetailLabel>Test URL:</DetailLabel>
+                    <DetailValue
+                      style={{
+                        whiteSpace: "normal",
+                        wordBreak: "break-all",
+                      }}
+                    >
+                      {flow.testUrl}
+                    </DetailValue>
+                  </DetailRow>
+                )}
+              </ActiveFlowCard>
+            )}
+          </>
         )}
       </Section>
+
     </Container>
   );
 };

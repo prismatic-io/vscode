@@ -19,6 +19,13 @@ export class FlowItem extends vscode.TreeItem {
     this.tooltip = `Flow: ${flow.name}\nStable Key: ${flow.stableKey}`;
     this.iconPath = new vscode.ThemeIcon("symbol-event");
     this.contextValue = "flowItem";
+
+    // Click to test this flow
+    this.command = {
+      command: "prismatic.integrations.test",
+      title: "Test Flow",
+      arguments: [this],
+    };
   }
 
   get stableKey(): string {

@@ -15,6 +15,12 @@ export function createIntegrationDetailsViewProvider(
       scriptPath: WEBVIEW_CONFIG.scriptPath,
       onMessage: (message, postMessage) => {
         switch (message.type) {
+          case "integrationDetails.refresh": {
+            vscode.commands.executeCommand(
+              "prismatic.integrationDetails.refresh",
+            );
+            break;
+          }
           case "integrationDetails.error": {
             vscode.window.showErrorMessage(message.payload.message);
             break;

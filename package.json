@@ -151,36 +151,17 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "prismatic.integrations.select",
+        "title": "Select Integration",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled"
+      },
+      {
         "command": "prismatic.flows.createPayload",
         "title": "Create Flow Payload",
         "category": "Prismatic",
         "enablement": "prismatic.workspaceEnabled",
         "icon": "$(add)"
-      },
-      {
-        "command": "prismatic.integrations.select",
-        "title": "Select Integration",
-        "category": "Prismatic"
-      },
-      {
-        "command": "prismatic.integrations.switch",
-        "title": "Switch Active Integration",
-        "category": "Prismatic",
-        "enablement": "prismatic.workspaceEnabled"
-      },
-      {
-        "command": "prismatic.flowPayloads.createPayload",
-        "title": "Create Payload",
-        "category": "Prismatic",
-        "enablement": "prismatic.workspaceEnabled",
-        "icon": "$(add)"
-      },
-      {
-        "command": "prismatic.flowPayloads.testFlow",
-        "title": "Test Flow",
-        "category": "Prismatic",
-        "enablement": "prismatic.workspaceEnabled",
-        "icon": "$(play)"
       },
       {
         "command": "prismatic.integrations.revealInExplorer",
@@ -305,12 +286,12 @@
           "group": "inline"
         },
         {
-          "command": "prismatic.flowPayloads.testFlow",
+          "command": "prismatic.integrations.test",
           "when": "view == prismatic.flowPayloadsView && viewItem == flowItem",
           "group": "inline@1"
         },
         {
-          "command": "prismatic.flowPayloads.createPayload",
+          "command": "prismatic.flows.createPayload",
           "when": "view == prismatic.flowPayloadsView && viewItem == flowItem",
           "group": "inline@2"
         }

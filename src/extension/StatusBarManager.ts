@@ -38,7 +38,7 @@ export class StatusBarManager {
       -1,
     );
     this.integrationStatusBarItem.name = "Prismatic Integration";
-    this.integrationStatusBarItem.command = "prismatic.integrations.switch";
+    this.integrationStatusBarItem.command = "prismatic.integrations.select";
   }
 
   /**

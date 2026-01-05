@@ -1,7 +1,9 @@
 import * as vscode from "vscode";
 import { type ActorRefFrom, assign, setup } from "xstate";
 import { log } from "@/extension";
-import { getIntegration, InstanceConfigState } from "./getIntegration";
+import { StateManager } from "@/extension/StateManager";
+import type { Flow } from "@/types/flows";
+import { InstanceConfigState } from "@/types/state";
 import { testIntegrationFlow } from "./testIntegrationFlow";
 
 type TestIntegrationFlowInput = {};
@@ -25,6 +27,9 @@ type TestIntegrationFlowEvents = {
   flowId?: string;
   accessToken: string;
   prismaticUrl: string;
+  configState: InstanceConfigState | null;
+  systemInstanceId: string;
+  flows: Flow[];
   payload?: string;
   contentType?: string;
   headers?: string;
@@ -53,7 +58,6 @@ export const testIntegrationFlowMachine = setup({
       context.configState === InstanceConfigState.FULLY_CONFIGURED,
   },
   actors: {
-    getIntegration,
     testIntegrationFlow,
   },
 }).createMachine({
@@ -80,9 +84,11 @@ export const testIntegrationFlowMachine = setup({
           actions: [
             assign(({ event }) => ({
               integrationId: event.integrationId,
-              flowId: event.flowId,
+              flowId: event.flowId || event.flows[0]?.id,
               accessToken: event.accessToken,
               prismaticUrl: event.prismaticUrl,
+              configState: event.configState,
+              systemInstanceId: event.systemInstanceId,
               payload: event.payload,
               contentType: event.contentType,
               headers: event.headers,
@@ -102,37 +108,8 @@ export const testIntegrationFlowMachine = setup({
         systemInstanceId: null,
       }),
       tags: "testing",
-      initial: "LOADING_INTEGRATION",
+      initial: "CHECKING_CONFIGURATION",
       states: {
-        LOADING_INTEGRATION: {
-          entry: ({ context }) =>
-            log("INFO", `Fetching integration: ${context.integrationId}`),
-          invoke: {
-            id: "getIntegration",
-            src: "getIntegration",
-            input: ({ context }) => ({
-              accessToken: context.accessToken!,
-              prismaticUrl: context.prismaticUrl!,
-              integrationId: context.integrationId!,
-            }),
-            onDone: {
-              actions: [
-                assign(({ context, event }) => ({
-                  configState: event.output.configState,
-                  systemInstanceId: event.output.systemInstanceId,
-                  flowId: context.flowId || event.output.initialFlow?.id,
-                })),
-              ],
-              target:
-                "#testIntegrationFlow.TESTING_INTEGRATION.CHECKING_CONFIGURATION",
-            },
-            onError: {
-              actions: ({ event }) =>
-                log("ERROR", `Error fetching integration. ${event.error}`),
-              target: "#testIntegrationFlow.WAITING_FOR_TEST",
-            },
-          },
-        },
         CHECKING_CONFIGURATION: {
           entry: ({ context }) =>
             log("INFO", `Checking config state: ${context.configState}`),
@@ -159,8 +136,10 @@ export const testIntegrationFlowMachine = setup({
           always: [{ target: "#testIntegrationFlow.WAITING_FOR_TEST" }],
         },
         EXECUTING_TEST: {
-          entry: ({ context }) =>
-            log("INFO", `Running test for flow: ${context.flowId}`),
+          entry: ({ context }) => {
+            log("INFO", `Running test for flow: ${context.flowId}`);
+            vscode.commands.executeCommand("executionResults.webview.focus");
+          },
           invoke: {
             id: "testIntegrationFlow",
             src: "testIntegrationFlow",
@@ -178,7 +157,14 @@ export const testIntegrationFlowMachine = setup({
                   log(
                     "SUCCESS",
                     "Integration flow test completed successfully!",
+                    true,
                   ),
+                () => {
+                  StateManager.getInstance().notifyWebviews({
+                    type: "executionResults.refetch",
+                    payload: new Date().toISOString(),
+                  });
+                },
               ],
               target: "#testIntegrationFlow.WAITING_FOR_TEST",
             },
@@ -187,6 +173,7 @@ export const testIntegrationFlowMachine = setup({
                 log(
                   "ERROR",
                   `Error running integration flow test. ${event.error}`,
+                  true,
                 ),
               target: "#testIntegrationFlow.WAITING_FOR_TEST",
             },

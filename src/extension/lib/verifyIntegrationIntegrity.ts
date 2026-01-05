@@ -35,7 +35,15 @@ export const verifyIntegrationIntegrity = async (): Promise<void> => {
 
     dataActor.start();
 
-    await toPromise(dataActor);
+    const result = await toPromise(dataActor);
+
+    // Store integration data in workspace state
+    await stateManager.updateWorkspaceState({
+      systemInstanceId: result.systemInstanceId,
+      configState: result.configState ?? undefined,
+      flows: result.flows,
+      connections: result.connections,
+    });
   } catch (_error) {
     log(
       "WARN",
@@ -45,6 +53,9 @@ export const verifyIntegrationIntegrity = async (): Promise<void> => {
     await stateManager.updateWorkspaceState({
       integrationId: undefined,
       flow: undefined,
+      configState: undefined,
+      flows: undefined,
+      connections: undefined,
     });
   }
 };

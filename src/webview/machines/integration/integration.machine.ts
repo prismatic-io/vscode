@@ -1,30 +1,30 @@
 import { assign, setup } from "xstate";
+import type { Connection } from "@/types/connections";
 import type { Flow } from "@/types/flows";
-import {
-  type Connection,
-  type InstanceConfigState,
-  getIntegration,
-} from "@/webview/machines/integration/getIntegration";
-
-interface IntegrationInput {
-  accessToken: string;
-  prismaticUrl: string;
-}
+import type { InstanceConfigState } from "@/types/state";
 
 interface IntegrationContext {
   integrationId: string | null;
   systemInstanceId: string;
   configState: InstanceConfigState | null;
   connections: Connection[];
-  flowId: string;
+  flow: Flow | null;
   flows: Flow[];
-  "@input": IntegrationInput;
 }
 
 type IntegrationEvents =
-  | { type: "FETCH" }
-  | { type: "SET_FLOW_ID"; flowId: string }
-  | { type: "SET_INTEGRATION_ID"; integrationId: string };
+  | { type: "SET_FLOW"; flow: Flow }
+  | { type: "SET_INTEGRATION_ID"; integrationId: string }
+  | {
+      type: "SYNC_DATA";
+      data: {
+        systemInstanceId?: string;
+        configState?: InstanceConfigState | null;
+        connections?: Connection[];
+        flows?: Flow[];
+      };
+    }
+  | { type: "CLEAR" };
 
 type IntegrationTags = "idle" | "loading";
 
@@ -32,79 +32,73 @@ export const integrationMachine = setup({
   types: {
     context: {} as IntegrationContext,
     events: {} as IntegrationEvents,
-    input: {} as IntegrationInput,
     tags: {} as IntegrationTags,
   },
   actions: {
-    updateIntegrationId: assign((_, params: { integrationId: string }) => {
-      return {
-        integrationId: params.integrationId,
-      };
-    }),
-    updateFlowId: assign((_, params: { flowId: string }) => {
-      return {
-        flowId: params.flowId,
-      };
-    }),
-    updateSystemInstanceId: assign(
-      (_, params: { systemInstanceId: string }) => {
-        return {
+    updateIntegrationId: assign((_, params: { integrationId: string }) => ({
+      integrationId: params.integrationId,
+    })),
+    updateFlow: assign((_, params: { flow: Flow }) => ({
+      flow: params.flow,
+    })),
+    syncData: assign(
+      (
+        _,
+        params: {
+          systemInstanceId?: string;
+          configState?: InstanceConfigState | null;
+          connections?: Connection[];
+          flows?: Flow[];
+        },
+      ) => ({
+        ...(params.systemInstanceId !== undefined && {
           systemInstanceId: params.systemInstanceId,
-        };
-      },
-    ),
-    updateConfigState: assign(
-      (_, params: { configState: InstanceConfigState | null }) => {
-        return {
+        }),
+        ...(params.configState !== undefined && {
           configState: params.configState,
-        };
-      },
+        }),
+        ...(params.connections !== undefined && {
+          connections: params.connections,
+        }),
+        ...(params.flows !== undefined && { flows: params.flows }),
+      }),
     ),
-    updateFlows: assign((_, params: { flows: Flow[] }) => {
-      return {
-        flows: params.flows,
-      };
-    }),
-    updateConnections: assign((_, params: { connections: Connection[] }) => {
-      return {
-        connections: params.connections,
-      };
-    }),
-  },
-  actors: {
-    getIntegration,
-  },
-  guards: {
-    hasIntegrationId: ({ context }) => Boolean(context.integrationId),
-    hasFlowId: ({ context }) => Boolean(context.flowId),
-    hasSystemInstanceId: ({ context }) => Boolean(context.systemInstanceId),
-  },
-}).createMachine({
-  id: "integration",
-  initial: "INITIALIZING",
-  context: ({ input }) => {
-    const context: IntegrationContext = {
+    clearContext: assign(() => ({
       integrationId: null,
       systemInstanceId: "",
       configState: null,
       connections: [],
-      flowId: "",
+      flow: null,
       flows: [],
-      "@input": input,
-    };
-
-    return context;
+    })),
+  },
+  guards: {
+    hasIntegrationId: ({ context }) => Boolean(context.integrationId),
+    hasFlow: ({ context }) => Boolean(context.flow),
+    hasSystemInstanceId: ({ context }) => Boolean(context.systemInstanceId),
+    hasData: ({ context }) =>
+      Boolean(context.systemInstanceId) || context.flows.length > 0,
+  },
+}).createMachine({
+  id: "integration",
+  initial: "IDLE",
+  context: {
+    integrationId: null,
+    systemInstanceId: "",
+    configState: null,
+    connections: [],
+    flow: null,
+    flows: [],
   },
   states: {
     IDLE: {
       tags: "idle",
       on: {
-        FETCH: "INITIALIZING",
-        SET_FLOW_ID: {
+        SET_FLOW: {
           actions: [
             {
-              type: "updateFlowId",
-              params: ({ event }) => ({ flowId: event.flowId }),
+              type: "updateFlow",
+              params: ({ event }) => ({ flow: event.flow }),
             },
           ],
         },
@@ -115,73 +109,48 @@ export const integrationMachine = setup({
               params: ({ event }) => ({ integrationId: event.integrationId }),
             },
           ],
-          target: "INITIALIZING",
+          target: "AWAITING_DATA",
+        },
+        SYNC_DATA: {
+          actions: [
+            {
+              type: "syncData",
+              params: ({ event }) => event.data,
+            },
+          ],
+        },
+        CLEAR: {
+          actions: "clearContext",
         },
       },
     },
-    INITIALIZING: {
+    AWAITING_DATA: {
       tags: "loading",
-      always: [
-        {
-          target: "FETCHING",
-          guard: "hasIntegrationId",
-        },
-        {
-          target: "IDLE",
-        },
-      ],
-    },
-    FETCHING: {
-      tags: "loading",
-      invoke: {
-        src: "getIntegration",
-        input: ({ context }) => ({
-          integrationId: context.integrationId as string,
-          accessToken: context["@input"].accessToken,
-          prismaticUrl: context["@input"].prismaticUrl,
-        }),
-        onDone: {
+      on: {
+        SYNC_DATA: {
           actions: [
             {
-              type: "updateFlows",
-              params: ({ event }) => {
-                return {
-                  flows: event.output.flows,
-                };
-              },
-            },
-            {
-              type: "updateFlowId",
-              params: ({ event }) => ({ flowId: event.output.flows[0].id }),
-            },
-            {
-              type: "updateSystemInstanceId",
-              params: ({ event }) => {
-                return {
-                  systemInstanceId: event.output.systemInstanceId,
-                };
-              },
-            },
-            {
-              type: "updateConfigState",
-              params: ({ event }) => {
-                return {
-                  configState: event.output.configState,
-                };
-              },
-            },
-            {
-              type: "updateConnections",
-              params: ({ event }) => {
-                return {
-                  connections: event.output.connections,
-                };
-              },
+              type: "syncData",
+              params: ({ event }) => event.data,
             },
           ],
+        },
+        SET_INTEGRATION_ID: {
+          actions: [
+            {
+              type: "updateIntegrationId",
+              params: ({ event }) => ({ integrationId: event.integrationId }),
+            },
+          ],
+        },
+        CLEAR: {
+          actions: "clearContext",
           target: "IDLE",
         },
-        onError: "IDLE",
+      },
+      always: {
+        guard: "hasData",
+        target: "IDLE",
       },
     },
   },

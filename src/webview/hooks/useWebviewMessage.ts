@@ -1,8 +1,6 @@
-import { MessageHandlerManager } from "@extension/MessageHandlerManager";
+import { messageHandlerManager } from "@extension/MessageHandlerManager";
 import type { MessageType } from "@type/messages";
 import { useCallback, useEffect, useState } from "react";
-
-const messageHandlerManager = new MessageHandlerManager();
 
 type MessageMap = {
   [K in MessageType["type"]]: Extract<MessageType, { type: K }>;

@@ -13,19 +13,8 @@ export function createExecutionResultsViewProvider(
       viewType: WEBVIEW_CONFIG.viewType,
       title: WEBVIEW_CONFIG.title,
       scriptPath: WEBVIEW_CONFIG.scriptPath,
-      onMessage: (message, postMessage) => {
+      onMessage: (message) => {
         switch (message.type) {
-          case "executionResults.example": {
-            vscode.window.showInformationMessage(
-              `Received from execution results view: ${message.payload}`,
-            );
-
-            postMessage({
-              type: "executionResults.example",
-              payload: `VS Code received your message at ${new Date().toLocaleTimeString()}`,
-            });
-            break;
-          }
           case "executionResults.error": {
             vscode.window.showErrorMessage(message.payload.message);
             break;
