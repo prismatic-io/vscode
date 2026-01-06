@@ -130,6 +130,7 @@ export const testIntegrationFlowMachine = setup({
               log(
                 "WARN",
                 "Opening config wizard. Complete the instance setup, then proceed with a new test.",
+                true,
               ),
             "configureInstance",
           ],

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type React from "react";
 import { messageHandlerManager } from "@extension/MessageHandlerManager";
 import type { Connection } from "@/types/connections";
@@ -309,6 +309,31 @@ export const App: React.FC = () => {
   });
   const { flows, flow, setFlow, connections, configState, isLoading } =
     useIntegrationContext();
+
+  // Auto-expand connections that need configuration or authorization
+  useEffect(() => {
+    const connectionsNeedingAttention = connections.filter((connection) => {
+      const missingInputs = connection.inputs.filter(
+        (i) => !i.hasValue && i.name !== "scopes",
+      );
+      // Same logic as getStatusDotColor - expand if not fully configured
+      return (
+        connection.status === "ERROR" ||
+        missingInputs.length > 0 ||
+        connection.status !== "ACTIVE"
+      );
+    });
+
+    if (connectionsNeedingAttention.length > 0) {
+      setExpandedConnections((prev) => {
+        const next = new Set(prev);
+        for (const connection of connectionsNeedingAttention) {
+          next.add(connection.id);
+        }
+        return next;
+      });
+    }
+  }, [connections]);
 
   const integrationPath = workspaceState?.activeIntegrationPath;
   const integrationName = integrationPath

@@ -15,6 +15,10 @@ export function createConfigWizardPanel(context: vscode.ExtensionContext) {
       onMessage: async (message, _postMessage) => {
         switch (message.type) {
           case "configWizard.closed": {
+            // Refresh integration details to pick up new config state
+            await vscode.commands.executeCommand(
+              "prismatic.integrationDetails.refresh",
+            );
             configWizardProvider.close();
             break;
           }
