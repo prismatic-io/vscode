@@ -4,9 +4,9 @@ This guide is for internal Prismatic developers working on the VS Code extension
 
 ## Prerequisites
 
-- **Node.js**: Version specified in `.tool-versions` (currently 22.11.0)
+- **Node.js**: Version specified in `mise.toml` (currently 22.11.0)
 - **VS Code**: Version 1.96.0 or higher
-- **asdf**: Installed globally for Node.js version management (recommended)
+- **mise**: Installed globally for Node.js version management (recommended)
 - **Prismatic CLI**: Installed globally (`npm install -g @prismatic-io/prism`)
 - **Git**: For version control
 
@@ -25,14 +25,14 @@ npm install
 
 ### 2. Environment Setup
 
-The project uses asdf for Node.js version management. If you don't have asdf installed globally:
+The project uses mise for Node.js version management. If you don't have mise installed globally:
 
 ```bash
-# Install asdf globally (if not already installed)
-# See: https://asdf-vm.com/guide/getting-started.html
+# Install mise globally (if not already installed)
+# See: https://mise.jdx.dev/getting-started.html
 
 # Install the correct Node.js version for this project
-asdf install
+mise install
 
 # Verify Node.js version
 node --version  # Should show 22.11.0
