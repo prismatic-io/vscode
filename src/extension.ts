@@ -118,7 +118,7 @@ export async function activate(context: vscode.ExtensionContext) {
         try {
           const user = await authManager.getCurrentUser();
 
-          log("INFO", `\n${user}`);
+          log("INFO", `\n${user}\n`);
         } catch (error) {
           log("ERROR", String(error));
         }
@@ -494,15 +494,10 @@ export async function deactivate() {
 }
 
 export const log = (
-  level: "SUCCESS" | "WARN" | "ERROR" | "INFO" | "COMMAND",
+  level: "SUCCESS" | "WARN" | "ERROR" | "INFO" | "DEBUG",
   message: string,
   showMessage = false,
 ) => {
-  // Skip COMMAND logs in production
-  if (level === "COMMAND" && process.env.NODE_ENV === "production") {
-    return;
-  }
-
   const timestamp = new Date().toISOString();
   const emoji =
     level === "SUCCESS"
@@ -513,8 +508,8 @@ export const log = (
           ? "❌"
           : level === "INFO"
             ? "ℹ️"
-            : level === "COMMAND"
-              ? "🔧"
+            : level === "DEBUG"
+              ? "🐛"
               : "";
 
   outputChannel.appendLine(`[${timestamp}] ${emoji} [${level}] ${message}`);

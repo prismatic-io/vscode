@@ -7,6 +7,7 @@ import * as vscode from "vscode";
 import {
   buildExecCommand,
   buildSpawnCommand,
+  logExecContext,
 } from "@/extension/lib/buildCommand";
 import type { ExecutablePath } from "@/extension/lib/findExecutable";
 import { findPrismExecutable } from "@/extension/lib/findPrismExecutable";
@@ -84,14 +85,18 @@ export class PrismCLIManager {
     try {
       const fullCommand = buildExecCommand(this.prismExecutable, [command]);
 
+      const execEnv = {
+        ...process.env,
+        PRISMATIC_URL: globalState.prismaticUrl,
+        // explicitly override DEBUG to prevent Node's require from dumping debug data when CNI projects set DEBUG=true via dotenv
+        DEBUG: undefined,
+      };
+
+      logExecContext({ command: fullCommand, cwd, env: execEnv });
+
       const { stdout, stderr } = await execAsync(fullCommand, {
         cwd,
-        env: {
-          ...process.env,
-          PRISMATIC_URL: globalState.prismaticUrl,
-          // explicitly override DEBUG to prevent Node's require from dumping debug data when CNI projects set DEBUG=true via dotenv
-          DEBUG: undefined,
-        },
+        env: execEnv,
       });
 
       return { stdout, stderr };
@@ -118,12 +123,16 @@ export class PrismCLIManager {
         "login",
       ]);
 
+      const spawnEnv = {
+        ...process.env,
+        PRISMATIC_URL: globalState?.prismaticUrl,
+      };
+
+      logExecContext({ command: `${command} ${args.join(" ")}`, env: spawnEnv });
+
       const loginProcess = spawn(command, args, {
         stdio: ["pipe", "pipe", "pipe"],
-        env: {
-          ...process.env,
-          PRISMATIC_URL: globalState?.prismaticUrl,
-        },
+        env: spawnEnv,
       });
 
       let promptShown = false;
