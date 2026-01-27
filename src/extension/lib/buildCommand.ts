@@ -17,8 +17,13 @@ export function buildExecCommand(
   const allArgs = [...executable.args, ...additionalArgs];
 
   if (executable.isNpx) {
-    return `npx ${allArgs.join(" ")}`;
+    const baseCommand = `npx ${allArgs.join(" ")}`;
+    return executable.isWsl ? `wsl.exe ${baseCommand}` : baseCommand;
   } else {
+    if (executable.isWsl) {
+      // For WSL, use -e flag to execute command directly without shell interpretation
+      return `wsl.exe -e ${executable.command} ${allArgs.join(" ")}`;
+    }
     return `"${executable.command}" ${allArgs.join(" ")}`;
   }
 }
@@ -37,9 +42,24 @@ export function buildSpawnCommand(
   const allArgs = [...executable.args, ...additionalArgs];
 
   if (executable.isNpx) {
+    if (executable.isWsl) {
+      // Wrap npx command with wsl.exe
+      return {
+        command: "wsl.exe",
+        args: ["npx", ...allArgs],
+      };
+    }
     return {
       command: "npx",
       args: allArgs,
+    };
+  }
+
+  if (executable.isWsl) {
+    // Wrap command with wsl.exe -e for direct execution
+    return {
+      command: "wsl.exe",
+      args: ["-e", executable.command, ...allArgs],
     };
   }
 
