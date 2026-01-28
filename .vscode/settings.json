@@ -18,7 +18,13 @@
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "terminal.integrated.env.osx": {
-    "PATH": "${env:PATH}:/usr/local/bin"
+    "PATH": "${env:HOME}/.local/share/mise/shims:${env:PATH}:/usr/local/bin"
+  },
+  "terminal.integrated.env.linux": {
+    "PATH": "${env:HOME}/.local/share/mise/shims:${env:PATH}"
+  },
+  "terminal.integrated.env.windows": {
+    "PATH": "${env:USERPROFILE}\\AppData\\Local\\mise\\shims;${env:PATH}"
   },
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
