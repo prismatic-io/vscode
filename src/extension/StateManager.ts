@@ -15,12 +15,17 @@ const DEFAULT_GLOBAL_STATE: GlobalState = {
 const WORKSPACE_STATE_KEY = "prismatic-workspace-state";
 
 const DEFAULT_WORKSPACE_STATE: WorkspaceState = {
+  activeIntegrationPath: undefined,
   debugMode: undefined,
   headers: undefined,
   payload: undefined,
   integrationId: undefined,
   systemInstanceId: undefined,
   flow: undefined,
+  // Integration runtime data
+  configState: undefined,
+  flows: undefined,
+  connections: undefined,
 };
 
 export class StateManager {
@@ -199,6 +204,34 @@ export class StateManager {
    */
   async getWorkspaceState(): Promise<WorkspaceState | undefined> {
     return this.workspaceState.get<WorkspaceState>(WORKSPACE_STATE_KEY);
+  }
+
+  /**
+   * Synchronously retrieves the workspace state.
+   * @returns The workspace state, or undefined if not found
+   */
+  getWorkspaceStateSync(): WorkspaceState | undefined {
+    return this.workspaceState.get<WorkspaceState>(WORKSPACE_STATE_KEY);
+  }
+
+  /**
+   * Switches to a new active integration and resets related state.
+   * @param integrationPath - The path to the integration directory (parent of .spectral)
+   */
+  public async switchActiveIntegration(integrationPath: string): Promise<void> {
+    await this.updateWorkspaceState({
+      activeIntegrationPath: integrationPath,
+      integrationId: undefined,
+      systemInstanceId: undefined,
+      flow: undefined,
+      headers: undefined,
+      payload: undefined,
+      debugMode: undefined,
+      // Clear integration runtime data
+      configState: undefined,
+      flows: undefined,
+      connections: undefined,
+    });
   }
 
   /**

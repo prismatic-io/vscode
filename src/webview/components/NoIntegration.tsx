@@ -18,7 +18,7 @@ const Container = styled(ContainerBase)`
   display: flex;
   height: 100%;
   justify-content: center;
-  padding: 0;
+  padding: 12px;
 `;
 
 const TextContainer = styled(TextBase)`

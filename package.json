@@ -68,6 +68,15 @@
         }
       }
     },
+    "icons": {
+      "prismatic-logo": {
+        "description": "Prismatic logo",
+        "default": {
+          "fontPath": "./resources/fonts/prismatic-icons.woff2",
+          "fontCharacter": "\\F101"
+        }
+      }
+    },
     "commands": [
       {
         "command": "prismatic.configWizard",
@@ -135,14 +144,72 @@
         "icon": "$(refresh)"
       },
       {
+        "command": "prismatic.integrationDetails.refresh",
+        "title": "Refresh Integration Details",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "prismatic.integrations.select",
+        "title": "Select Integration",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled"
+      },
+      {
         "command": "prismatic.flows.createPayload",
         "title": "Create Flow Payload",
         "category": "Prismatic",
         "enablement": "prismatic.workspaceEnabled",
         "icon": "$(add)"
+      },
+      {
+        "command": "prismatic.integrations.revealInExplorer",
+        "title": "Reveal in Explorer",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled",
+        "icon": "$(folder-opened)"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "prismaticIntegrations",
+          "title": "Prismatic",
+          "icon": "resources/prismatic.svg"
+        }
+      ],
+      "panel": [
+        {
+          "id": "executionResults",
+          "title": "Prismatic",
+          "icon": "resources/prismatic.svg",
+          "when": "prismatic.workspaceEnabled"
+        }
+      ]
+    },
     "views": {
+      "prismaticIntegrations": [
+        {
+          "id": "prismatic.integrationsView",
+          "name": "Integrations",
+          "icon": "resources/prismatic.svg",
+          "contextualTitle": "Prismatic Integrations"
+        },
+        {
+          "type": "webview",
+          "id": "integrationDetails.webview",
+          "name": "Development Instance",
+          "icon": "resources/prismatic.svg",
+          "contextualTitle": "Development Instance"
+        },
+        {
+          "id": "prismatic.flowPayloadsView",
+          "name": "Test Payloads",
+          "icon": "resources/prismatic.svg",
+          "contextualTitle": "Flow Test Payloads"
+        }
+      ],
       "executionResults": [
         {
           "type": "webview",
@@ -153,16 +220,12 @@
         }
       ]
     },
-    "viewsContainers": {
-      "panel": [
-        {
-          "id": "executionResults",
-          "title": "Prismatic",
-          "icon": "resources/prismatic.svg",
-          "when": "prismatic.workspaceEnabled"
-        }
-      ]
-    },
+    "viewsWelcome": [
+      {
+        "view": "prismatic.integrationsView",
+        "contents": "No integrations detected.\n\n[Learn more about Prismatic integrations](https://prismatic.io/docs)"
+      }
+    ],
     "menus": {
       "view/title": [
         {
@@ -175,12 +238,12 @@
           "when": "view == executionResults.webview && prismatic.workspaceEnabled",
           "group": "navigation@2"
         },
-         {
+        {
           "command": "prismatic.configWizard",
           "when": "view == executionResults.webview && prismatic.workspaceEnabled",
           "group": "navigation@3"
         },
-         {
+        {
           "command": "prismatic.integrations.import",
           "when": "view == executionResults.webview && prismatic.workspaceEnabled",
           "group": "navigation@4"
@@ -189,14 +252,57 @@
           "command": "prismatic.integrations.openInBrowser",
           "when": "view == executionResults.webview && prismatic.workspaceEnabled",
           "group": "navigation@5"
+        },
+        {
+          "command": "prismatic.integrationDetails.refresh",
+          "when": "view == integrationDetails.webview && prismatic.workspaceEnabled",
+          "group": "navigation@1"
+        },
+        {
+          "command": "prismatic.configWizard",
+          "when": "view == integrationDetails.webview && prismatic.workspaceEnabled",
+          "group": "navigation@2"
+        },
+        {
+          "command": "prismatic.integrations.import",
+          "when": "view == integrationDetails.webview && prismatic.workspaceEnabled",
+          "group": "navigation@3"
+        },
+        {
+          "command": "prismatic.integrations.openInBrowser",
+          "when": "view == integrationDetails.webview && prismatic.workspaceEnabled",
+          "group": "navigation@4"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "prismatic.integrations.select",
+          "when": "view == prismatic.integrationsView && viewItem == integrationItem",
+          "group": "navigation"
+        },
+        {
+          "command": "prismatic.integrations.revealInExplorer",
+          "when": "view == prismatic.integrationsView && viewItem == integrationItem",
+          "group": "inline"
+        },
+        {
+          "command": "prismatic.integrations.test",
+          "when": "view == prismatic.flowPayloadsView && viewItem == flowItem",
+          "group": "inline@1"
+        },
+        {
+          "command": "prismatic.flows.createPayload",
+          "when": "view == prismatic.flowPayloadsView && viewItem == flowItem",
+          "group": "inline@2"
         }
       ]
     }
   },
   "scripts": {
     "check-types": "tsc --noEmit",
+    "build:icons": "fantasticon",
     "build:dev": "node esbuild.js",
-    "build:prod": "npm run check-types && NODE_ENV=production node esbuild.js",
+    "build:prod": "npm run build:icons && npm run check-types && NODE_ENV=production node esbuild.js",
     "vscode:prepublish": "npm run build:prod",
     "watch": "node esbuild.js --watch",
     "package": "vsce package",
@@ -232,6 +338,7 @@
     "@vscode/vsce": "^3.6.0",
     "esbuild": "^0.25.3",
     "eslint": "^9.23.0",
+    "fantasticon": "^3.0.0",
     "jest": "^29.7.0",
     "npm-run-all": "^4.1.5",
     "ts-jest": "^29.1.2",

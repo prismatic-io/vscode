@@ -1,6 +1,7 @@
 import type { GlobalState, WorkspaceState } from "@type/state";
 import type { ConfigWizardMessage } from "@webview/views/configWizard/types";
 import type { ExecutionResultsMessage } from "@webview/views/executionResults/types";
+import type { IntegrationDetailsMessage } from "@webview/views/integrationDetails/types";
 
 export type MessageHandlerManager = (message: MessageType) => void;
 
@@ -38,7 +39,8 @@ export type MessageType =
   | StateChangeMessage
   | GetStateMessage
   | ExecutionResultsMessage
-  | ConfigWizardMessage;
+  | ConfigWizardMessage
+  | IntegrationDetailsMessage;
 
 export interface WebviewApi {
   postMessage(message: MessageType): void;

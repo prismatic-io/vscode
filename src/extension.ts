@@ -1,17 +1,30 @@
 import { AuthManager } from "@extension/AuthManager";
 import { PrismCLIManager } from "@extension/PrismCLIManager";
 import { StateManager } from "@extension/StateManager";
+import { StatusBarManager } from "@extension/StatusBarManager";
 import { createConfigWizardPanel } from "@webview/views/configWizard/ViewProvider";
 import { createExecutionResultsViewProvider } from "@webview/views/executionResults/ViewProvider";
+import { createIntegrationDetailsViewProvider } from "@webview/views/integrationDetails/ViewProvider";
 import { CONFIG } from "config";
 import * as vscode from "vscode";
-import { createActor } from "xstate";
+import { createActor, toPromise } from "xstate";
+import { getIntegration } from "@/extension/machines/integrationsFlowsTest/getIntegration";
 import { enableWorkspace } from "@/extension/lib/enableWorkspace";
 import { executeProjectNpmScript } from "@/extension/lib/executeProjectNpmScript";
 import { syncPrismaticUrl } from "@/extension/lib/syncPrismaticUrl";
 import { verifyIntegrationIntegrity } from "@/extension/lib/verifyIntegrationIntegrity";
+import path from "node:path";
 import { createFlowPayload } from "./extension/lib/flows/createFlowPayload";
 import { selectProjectFlowPayload } from "./extension/lib/flows/selectProjectFlowPayload";
+import {
+  FlowItem,
+  FlowPayloadsTreeDataProvider,
+} from "./extension/FlowPayloadsTreeDataProvider";
+import type { Flow } from "./types/flows";
+import {
+  IntegrationItem,
+  IntegrationsTreeDataProvider,
+} from "./extension/IntegrationsTreeDataProvider";
 import {
   type TestIntegrationFlowMachineActorRef,
   testIntegrationFlowMachine,
@@ -19,12 +32,16 @@ import {
 
 // Disposables
 let executionResultsViewProvider: vscode.Disposable | undefined;
+let integrationDetailsViewProvider: vscode.Disposable | undefined;
 let configWizardPanel: vscode.Disposable | undefined;
 let outputChannel: vscode.OutputChannel;
 let authManager: AuthManager;
 let stateManager: StateManager;
 let prismCLIManager: PrismCLIManager;
 let testIntegrationFlowActor: TestIntegrationFlowMachineActorRef | undefined;
+let integrationsTreeDataProvider: IntegrationsTreeDataProvider | undefined;
+let flowPayloadsTreeDataProvider: FlowPayloadsTreeDataProvider | undefined;
+let statusBarManager: StatusBarManager | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
   try {
@@ -83,6 +100,16 @@ export async function activate(context: vscode.ExtensionContext) {
     await authManager.performInitialAuthFlow();
 
     /**
+     * Initialize Status Bar Manager
+     */
+    log("INFO", "Initializing Status Bar Manager...");
+    statusBarManager = await StatusBarManager.initialize(
+      authManager,
+      stateManager,
+      context,
+    );
+
+    /**
      * Sync the prismatic url
      */
     await syncPrismaticUrl();
@@ -94,14 +121,97 @@ export async function activate(context: vscode.ExtensionContext) {
 
     /**
      * Register views
-     *   - settings
+     *   - integrations (Activity Bar sidebar)
      *   - execution results
      *   - config wizard
      */
     log("INFO", "Registering views...");
 
+    // Register Integrations TreeView (Activity Bar sidebar)
+    integrationsTreeDataProvider = new IntegrationsTreeDataProvider();
+    const integrationsTreeView = vscode.window.createTreeView(
+      "prismatic.integrationsView",
+      {
+        treeDataProvider: integrationsTreeDataProvider,
+        showCollapseAll: false,
+      },
+    );
+    context.subscriptions.push(integrationsTreeView);
+
+    // Watch for workspace folder changes
+    context.subscriptions.push(
+      vscode.workspace.onDidChangeWorkspaceFolders(() => {
+        integrationsTreeDataProvider?.refresh();
+      }),
+    );
+
+    // Watch for .spectral directory changes
+    const spectralWatcher = vscode.workspace.createFileSystemWatcher(
+      "**/.spectral",
+      false,
+      true,
+      false,
+    );
+    spectralWatcher.onDidCreate(() => {
+      integrationsTreeDataProvider?.refresh();
+      enableWorkspace();
+    });
+    spectralWatcher.onDidDelete(() => {
+      integrationsTreeDataProvider?.refresh();
+      enableWorkspace();
+    });
+    context.subscriptions.push(spectralWatcher);
+
+    // Register Flow Payloads TreeView
+    flowPayloadsTreeDataProvider = new FlowPayloadsTreeDataProvider();
+    const flowPayloadsTreeView = vscode.window.createTreeView(
+      "prismatic.flowPayloadsView",
+      {
+        treeDataProvider: flowPayloadsTreeDataProvider,
+        showCollapseAll: true,
+      },
+    );
+    context.subscriptions.push(flowPayloadsTreeView);
+
+    // Auto-select first integration if none active, or restore previous selection
+    const currentWorkspaceState = await stateManager.getWorkspaceState();
+    if (!currentWorkspaceState?.activeIntegrationPath) {
+      const integrations = integrationsTreeDataProvider.getChildren();
+      if (integrations.length > 0) {
+        await stateManager.updateWorkspaceState({
+          activeIntegrationPath: integrations[0].integrationPath,
+        });
+        integrationsTreeDataProvider.setActiveIntegration(
+          integrations[0].integrationPath,
+        );
+        flowPayloadsTreeDataProvider.setActiveIntegrationPath(
+          integrations[0].integrationPath,
+        );
+        log(
+          "INFO",
+          `Auto-selected integration: ${path.basename(integrations[0].integrationPath)}`,
+        );
+      }
+    } else {
+      // Restore previous selection in tree view
+      integrationsTreeDataProvider.setActiveIntegration(
+        currentWorkspaceState.activeIntegrationPath,
+      );
+      flowPayloadsTreeDataProvider.setActiveIntegrationPath(
+        currentWorkspaceState.activeIntegrationPath,
+      );
+      // Set flows from workspace state (populated by verifyIntegrationIntegrity)
+      if (currentWorkspaceState.flows) {
+        flowPayloadsTreeDataProvider.setFlows(currentWorkspaceState.flows);
+      }
+    }
+
     executionResultsViewProvider = createExecutionResultsViewProvider(context);
     context.subscriptions.push(executionResultsViewProvider);
+
+    integrationDetailsViewProvider =
+      createIntegrationDetailsViewProvider(context);
+    context.subscriptions.push(integrationDetailsViewProvider);
 
     configWizardPanel = createConfigWizardPanel(context);
     context.subscriptions.push(configWizardPanel);
@@ -136,6 +246,9 @@ export async function activate(context: vscode.ExtensionContext) {
         try {
           const result = await authManager.login();
 
+          // Update status bar after successful login
+          await statusBarManager?.updateUserStatusBar();
+
           log("SUCCESS", result, true);
         } catch (error) {
           log("ERROR", String(error), true);
@@ -153,6 +266,9 @@ export async function activate(context: vscode.ExtensionContext) {
       async () => {
         try {
           const result = await authManager.logout();
+
+          // Update status bar after logout
+          await statusBarManager?.updateUserStatusBar();
 
           log("SUCCESS", result, true);
         } catch (error) {
@@ -291,11 +407,14 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     /**
+     * command: prismatic.integrations.test
      * This command is used to run a test for the integration.
+     * - When called with a FlowItem (from tree view click): uses that flow directly
+     * - When called without arguments (from command palette or execution panel): uses the currently selected flow, or shows a quick pick if none selected
      */
     const integrationFlowTestCommand = vscode.commands.registerCommand(
       "prismatic.integrations.test",
-      async () => {
+      async (item?: FlowItem) => {
         log("INFO", "Starting integration test...");
 
         try {
@@ -305,7 +424,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
           const accessToken = await authManager.getAccessToken();
           const globalState = await stateManager.getGlobalState();
-          const workspaceState = await stateManager.getWorkspaceState();
+          let workspaceState = await stateManager.getWorkspaceState();
 
           if (!workspaceState?.integrationId) {
             throw new Error(
@@ -317,20 +436,55 @@ export async function activate(context: vscode.ExtensionContext) {
             throw new Error("No test integration actor available.");
           }
 
-          if (!workspaceState.flow) {
-            throw new Error("No flow selected. Please select a flow first.");
+          // Determine target flow
+          let targetFlow = item?.flow ?? workspaceState.flow;
+
+          // If no flow provided or selected, show quick pick
+          if (!targetFlow) {
+            const flows = workspaceState.flows ?? [];
+            if (flows.length === 0) {
+              throw new Error("No flows available for this integration.");
+            }
+
+            const items = flows.map((flow) => ({
+              label: flow.name,
+              description: flow.stableKey,
+              flow,
+            }));
+
+            const selected = await vscode.window.showQuickPick(items, {
+              placeHolder: "Select a flow to test",
+              title: "Select Flow",
+            });
+
+            if (!selected) {
+              return; // User cancelled
+            }
+            targetFlow = selected.flow;
           }
 
+          // Update workspace state with selected flow if it changed
+          if (item?.flow || !workspaceState.flow) {
+            await stateManager.updateWorkspaceState({ flow: targetFlow });
+            workspaceState = await stateManager.getWorkspaceState();
+          }
+
+          // Focus the execution results panel
+          vscode.commands.executeCommand("executionResults.webview.focus");
+
           const selectedFlowPayload = await selectProjectFlowPayload(
-            workspaceState.flow.stableKey,
+            targetFlow.stableKey,
           );
 
           testIntegrationFlowActor.send({
             type: "TEST_INTEGRATION",
-            integrationId: workspaceState.integrationId,
-            flowId: workspaceState.flow.id,
+            integrationId: workspaceState!.integrationId!,
+            flowId: targetFlow.id,
             accessToken,
             prismaticUrl: globalState?.prismaticUrl ?? CONFIG.prismaticUrl,
+            configState: workspaceState!.configState ?? null,
+            systemInstanceId: workspaceState!.systemInstanceId!,
+            flows: workspaceState!.flows ?? [],
             ...(selectedFlowPayload
               ? {
                   payload: JSON.stringify(selectedFlowPayload.data, null, 2),
@@ -393,6 +547,9 @@ export async function activate(context: vscode.ExtensionContext) {
         try {
           const result = await authManager.login();
 
+          // Update status bar after re-login with new URL
+          await statusBarManager?.updateUserStatusBar();
+
           log("SUCCESS", result, true);
         } catch (error) {
           log("ERROR", String(error), true);
@@ -420,38 +577,211 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(executionResultsRefetchCommand);
 
     /**
-     * command: prismatic.flows.createPayload
-     * This command is used to create a new payload file for the selected flow.
+     * command: prismatic.integrationDetails.refresh
+     * This command is used to trigger a refresh of integration details.
+     * Fetches fresh data from the API and updates workspace state.
      */
-    const flowPayloadCreateCommand = vscode.commands.registerCommand(
-      "prismatic.flows.createPayload",
+    const integrationDetailsRefreshCommand = vscode.commands.registerCommand(
+      "prismatic.integrationDetails.refresh",
       async () => {
+        const workspaceState = await stateManager.getWorkspaceState();
+        const globalState = await stateManager.getGlobalState();
+
+        if (
+          workspaceState?.integrationId &&
+          globalState?.accessToken &&
+          globalState?.prismaticUrl
+        ) {
+          try {
+            const dataActor = createActor(getIntegration, {
+              input: {
+                integrationId: workspaceState.integrationId,
+                accessToken: globalState.accessToken,
+                prismaticUrl: globalState.prismaticUrl,
+              },
+            });
+            dataActor.start();
+            const result = await toPromise(dataActor);
+
+            await stateManager.updateWorkspaceState({
+              systemInstanceId: result.systemInstanceId,
+              configState: result.configState ?? undefined,
+              flows: result.flows,
+              connections: result.connections,
+            });
+
+            flowPayloadsTreeDataProvider?.setFlows(result.flows);
+          } catch (error) {
+            log("ERROR", `Failed to refresh integration details: ${error}`);
+          }
+        }
+      },
+    );
+    context.subscriptions.push(integrationDetailsRefreshCommand);
+
+
+    /**
+     * command: prismatic.integrations.select
+     * This command is used to select an active integration.
+     * - When called with an IntegrationItem (from tree view click): switches directly to that integration
+     * - When called without arguments (from status bar or command palette): shows a quick pick to select
+     */
+    const selectIntegrationCommand = vscode.commands.registerCommand(
+      "prismatic.integrations.select",
+      async (item?: IntegrationItem) => {
+        let targetIntegration: IntegrationItem | undefined = item;
+
+        // If no item provided, show quick pick to select one
+        if (!targetIntegration) {
+          const integrations = integrationsTreeDataProvider?.getChildren() ?? [];
+
+          if (integrations.length === 0) {
+            log("WARN", "No integrations found in workspace", true);
+            return;
+          }
+
+          const items = integrations.map((integration) => ({
+            label: integration.label as string,
+            description: integration.description as string,
+            integration,
+          }));
+
+          const selected = await vscode.window.showQuickPick(items, {
+            placeHolder: "Select an integration to switch to",
+            title: "Select Integration",
+          });
+
+          if (!selected) {
+            return; // User cancelled
+          }
+          targetIntegration = selected.integration;
+        }
+
+        log("INFO", `Selecting integration: ${targetIntegration.integrationPath}`);
+
+        try {
+          // Switch active integration (resets state)
+          await stateManager.switchActiveIntegration(targetIntegration.integrationPath);
+
+          // Update tree view to show new selection
+          integrationsTreeDataProvider?.setActiveIntegration(
+            targetIntegration.integrationPath,
+          );
+
+          // Update flow payloads tree view with new integration path
+          flowPayloadsTreeDataProvider?.setActiveIntegrationPath(
+            targetIntegration.integrationPath,
+          );
+
+          // Update status bar with new integration
+          await statusBarManager?.updateIntegrationStatusBar();
+
+          // Clear flows when switching integrations
+          flowPayloadsTreeDataProvider?.setFlows([]);
+
+          // Re-verify integration integrity for the new path (also fetches integration data)
+          await verifyIntegrationIntegrity();
+
+          // Set flows from newly fetched workspace state
+          const updatedState = await stateManager.getWorkspaceState();
+          if (updatedState?.flows) {
+            flowPayloadsTreeDataProvider?.setFlows(updatedState.flows);
+          }
+
+          log(
+            "SUCCESS",
+            `Switched to: ${path.basename(targetIntegration.integrationPath)}`,
+            true,
+          );
+        } catch (error) {
+          log("ERROR", `Failed to select integration: ${String(error)}`, true);
+        }
+      },
+    );
+    context.subscriptions.push(selectIntegrationCommand);
+
+    /**
+     * command: prismatic.integrations.revealInExplorer
+     * This command is used to reveal the integration directory in the file explorer.
+     */
+    const revealInExplorerCommand = vscode.commands.registerCommand(
+      "prismatic.integrations.revealInExplorer",
+      async (item?: IntegrationItem) => {
+        if (!item) {
+          log("WARN", "No integration item provided for reveal");
+          return;
+        }
+
+        try {
+          const uri = vscode.Uri.file(item.integrationPath);
+          await vscode.commands.executeCommand("revealInExplorer", uri);
+        } catch (error) {
+          log("ERROR", `Failed to reveal in explorer: ${String(error)}`, true);
+        }
+      },
+    );
+    context.subscriptions.push(revealInExplorerCommand);
+
+    /**
+     * command: prismatic.flowPayloads.setFlows
+     * This command is used to set the flows in the flow payloads tree view.
+     * Called from the webview when flows are loaded.
+     */
+    const setFlowsCommand = vscode.commands.registerCommand(
+      "prismatic.flowPayloads.setFlows",
+      (flows: Flow[]) => {
+        flowPayloadsTreeDataProvider?.setFlows(flows);
+      },
+    );
+    context.subscriptions.push(setFlowsCommand);
+
+    /**
+     * command: prismatic.flows.createPayload
+     * This command is used to create a new payload file for a flow.
+     * When called with a FlowItem argument (from tree view), uses that flow.
+     * When called without arguments (from command palette), uses the active flow.
+     */
+    const createPayloadFromFlowCommand = vscode.commands.registerCommand(
+      "prismatic.flows.createPayload",
+      async (item?: FlowItem) => {
         log("INFO", "Starting payload creation...");
 
         try {
           const workspaceState = await stateManager.getWorkspaceState();
 
-          if (!workspaceState?.flow) {
+          if (!workspaceState?.activeIntegrationPath) {
+            throw new Error(
+              "No active integration. Please select an integration first.",
+            );
+          }
+
+          // Use provided FlowItem or fall back to active flow from workspace state
+          const stableKey = item?.stableKey ?? workspaceState?.flow?.stableKey;
+          const flowName = item?.flow.name ?? workspaceState?.flow?.name;
+
+          if (!stableKey) {
             throw new Error("No flow selected. Please select a flow first.");
           }
 
           const filePath = await createFlowPayload(
-            workspaceState.flow.stableKey,
+            stableKey,
+            workspaceState.activeIntegrationPath,
           );
 
           if (filePath) {
             log(
               "SUCCESS",
-              `Payload created successfully for flow: ${workspaceState.flow.name}`,
+              `Payload created successfully for flow: ${flowName}`,
               true,
             );
+            flowPayloadsTreeDataProvider?.refresh();
           }
         } catch (error) {
           log("ERROR", String(error), true);
         }
       },
     );
-    context.subscriptions.push(flowPayloadCreateCommand);
+    context.subscriptions.push(createPayloadFromFlowCommand);
 
     log("SUCCESS", "Extension initialization complete!");
   } catch (error) {
@@ -479,11 +809,15 @@ export async function deactivate() {
     // Dispose of prism CLI
     prismCLIManager.dispose();
 
+    // Dispose of status bar manager
+    statusBarManager?.dispose();
+
     // Dispose of test integration flow actor
     testIntegrationFlowActor?.stop();
 
     // Dispose of views
     executionResultsViewProvider?.dispose();
+    integrationDetailsViewProvider?.dispose();
     configWizardPanel?.dispose();
 
     // Dispose of output channel

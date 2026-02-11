@@ -35,7 +35,15 @@ export const verifyIntegrationIntegrity = async (): Promise<void> => {
 
     dataActor.start();
 
-    await toPromise(dataActor);
+    const result = await toPromise(dataActor);
+
+    // Store integration data in workspace state
+    await stateManager.updateWorkspaceState({
+      systemInstanceId: result.systemInstanceId,
+      configState: result.configState ?? undefined,
+      flows: result.flows,
+      connections: result.connections,
+    });
   } catch (_error) {
     log(
       "WARN",
@@ -45,24 +53,39 @@ export const verifyIntegrationIntegrity = async (): Promise<void> => {
     await stateManager.updateWorkspaceState({
       integrationId: undefined,
       flow: undefined,
+      configState: undefined,
+      flows: undefined,
+      connections: undefined,
     });
   }
 };
 
 /**
  * Synchronizes the integration ID between workspace state and the SPECTRAL_DIR/prism.json file.
+ * Uses the active integration path from workspace state.
  * @returns Promise that resolves to the current integration ID, or undefined if none found
  */
 export const syncIntegrationId = async (): Promise<string | undefined> => {
-  // step 1. check if integrationId is already in workspace state
   const stateManager = StateManager.getInstance();
   const workspaceState = await stateManager.getWorkspaceState();
 
-  // step 2. check if integrationId is in SPECTRAL_DIR/prism.json file
-  const { fileData } = getWorkspaceJsonFile({
-    directory: SPECTRAL_DIR,
-    fileName: "prism.json",
-  });
+  // If no active integration is selected, return existing integrationId
+  if (!workspaceState?.activeIntegrationPath) {
+    return workspaceState?.integrationId;
+  }
+
+  // Check if integrationId is in SPECTRAL_DIR/prism.json file
+  let fileData: Record<string, unknown> | null = null;
+  try {
+    const result = getWorkspaceJsonFile({
+      directory: SPECTRAL_DIR,
+      fileName: "prism.json",
+    });
+    fileData = result.fileData;
+  } catch {
+    // No active integration path set yet
+    return workspaceState?.integrationId;
+  }
 
   if (fileData && "integrationId" in fileData && fileData.integrationId) {
     const fileIntegrationId = fileData.integrationId as string;

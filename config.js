@@ -16,6 +16,14 @@ const CONFIG = {
       title: "Config Wizard",
       viewType: "configWizard.webview",
     },
+    integrationDetails: {
+      command: "prismatic.integrationDetails",
+      entryPoint: "src/webview/views/integrationDetails/index.tsx",
+      outdir: "dist/integrationDetailsView",
+      scriptPath: "dist/integrationDetailsView/index.js",
+      title: "Development Instance",
+      viewType: "integrationDetails.webview",
+    },
   },
   prismaticUrl: "https://app.prismatic.io",
 };

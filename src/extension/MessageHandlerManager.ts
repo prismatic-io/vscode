@@ -4,7 +4,7 @@ import type {
   WebviewApi,
 } from "@type/messages";
 
-export class MessageHandlerManager {
+class MessageHandlerManagerImpl {
   private readonly vscode: WebviewApi;
   private readonly handlers: Map<string, MessageHandlerManagerType[]>;
 
@@ -103,3 +103,23 @@ const getWebviewApi = (): WebviewApi => {
 
   return webviewApi;
 };
+
+// Singleton instance for shared use across all webview modules
+let messageHandlerInstance: MessageHandlerManagerImpl | null = null;
+
+/**
+ * Gets or creates the singleton MessageHandlerManager instance
+ * @returns The shared MessageHandlerManager instance
+ */
+export const getMessageHandlerManager = (): MessageHandlerManagerImpl => {
+  if (!messageHandlerInstance) {
+    messageHandlerInstance = new MessageHandlerManagerImpl();
+  }
+  return messageHandlerInstance;
+};
+
+// Export singleton instance for direct import
+export const messageHandlerManager = getMessageHandlerManager();
+
+// Export type for type annotations if needed
+export type MessageHandlerManager = MessageHandlerManagerImpl;

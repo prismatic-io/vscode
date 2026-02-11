@@ -11,6 +11,7 @@ import {
 } from "@/extension/lib/buildCommand";
 import type { ExecutablePath } from "@/extension/lib/findExecutable";
 import { findPrismExecutable } from "@/extension/lib/findPrismExecutable";
+import { getActiveIntegrationPath } from "@/extension/lib/getActiveIntegrationPath";
 
 const execAsync = promisify(exec);
 
@@ -78,9 +79,7 @@ export class PrismCLIManager {
       );
     }
 
-    const cwd = fromWorkspace
-      ? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
-      : undefined;
+    const cwd = fromWorkspace ? getActiveIntegrationPath() : undefined;
 
     try {
       const fullCommand = buildExecCommand(this.prismExecutable, [command]);

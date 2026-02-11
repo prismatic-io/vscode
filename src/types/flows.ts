@@ -8,4 +8,8 @@ export interface Flow {
   id: string;
   name: string;
   stableKey: string;
+  isSynchronous: boolean;
+  usesFifoQueue: boolean;
+  endpointSecurityType: string;
+  testUrl: string;
 }

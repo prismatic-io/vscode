@@ -1,8 +1,3 @@
-export interface ExecutionResultsExampleMessage {
-  type: "executionResults.example";
-  payload: string;
-}
-
 export interface ExecutionResultsErrorMessage {
   type: "executionResults.error";
   payload: {
@@ -17,7 +12,6 @@ export interface ExecutionResultsRefetchMessage {
 }
 
 export type ExecutionResultsMessage =
-  | ExecutionResultsExampleMessage
   | ExecutionResultsErrorMessage
   | ExecutionResultsRefetchMessage;
 
