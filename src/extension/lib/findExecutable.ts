@@ -1,5 +1,6 @@
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
+import { isWslRemote } from "./isWslRemote";
 
 const execAsync = promisify(exec);
 
@@ -12,6 +13,7 @@ export interface ExecutablePath {
   command: string;
   args: string[];
   isNpx: boolean;
+  isWsl: boolean;
 }
 
 export async function findExecutable(
@@ -19,16 +21,23 @@ export async function findExecutable(
   options: FindExecutablePathOptions = {},
 ): Promise<ExecutablePath | null> {
   const { npxPackage, logPrefix = "findExecutable" } = options;
+  const isWsl = isWslRemote() && process.platform === "win32";
 
   // Test if the package is available via npx
   if (npxPackage) {
     try {
-      await execAsync(`npx ${npxPackage} --version`);
+      // In WSL remote, run npx via wsl.exe
+      const npxCommand = isWsl
+        ? `wsl.exe npx ${npxPackage} --version`
+        : `npx ${npxPackage} --version`;
+
+      await execAsync(npxCommand);
 
       return {
         command: "npx",
         args: [npxPackage],
         isNpx: true,
+        isWsl,
       };
     } catch (error) {
       console.error(
@@ -40,10 +49,16 @@ export async function findExecutable(
 
   // Fallback to which/where for direct executable lookup
   try {
-    const cmd =
-      process.platform === "win32"
-        ? `where ${executable}`
-        : `which ${executable}`;
+    let cmd: string;
+
+    if (isWsl) {
+      // In WSL remote on Windows, use wsl.exe to run which
+      cmd = `wsl.exe which ${executable}`;
+    } else if (process.platform === "win32") {
+      cmd = `where ${executable}`;
+    } else {
+      cmd = `which ${executable}`;
+    }
 
     const { stdout } = await execAsync(cmd);
 
@@ -54,6 +69,7 @@ export async function findExecutable(
         command: result,
         args: [],
         isNpx: false,
+        isWsl,
       };
     }
   } catch (error) {
