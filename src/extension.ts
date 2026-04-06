@@ -5,7 +5,7 @@ import { StatusBarManager } from "@extension/StatusBarManager";
 import { createConfigWizardPanel } from "@webview/views/configWizard/ViewProvider";
 import { createExecutionResultsViewProvider } from "@webview/views/executionResults/ViewProvider";
 import { createIntegrationDetailsViewProvider } from "@webview/views/integrationDetails/ViewProvider";
-import { CONFIG } from "config";
+import { CONFIG } from "@/config";
 import * as vscode from "vscode";
 import { createActor, toPromise } from "xstate";
 import { getIntegration } from "@/extension/machines/integrationsFlowsTest/getIntegration";

@@ -1,2 +1,56 @@
 [tools]
-nodejs = "22.11.0"
+node = "24"
+
+[tasks.lint]
+description = "Run Biome lint and format checks"
+run = "npm run check"
+
+[tasks.check-types]
+description = "Run TypeScript type checking"
+run = "npm run check-types"
+
+[tasks.test]
+description = "Run Jest test suite"
+run = "npm test"
+
+[tasks."build:icons"]
+description = "Generate icon font"
+run = "npm run build:icons"
+
+[tasks.build]
+description = "Build the extension"
+depends = ["build:icons", "check-types"]
+run = "NODE_ENV=production node esbuild.js"
+
+[tasks.package]
+description = "Package extension into .vsix"
+depends = ["build"]
+run = "npm run package"
+
+[tasks.ci]
+description = "Run full CI validation pipeline"
+depends = ["lint", "check-types", "test", "package"]
+
+[tasks."publish:vsce"]
+description = "Publish .vsix to VS Code Marketplace"
+run = "npm run publish:vsce"
+
+[tasks."publish:ovsx"]
+description = "Publish .vsix to OpenVSX"
+run = "npm run publish:ovsx"
+
+[tasks.publish]
+description = "Publish to both VS Code Marketplace and OpenVSX"
+depends = ["publish:vsce", "publish:ovsx"]
+
+[tasks.version-check]
+description = "Verify release tag matches package.json version"
+run = """
+PKG_VERSION=$(node -p "require('./package.json').version")
+TAG_VERSION="${RELEASE_TAG#v}"
+if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+  echo "ERROR: package.json version ($PKG_VERSION) does not match release tag ($TAG_VERSION)"
+  exit 1
+fi
+echo "Version check passed: $PKG_VERSION"
+"""

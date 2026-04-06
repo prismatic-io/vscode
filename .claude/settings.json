@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run check-types)",
+      "Bash(npm run build:dev)",
+      "Bash(npm run build:prod)",
+      "Bash(npm run format)",
+      "Bash(npm run format:fix)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint:fix)",
+      "Bash(npm run check)",
+      "Bash(npm run check:fix)",
+      "Bash(npm run watch)",
+      "Bash(npm test*)"
+    ],
+    "deny": []
+  }
+}

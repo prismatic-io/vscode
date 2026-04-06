@@ -2,7 +2,7 @@ import type { MessageType } from "@type/messages";
 import type { GlobalState, WorkspaceState } from "@type/state";
 import { produce } from "immer";
 import type * as vscode from "vscode";
-import { CONFIG } from "../../config";
+import { CONFIG } from "@/config";
 
 const GLOBAL_STATE_KEY = "prismatic-global-state";
 
