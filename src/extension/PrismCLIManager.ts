@@ -127,7 +127,10 @@ export class PrismCLIManager {
         PRISMATIC_URL: globalState?.prismaticUrl,
       };
 
-      logExecContext({ command: `${command} ${args.join(" ")}`, env: spawnEnv });
+      logExecContext({
+        command: `${command} ${args.join(" ")}`,
+        env: spawnEnv,
+      });
 
       const loginProcess = spawn(command, args, {
         stdio: ["pipe", "pipe", "pipe"],

@@ -3,7 +3,7 @@ import { fetcher } from "@/shared/fetcher";
 import type { Connection, ConnectionInput } from "@/types/connections";
 import type { Flow } from "@/types/flows";
 import type { GraphQLVariables } from "@/types/graphql";
-import { InstanceConfigState } from "@/types/state";
+import type { InstanceConfigState } from "@/types/state";
 
 type GetIntegrationQuery = {
   integration: {

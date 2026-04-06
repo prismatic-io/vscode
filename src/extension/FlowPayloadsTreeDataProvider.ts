@@ -63,6 +63,7 @@ export class FlowPayloadsTreeDataProvider
   implements vscode.TreeDataProvider<FlowPayloadTreeItem>
 {
   private _onDidChangeTreeData = new vscode.EventEmitter<
+    // biome-ignore lint/suspicious/noConfusingVoidType: standard VS Code EventEmitter pattern
     FlowPayloadTreeItem | undefined | void
   >();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;

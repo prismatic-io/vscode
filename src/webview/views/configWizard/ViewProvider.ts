@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
+import { CONFIG } from "@/config";
 import { WebviewPanelManager } from "@/extension/WebviewPanelManager";
 import type { ConfigWizardMessage } from "@/webview/views/configWizard/types";
-import { CONFIG } from "@/config";
 
 const WEBVIEW_CONFIG = CONFIG.webviews.configWizard;
 

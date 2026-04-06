@@ -1,11 +1,11 @@
-import { useState, useCallback, useEffect } from "react";
-import type React from "react";
 import { messageHandlerManager } from "@extension/MessageHandlerManager";
+import type React from "react";
+import { useCallback, useEffect, useState } from "react";
+import styled from "styled-components";
 import type { Connection } from "@/types/connections";
 import { useVSCodeState } from "@/webview/hooks/useVSCodeState";
 import { useIntegrationContext } from "@/webview/providers/IntegrationProvider";
 import type { IntegrationDetailsMessage } from "@/webview/views/integrationDetails/types";
-import styled from "styled-components";
 
 const Container = styled.div`
   padding: 12px;
@@ -36,7 +36,9 @@ const IntegrationName = styled.div`
   color: var(--vscode-foreground);
 `;
 
-const StatusBadge = styled.span<{ $status?: "success" | "warning" | "unknown" }>`
+const StatusBadge = styled.span<{
+  $status?: "success" | "warning" | "unknown";
+}>`
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -152,7 +154,6 @@ const AuthenticateButton = styled.button`
     background-color: var(--vscode-button-hoverBackground);
   }
 `;
-
 
 const InfoMessage = styled.span`
   display: block;
@@ -297,8 +298,6 @@ const formatOAuth2Type = (type: string | null): string => {
     .map((word) => word.charAt(0) + word.slice(1).toLowerCase())
     .join(" ");
 };
-
-
 
 export const App: React.FC = () => {
   const [expandedConnections, setExpandedConnections] = useState<Set<string>>(
@@ -511,7 +510,9 @@ export const App: React.FC = () => {
 
                         {missingInputs.length > 0 && (
                           <WarningSection>
-                            <WarningTitle>Missing Required Fields:</WarningTitle>
+                            <WarningTitle>
+                              Missing Required Fields:
+                            </WarningTitle>
                             <WarningList>
                               {missingInputs.map((input) => (
                                 <li key={input.name}>{input.label}</li>
@@ -638,7 +639,6 @@ export const App: React.FC = () => {
           </>
         )}
       </Section>
-
     </Container>
   );
 };

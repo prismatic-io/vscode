@@ -62,10 +62,7 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
     integrationActorRef,
     (state) => state.context.connections,
   );
-  const flow = useSelector(
-    integrationActorRef,
-    (state) => state.context.flow,
-  );
+  const flow = useSelector(integrationActorRef, (state) => state.context.flow);
   const isLoading = useSelector(integrationActorRef, (state) =>
     state.hasTag("loading"),
   );

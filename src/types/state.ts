@@ -41,4 +41,3 @@ export const isGlobalState = (value: unknown): value is GlobalState => {
     "refreshToken" in value
   );
 };
-

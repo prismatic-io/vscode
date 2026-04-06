@@ -1,3 +1,4 @@
+import path from "node:path";
 import { AuthManager } from "@extension/AuthManager";
 import { PrismCLIManager } from "@extension/PrismCLIManager";
 import { StateManager } from "@extension/StateManager";
@@ -5,30 +6,29 @@ import { StatusBarManager } from "@extension/StatusBarManager";
 import { createConfigWizardPanel } from "@webview/views/configWizard/ViewProvider";
 import { createExecutionResultsViewProvider } from "@webview/views/executionResults/ViewProvider";
 import { createIntegrationDetailsViewProvider } from "@webview/views/integrationDetails/ViewProvider";
-import { CONFIG } from "@/config";
 import * as vscode from "vscode";
 import { createActor, toPromise } from "xstate";
-import { getIntegration } from "@/extension/machines/integrationsFlowsTest/getIntegration";
+import { CONFIG } from "@/config";
 import { enableWorkspace } from "@/extension/lib/enableWorkspace";
 import { executeProjectNpmScript } from "@/extension/lib/executeProjectNpmScript";
 import { syncPrismaticUrl } from "@/extension/lib/syncPrismaticUrl";
 import { verifyIntegrationIntegrity } from "@/extension/lib/verifyIntegrationIntegrity";
-import path from "node:path";
-import { createFlowPayload } from "./extension/lib/flows/createFlowPayload";
-import { selectProjectFlowPayload } from "./extension/lib/flows/selectProjectFlowPayload";
+import { getIntegration } from "@/extension/machines/integrationsFlowsTest/getIntegration";
 import {
-  FlowItem,
+  type FlowItem,
   FlowPayloadsTreeDataProvider,
 } from "./extension/FlowPayloadsTreeDataProvider";
-import type { Flow } from "./types/flows";
 import {
-  IntegrationItem,
+  type IntegrationItem,
   IntegrationsTreeDataProvider,
 } from "./extension/IntegrationsTreeDataProvider";
+import { createFlowPayload } from "./extension/lib/flows/createFlowPayload";
+import { selectProjectFlowPayload } from "./extension/lib/flows/selectProjectFlowPayload";
 import {
   type TestIntegrationFlowMachineActorRef,
   testIntegrationFlowMachine,
 } from "./extension/machines/integrationsFlowsTest/testIntegrationFlow.machine";
+import type { Flow } from "./types/flows";
 
 // Disposables
 let executionResultsViewProvider: vscode.Disposable | undefined;
@@ -619,7 +619,6 @@ export async function activate(context: vscode.ExtensionContext) {
     );
     context.subscriptions.push(integrationDetailsRefreshCommand);
 
-
     /**
      * command: prismatic.integrations.select
      * This command is used to select an active integration.
@@ -633,7 +632,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
         // If no item provided, show quick pick to select one
         if (!targetIntegration) {
-          const integrations = integrationsTreeDataProvider?.getChildren() ?? [];
+          const integrations =
+            integrationsTreeDataProvider?.getChildren() ?? [];
 
           if (integrations.length === 0) {
             log("WARN", "No integrations found in workspace", true);
@@ -657,11 +657,16 @@ export async function activate(context: vscode.ExtensionContext) {
           targetIntegration = selected.integration;
         }
 
-        log("INFO", `Selecting integration: ${targetIntegration.integrationPath}`);
+        log(
+          "INFO",
+          `Selecting integration: ${targetIntegration.integrationPath}`,
+        );
 
         try {
           // Switch active integration (resets state)
-          await stateManager.switchActiveIntegration(targetIntegration.integrationPath);
+          await stateManager.switchActiveIntegration(
+            targetIntegration.integrationPath,
+          );
 
           // Update tree view to show new selection
           integrationsTreeDataProvider?.setActiveIntegration(

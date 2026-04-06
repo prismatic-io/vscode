@@ -32,7 +32,10 @@ export class IntegrationItem extends vscode.TreeItem {
 
     // Show green dot for active integration
     this.iconPath = isActive
-      ? new vscode.ThemeIcon("circle-filled", new vscode.ThemeColor("testing.iconPassed"))
+      ? new vscode.ThemeIcon(
+          "circle-filled",
+          new vscode.ThemeColor("testing.iconPassed"),
+        )
       : undefined;
     // Click to select
     this.command = {
@@ -50,6 +53,7 @@ export class IntegrationsTreeDataProvider
   implements vscode.TreeDataProvider<IntegrationItem>
 {
   private _onDidChangeTreeData = new vscode.EventEmitter<
+    // biome-ignore lint/suspicious/noConfusingVoidType: standard VS Code EventEmitter pattern
     IntegrationItem | undefined | void
   >();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
