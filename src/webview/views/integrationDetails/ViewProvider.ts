@@ -1,7 +1,7 @@
 import { WebviewViewManager } from "@extension/WebviewViewManager";
 import * as vscode from "vscode";
-import type { IntegrationDetailsMessage } from "@/webview/views/integrationDetails/types";
 import { CONFIG } from "@/config";
+import type { IntegrationDetailsMessage } from "@/webview/views/integrationDetails/types";
 
 const WEBVIEW_CONFIG = CONFIG.webviews.integrationDetails;
 
@@ -13,7 +13,7 @@ export function createIntegrationDetailsViewProvider(
       viewType: WEBVIEW_CONFIG.viewType,
       title: WEBVIEW_CONFIG.title,
       scriptPath: WEBVIEW_CONFIG.scriptPath,
-      onMessage: (message, postMessage) => {
+      onMessage: (message, _postMessage) => {
         switch (message.type) {
           case "integrationDetails.refresh": {
             vscode.commands.executeCommand(

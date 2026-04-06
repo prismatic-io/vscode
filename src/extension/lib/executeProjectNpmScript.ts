@@ -47,7 +47,11 @@ export const executeProjectNpmScript = async (
       DEBUG: undefined,
     };
 
-    logExecContext({ command: fullCommand, cwd: workspaceFolderPath, env: execEnv });
+    logExecContext({
+      command: fullCommand,
+      cwd: workspaceFolderPath,
+      env: execEnv,
+    });
 
     const { stdout, stderr } = await execAsync(fullCommand, {
       cwd: workspaceFolderPath,
