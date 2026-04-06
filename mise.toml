@@ -20,7 +20,7 @@ run = "npm run build:icons"
 [tasks.build]
 description = "Build the extension"
 depends = ["build:icons", "check-types"]
-run = "NODE_ENV=production node esbuild.js"
+run = "NODE_ENV=production npm run esbuild:run -- --production"
 
 [tasks.package]
 description = "Package extension into .vsix"
@@ -46,7 +46,7 @@ depends = ["publish:vsce", "publish:ovsx"]
 [tasks.version-check]
 description = "Verify release tag matches package.json version"
 run = """
-PKG_VERSION=$(node -p "require('./package.json').version")
+PKG_VERSION=$(node --input-type=commonjs -p "require('./package.json').version")
 TAG_VERSION="${RELEASE_TAG#v}"
 if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
   echo "ERROR: package.json version ($PKG_VERSION) does not match release tag ($TAG_VERSION)"
