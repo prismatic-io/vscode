@@ -1,5 +1,6 @@
 import { createActor, toPromise } from "xstate";
 import { log } from "@/extension";
+import { AuthManager } from "@/extension/AuthManager";
 import { getWorkspaceJsonFile } from "@/extension/lib/getWorkspaceJsonFile";
 import { getIntegration } from "@/extension/machines/integrationsFlowsTest/getIntegration";
 import { StateManager } from "@/extension/StateManager";
@@ -14,8 +15,8 @@ export const verifyIntegrationIntegrity = async (): Promise<void> => {
   const stateManager = StateManager.getInstance();
   const globalState = await stateManager.getGlobalState();
 
-  // if authentication is not configured, skip verification
-  if (!globalState?.accessToken || !globalState?.prismaticUrl) {
+  // if Prismatic URL is not configured, skip verification
+  if (!globalState?.prismaticUrl) {
     return;
   }
 
@@ -24,11 +25,20 @@ export const verifyIntegrationIntegrity = async (): Promise<void> => {
     return;
   }
 
+  let accessToken: string;
+  try {
+    const authManager = AuthManager.getInstance();
+    accessToken = await authManager.getAccessToken();
+  } catch {
+    // Not logged in, skip verification
+    return;
+  }
+
   try {
     const dataActor = createActor(getIntegration, {
       input: {
         integrationId,
-        accessToken: globalState?.accessToken,
+        accessToken,
         prismaticUrl: globalState?.prismaticUrl,
       },
     });

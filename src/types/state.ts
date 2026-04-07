@@ -2,8 +2,6 @@ import type { Connection } from "./connections";
 import type { Flow } from "./flows";
 
 export interface GlobalState {
-  accessToken: string | undefined;
-  refreshToken: string | undefined;
   prismaticUrl: string | undefined;
 }
 
@@ -34,10 +32,5 @@ export interface WorkspaceState {
 }
 
 export const isGlobalState = (value: unknown): value is GlobalState => {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "accessToken" in value &&
-    "refreshToken" in value
-  );
+  return typeof value === "object" && value !== null && "prismaticUrl" in value;
 };

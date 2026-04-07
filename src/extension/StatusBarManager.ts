@@ -3,13 +3,6 @@ import type { AuthManager } from "@extension/AuthManager";
 import type { StateManager } from "@extension/StateManager";
 import * as vscode from "vscode";
 
-export interface PrismUserInfo {
-  name: string;
-  email: string;
-  organization: string;
-  endpointUrl: string;
-}
-
 export class StatusBarManager {
   private static instance: StatusBarManager | null = null;
 
@@ -81,71 +74,21 @@ export class StatusBarManager {
   }
 
   /**
-   * Parses the output of `prism me` command.
-   * Expected format:
-   *   Name: Jake Hagle
-   *   Email: jake@example.com
-   *   Organization: Prismatic Internal
-   *   Endpoint URL: https://app.prismatic.io
-   */
-  private parsePrismMeOutput(output: string): PrismUserInfo | null {
-    try {
-      const lines = output.trim().split("\n");
-      const info: Partial<PrismUserInfo> = {};
-
-      for (const line of lines) {
-        const [key, ...valueParts] = line.split(":");
-        const value = valueParts.join(":").trim();
-
-        switch (key.trim().toLowerCase()) {
-          case "name":
-            info.name = value;
-            break;
-          case "email":
-            info.email = value;
-            break;
-          case "organization":
-            info.organization = value;
-            break;
-          case "endpoint url":
-            info.endpointUrl = value;
-            break;
-        }
-      }
-
-      if (info.email && info.organization) {
-        return info as PrismUserInfo;
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  }
-
-  /**
    * Updates the user/organization status bar item.
    */
   public async updateUserStatusBar(): Promise<void> {
     try {
-      const meOutput = await this.authManager.getCurrentUser();
-      const userInfo = this.parsePrismMeOutput(meOutput);
+      const userInfo = await this.authManager.getCurrentUser();
 
-      if (userInfo) {
-        this.userStatusBarItem.text = `$(prismatic-logo) ${userInfo.organization}`;
-        this.userStatusBarItem.tooltip = new vscode.MarkdownString(
-          `**Prismatic User**\n\n` +
-            `- **Name:** ${userInfo.name}\n` +
-            `- **Email:** ${userInfo.email}\n` +
-            `- **Organization:** ${userInfo.organization}\n` +
-            `- **Endpoint:** ${userInfo.endpointUrl}`,
-        );
-        this.userStatusBarItem.show();
-      } else {
-        // Fallback if parsing fails
-        this.userStatusBarItem.text = "$(prismatic-logo) Logged in";
-        this.userStatusBarItem.tooltip = "Prismatic: Logged in";
-        this.userStatusBarItem.show();
-      }
+      this.userStatusBarItem.text = `$(prismatic-logo) ${userInfo.organization || "Logged in"}`;
+      this.userStatusBarItem.tooltip = new vscode.MarkdownString(
+        `**Prismatic User**\n\n` +
+          `- **Name:** ${userInfo.name}\n` +
+          `- **Email:** ${userInfo.email}\n` +
+          `- **Organization:** ${userInfo.organization}\n` +
+          `- **Endpoint:** ${userInfo.endpointUrl}`,
+      );
+      this.userStatusBarItem.show();
     } catch {
       // On error (e.g., not logged in), show "Not logged in"
       this.userStatusBarItem.text = "$(prismatic-logo) Not logged in";

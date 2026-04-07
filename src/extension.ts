@@ -83,16 +83,16 @@ export async function activate(context: vscode.ExtensionContext) {
     stateManager = await StateManager.initialize(context);
 
     /**
-     * Initialize Prism CLI
-     */
-    log("INFO", "Initializing Prism CLI...");
-    prismCLIManager = await PrismCLIManager.getInstance();
-
-    /**
      * Initialize Auth Manager
      */
     log("INFO", "Initializing Auth Manager...");
-    authManager = await AuthManager.getInstance();
+    authManager = await AuthManager.initialize(context);
+
+    /**
+     * Initialize Prism CLI (used for integrations:import)
+     */
+    log("INFO", "Initializing Prism CLI...");
+    prismCLIManager = await PrismCLIManager.getInstance();
 
     /**
      * Perform initial auth flow
@@ -217,7 +217,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(configWizardPanel);
 
     /**
-     * command: prism me
+     * command: prismatic.me
      * This command is used to get the current user's information.
      */
     const prismMeCommand = vscode.commands.registerCommand(
@@ -228,7 +228,10 @@ export async function activate(context: vscode.ExtensionContext) {
         try {
           const user = await authManager.getCurrentUser();
 
-          log("INFO", `\n${user}\n`);
+          log(
+            "INFO",
+            `\nName: ${user.name}\nEmail: ${user.email}\nOrganization: ${user.organization}\nEndpoint URL: ${user.endpointUrl}\n`,
+          );
         } catch (error) {
           log("ERROR", String(error));
         }
@@ -279,8 +282,28 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(prismLogoutCommand);
 
     /**
-     * command: PRISM_REFRESH_TOKEN=${globalState.refreshToken} prism me:token
-     * This command is used to refresh the access token.
+     * command: prismatic.switchTenant
+     * This command is used to switch to a different tenant.
+     */
+    const switchTenantCommand = vscode.commands.registerCommand(
+      "prismatic.switchTenant",
+      async () => {
+        try {
+          const result = await authManager.switchTenant();
+
+          await statusBarManager?.updateUserStatusBar();
+
+          log("SUCCESS", result, true);
+        } catch (error) {
+          log("ERROR", String(error), true);
+        }
+      },
+    );
+    context.subscriptions.push(switchTenantCommand);
+
+    /**
+     * command: prismatic.refreshToken
+     * This command is used to manually refresh the access token.
      */
     const prismRefreshTokenCommand = vscode.commands.registerCommand(
       "prismatic.refreshToken",
@@ -364,7 +387,9 @@ export async function activate(context: vscode.ExtensionContext) {
           log("INFO", "Starting integration import...");
 
           // import the integration
-          const integrationId = await prismCLIManager.integrationsImport();
+          const accessToken = await authManager.getAccessToken();
+          const integrationId =
+            await prismCLIManager.integrationsImport(accessToken);
 
           stateManager.updateWorkspaceState({ integrationId });
 
@@ -543,8 +568,10 @@ export async function activate(context: vscode.ExtensionContext) {
         // Show the result
         log("SUCCESS", "Prismatic URL updated successfully!", true);
 
-        // Re-login and re-initialize tokens
+        // Clear cached auth config and re-login against new instance
+        authManager.onPrismaticUrlChanged();
         try {
+          await authManager.logout();
           const result = await authManager.login();
 
           // Update status bar after re-login with new URL
@@ -587,16 +614,13 @@ export async function activate(context: vscode.ExtensionContext) {
         const workspaceState = await stateManager.getWorkspaceState();
         const globalState = await stateManager.getGlobalState();
 
-        if (
-          workspaceState?.integrationId &&
-          globalState?.accessToken &&
-          globalState?.prismaticUrl
-        ) {
+        if (workspaceState?.integrationId && globalState?.prismaticUrl) {
           try {
+            const currentAccessToken = await authManager.getAccessToken();
             const dataActor = createActor(getIntegration, {
               input: {
                 integrationId: workspaceState.integrationId,
-                accessToken: globalState.accessToken,
+                accessToken: currentAccessToken,
                 prismaticUrl: globalState.prismaticUrl,
               },
             });

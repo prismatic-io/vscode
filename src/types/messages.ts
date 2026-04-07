@@ -35,9 +35,33 @@ export interface GetStateMessage {
       };
 }
 
+export interface RequestAccessTokenMessage {
+  type: "requestAccessToken";
+  payload: undefined;
+}
+
+export interface RequestLoginMessage {
+  type: "requestLogin";
+  payload: undefined;
+}
+
+export interface AccessTokenMessage {
+  type: "accessToken";
+  payload: { token: string | null };
+}
+
+export interface AuthStateChangedMessage {
+  type: "authStateChanged";
+  payload: undefined;
+}
+
 export type MessageType =
   | StateChangeMessage
   | GetStateMessage
+  | RequestAccessTokenMessage
+  | RequestLoginMessage
+  | AccessTokenMessage
+  | AuthStateChangedMessage
   | ExecutionResultsMessage
   | ConfigWizardMessage
   | IntegrationDetailsMessage;

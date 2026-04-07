@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("vscode", () => ({
   workspace: {
@@ -22,17 +22,16 @@ import {
   resolvePrismExecutable,
 } from "./resolveExecutable";
 
-function mockConfig(values: Record<string, string>) {
+const mockConfig = (values: Record<string, string>) => {
   vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({
     get: (key: string) => values[key] ?? "",
   } as ReturnType<typeof vscode.workspace.getConfiguration>);
-}
+};
 
-function mockWhichResult(results: Record<string, string | null>) {
+const mockWhichResult = (results: Record<string, string | null>) => {
   vi.mocked(x).mockImplementation((cmd: string, args?: string[]) => {
     const name = args?.[0] ?? "";
 
-    // which/where calls
     if (cmd === "which" || cmd === "where") {
       const path = results[name];
       if (path) {
@@ -41,75 +40,62 @@ function mockWhichResult(results: Record<string, string | null>) {
       throw new Error(`not found: ${name}`);
     }
 
-    // npx --version calls
     if (cmd === "npx") {
       return { stdout: "1.0.0", stderr: "" } as ReturnType<typeof x>;
     }
 
     throw new Error(`unexpected command: ${cmd}`);
   });
-}
+};
 
 describe("resolveNpmExecutable", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("returns configured path when valid", async () => {
-    mockConfig({ npmCliPath: "/custom/npm" });
+    const expectedPath = "/custom/npm";
+    const expectedResult = { command: expectedPath, args: [], isNpx: false };
+
+    mockConfig({ npmCliPath: expectedPath });
     vi.mocked(existsSync).mockReturnValue(true);
 
     const result = await resolveNpmExecutable();
 
-    expect(result).toEqual({
-      command: "/custom/npm",
-      args: [],
-      isNpx: false,
-    });
+    expect(result).toEqual(expectedResult);
   });
 
   it("falls through when configured path does not exist", async () => {
+    const expectedPath = "/usr/bin/npm";
+    const expectedResult = { command: expectedPath, args: [], isNpx: false };
+
     mockConfig({ npmCliPath: "/nonexistent/npm" });
     vi.mocked(existsSync).mockReturnValue(false);
-    mockWhichResult({ npm: "/usr/bin/npm" });
+    mockWhichResult({ npm: expectedPath });
 
     const result = await resolveNpmExecutable();
 
-    expect(result).toEqual({
-      command: "/usr/bin/npm",
-      args: [],
-      isNpx: false,
-    });
+    expect(result).toEqual(expectedResult);
   });
 
   it("falls through when config is empty", async () => {
+    const expectedPath = "/usr/local/bin/npm";
+    const expectedResult = { command: expectedPath, args: [], isNpx: false };
+
     mockConfig({});
-    mockWhichResult({ npm: "/usr/local/bin/npm" });
+    mockWhichResult({ npm: expectedPath });
 
     const result = await resolveNpmExecutable();
 
-    expect(result).toEqual({
-      command: "/usr/local/bin/npm",
-      args: [],
-      isNpx: false,
-    });
+    expect(result).toEqual(expectedResult);
   });
 
   it("finds npm on PATH", async () => {
+    const expectedPath = "/opt/homebrew/bin/npm";
+    const expectedResult = { command: expectedPath, args: [], isNpx: false };
+
     mockConfig({});
-    mockWhichResult({ npm: "/opt/homebrew/bin/npm" });
+    mockWhichResult({ npm: expectedPath });
 
     const result = await resolveNpmExecutable();
 
-    expect(result).toEqual({
-      command: "/opt/homebrew/bin/npm",
-      args: [],
-      isNpx: false,
-    });
+    expect(result).toEqual(expectedResult);
   });
 
   it("returns null when npm is not found anywhere", async () => {
@@ -123,46 +109,38 @@ describe("resolveNpmExecutable", () => {
 });
 
 describe("resolvePrismExecutable", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("returns configured path when valid", async () => {
-    mockConfig({ prismCliPath: "/custom/prism" });
+    const expectedPath = "/custom/prism";
+    const expectedResult = { command: expectedPath, args: [], isNpx: false };
+
+    mockConfig({ prismCliPath: expectedPath });
     vi.mocked(existsSync).mockReturnValue(true);
 
     const result = await resolvePrismExecutable();
 
-    expect(result).toEqual({
-      command: "/custom/prism",
-      args: [],
-      isNpx: false,
-    });
+    expect(result).toEqual(expectedResult);
   });
 
   it("finds prism on PATH", async () => {
+    const expectedPath = "/usr/local/bin/prism";
+    const expectedResult = { command: expectedPath, args: [], isNpx: false };
+
     mockConfig({});
-    mockWhichResult({ prism: "/usr/local/bin/prism" });
+    mockWhichResult({ prism: expectedPath });
 
     const result = await resolvePrismExecutable();
 
-    expect(result).toEqual({
-      command: "/usr/local/bin/prism",
-      args: [],
-      isNpx: false,
-    });
+    expect(result).toEqual(expectedResult);
   });
 
   it("falls back to npx when prism not on PATH", async () => {
-    mockConfig({});
-    mockWhichResult({});
-    // x is already set up to succeed for npx calls via mockWhichResult
+    const expectedResult = {
+      command: "npx",
+      args: ["@prismatic-io/prism"],
+      isNpx: true,
+    };
 
-    // Override to make which fail but npx succeed
+    mockConfig({});
     vi.mocked(x).mockImplementation((cmd: string) => {
       if (cmd === "which" || cmd === "where") {
         throw new Error("not found");
@@ -175,11 +153,7 @@ describe("resolvePrismExecutable", () => {
 
     const result = await resolvePrismExecutable();
 
-    expect(result).toEqual({
-      command: "npx",
-      args: ["@prismatic-io/prism"],
-      isNpx: true,
-    });
+    expect(result).toEqual(expectedResult);
   });
 
   it("returns null when prism not found and npx unavailable", async () => {
