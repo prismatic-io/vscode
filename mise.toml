@@ -14,13 +14,17 @@ description = "Run Jest test suite"
 run = "npm test"
 
 [tasks."build:icons"]
-description = "Generate icon font"
+description = "Generate icon font from SVGs"
+sources = ["resources/icons/**/*.svg", ".fantasticonrc.json"]
+outputs = ["resources/fonts/prismatic-icons.woff2", "resources/fonts/prismatic-icons.json"]
 run = "npm run build:icons"
+
 
 [tasks.build]
 description = "Build the extension"
-depends = ["build:icons", "check-types"]
-run = "NODE_ENV=production npm run esbuild:run -- --production"
+depends = ["check-types"]
+env = { NODE_ENV = "production" }
+run = "npm run esbuild:run -- --production"
 
 [tasks.package]
 description = "Package extension into .vsix"

@@ -1,0 +1,2 @@
+# Enforce LF line endings for all text files so formatting checks pass on Windows
+* text=auto eol=lf

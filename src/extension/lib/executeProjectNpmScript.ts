@@ -1,16 +1,7 @@
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
-import { buildExecCommand, logExecContext } from "@/extension/lib/buildCommand";
-import { findNpmExecutable } from "@/extension/lib/findNpmExecutable";
 import { getActiveIntegrationPath } from "@/extension/lib/getActiveIntegrationPath";
 import { getWorkspaceJsonFile } from "@/extension/lib/getWorkspaceJsonFile";
-
-type ExecError = Error & {
-  stdout?: string;
-  stderr?: string;
-};
-
-const execAsync = promisify(exec);
+import { resolveNpmExecutable } from "@/extension/lib/resolveExecutable";
+import { runExecutable } from "@/extension/lib/runCommand";
 
 export const executeProjectNpmScript = async (
   scriptName: string,
@@ -29,7 +20,7 @@ export const executeProjectNpmScript = async (
     );
   }
 
-  const npmExecutable = await findNpmExecutable();
+  const npmExecutable = await resolveNpmExecutable();
 
   if (!npmExecutable) {
     throw new Error(
@@ -38,30 +29,17 @@ export const executeProjectNpmScript = async (
     );
   }
 
+  // Exclude DEBUG to prevent debug noise from CNI projects
+  const { DEBUG: _, ...execEnv } = process.env;
+
   try {
-    const fullCommand = buildExecCommand(npmExecutable, ["run", scriptName]);
-
-    const execEnv = {
-      ...process.env,
-      // explicitly override DEBUG to prevent Node's require from dumping debug data when CNI projects set DEBUG=true via dotenv
-      DEBUG: undefined,
-    };
-
-    logExecContext({
-      command: fullCommand,
+    return await runExecutable(npmExecutable, ["run", scriptName], {
       cwd: workspaceFolderPath,
       env: execEnv,
     });
-
-    const { stdout, stderr } = await execAsync(fullCommand, {
-      cwd: workspaceFolderPath,
-      env: execEnv,
-    });
-
-    return { stdout, stderr };
   } catch (error) {
-    const execError = error as ExecError;
-    const errorMessage = execError.message || String(error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const execError = error as { stdout?: string; stderr?: string };
     const errorStdout = (execError.stdout || "").trim();
     const errorStderr = (execError.stderr || "").trim();
 

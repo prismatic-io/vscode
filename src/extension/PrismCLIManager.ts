@@ -1,19 +1,11 @@
-import { exec, spawn } from "node:child_process";
 import * as os from "node:os";
 import path from "node:path";
-import { promisify } from "node:util";
 import { StateManager } from "@extension/StateManager";
 import * as vscode from "vscode";
-import {
-  buildExecCommand,
-  buildSpawnCommand,
-  logExecContext,
-} from "@/extension/lib/buildCommand";
-import type { ExecutablePath } from "@/extension/lib/findExecutable";
-import { findPrismExecutable } from "@/extension/lib/findPrismExecutable";
 import { getActiveIntegrationPath } from "@/extension/lib/getActiveIntegrationPath";
-
-const execAsync = promisify(exec);
+import type { ExecutablePath } from "@/extension/lib/resolveExecutable";
+import { resolvePrismExecutable } from "@/extension/lib/resolveExecutable";
+import { runExecutable, spawnExecutable } from "@/extension/lib/runCommand";
 
 export class PrismCLIManager {
   private static instance: PrismCLIManager | null = null;
@@ -41,7 +33,7 @@ export class PrismCLIManager {
    */
   public static async getInstance(): Promise<PrismCLIManager> {
     if (!PrismCLIManager.instance) {
-      const prismExecutable = await findPrismExecutable();
+      const prismExecutable = await resolvePrismExecutable();
 
       if (!prismExecutable) {
         throw new Error(
@@ -81,24 +73,14 @@ export class PrismCLIManager {
 
     const cwd = fromWorkspace ? getActiveIntegrationPath() : undefined;
 
+    // Exclude DEBUG to prevent debug noise from CNI projects
+    const { DEBUG: _, ...execEnv } = process.env;
+
     try {
-      const fullCommand = buildExecCommand(this.prismExecutable, [command]);
-
-      const execEnv = {
-        ...process.env,
-        PRISMATIC_URL: globalState.prismaticUrl,
-        // explicitly override DEBUG to prevent Node's require from dumping debug data when CNI projects set DEBUG=true via dotenv
-        DEBUG: undefined,
-      };
-
-      logExecContext({ command: fullCommand, cwd, env: execEnv });
-
-      const { stdout, stderr } = await execAsync(fullCommand, {
+      return await runExecutable(this.prismExecutable, [command], {
         cwd,
-        env: execEnv,
+        env: { ...execEnv, PRISMATIC_URL: globalState.prismaticUrl },
       });
-
-      return { stdout, stderr };
     } catch (error) {
       throw new Error(
         `Failed to execute Prismatic CLI command: ${
@@ -117,31 +99,27 @@ export class PrismCLIManager {
   public async login(): Promise<string> {
     const globalState = await this.stateManager.getGlobalState();
 
-    return new Promise((resolve, reject) => {
-      const { command, args } = buildSpawnCommand(this.prismExecutable, [
-        "login",
-      ]);
-
-      const spawnEnv = {
+    const result = spawnExecutable(this.prismExecutable, ["login"], {
+      env: {
         ...process.env,
         PRISMATIC_URL: globalState?.prismaticUrl,
-      };
+      },
+      nodeOptions: { stdio: ["pipe", "pipe", "pipe"] },
+    });
 
-      logExecContext({
-        command: `${command} ${args.join(" ")}`,
-        env: spawnEnv,
-      });
+    const child = result.process;
+    if (!child) {
+      throw new Error(
+        "Failed to start login process. Please ensure @prismatic-io/prism is installed and executable.",
+      );
+    }
 
-      const loginProcess = spawn(command, args, {
-        stdio: ["pipe", "pipe", "pipe"],
-        env: spawnEnv,
-      });
-
+    return new Promise((resolve, reject) => {
       let promptShown = false;
       let loginComplete = false;
       let lastMessage = "";
 
-      loginProcess.stdout.on("data", (data) => {
+      child.stdout?.on("data", (data: Buffer) => {
         const chunk = data.toString();
         lastMessage = chunk.trim();
 
@@ -151,7 +129,7 @@ export class PrismCLIManager {
         }
       });
 
-      loginProcess.stderr.on("data", (data) => {
+      child.stderr?.on("data", (data: Buffer) => {
         const chunk = data.toString();
 
         if (
@@ -161,17 +139,16 @@ export class PrismCLIManager {
           !promptShown
         ) {
           promptShown = true;
-          loginProcess.stdin.write("\n");
+          child.stdin?.write("\n");
         }
       });
 
-      loginProcess.on("close", (code) => {
+      child.on("close", (code) => {
         if (!loginComplete) {
           if (code === 126) {
-            const pathInfo = buildExecCommand(this.prismExecutable);
             reject(
               new Error(
-                `Prismatic CLI was found but could not be executed (exit code 126). Path: ${pathInfo}. Please check that it is installed correctly and is executable.`,
+                `Prismatic CLI was found but could not be executed (exit code 126). Path: ${this.prismExecutable.command}. Please check that it is installed correctly and is executable.`,
               ),
             );
           } else if (code === 127) {
@@ -188,7 +165,7 @@ export class PrismCLIManager {
         }
       });
 
-      loginProcess.on("error", (error) => {
+      child.on("error", (error) => {
         reject(
           new Error(
             `Failed to start login process: ${error.message}\nPlease ensure @prismatic-io/prism is installed and executable.`,
