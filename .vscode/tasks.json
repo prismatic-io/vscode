@@ -48,6 +48,32 @@
       "label": "prepare-dev-environment",
       "dependsOn": ["get-npm-global-bin", "npm: build:dev"],
       "dependsOrder": "sequence"
+    },
+    {
+      "label": "scaffold-cni-workspace",
+      "type": "shell",
+      "command": "test -d test-workspaces/cni-workspace/.spectral || (cd test-workspaces && prism integrations:init cni-workspace)",
+      "presentation": {
+        "reveal": "silent"
+      }
+    },
+    {
+      "label": "build:dev + scaffold-cni",
+      "dependsOn": ["npm: build:dev", "scaffold-cni-workspace"],
+      "dependsOrder": "parallel"
+    },
+    {
+      "label": "scaffold-monorepo-workspace",
+      "type": "shell",
+      "command": "cd test-workspaces/monorepo-workspace && for name in integration-alpha integration-beta integration-gamma; do test -d \"$name/.spectral\" || prism integrations:init \"$name\"; done",
+      "presentation": {
+        "reveal": "silent"
+      }
+    },
+    {
+      "label": "build:dev + scaffold-monorepo",
+      "dependsOn": ["npm: build:dev", "scaffold-monorepo-workspace"],
+      "dependsOrder": "parallel"
     }
   ]
 }

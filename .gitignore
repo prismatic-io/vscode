@@ -53,6 +53,9 @@ logs/
 tmp/
 temp/
 
+# Test workspaces (scaffolded by launch tasks)
+test-workspaces/
+
 # VS Code specific
 .vscode-test/
 .vscode-test-cli/
