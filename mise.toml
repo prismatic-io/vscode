@@ -31,9 +31,17 @@ description = "Package extension into .vsix"
 depends = ["build"]
 run = "npm run package"
 
+[tasks.fix]
+description = "Auto-fix lint/format issues, then run full CI validation"
+run = "npm run check:fix"
+
 [tasks.ci]
 description = "Run full CI validation pipeline"
 depends = ["lint", "check-types", "test", "package"]
+
+[tasks."ci:fix"]
+description = "Auto-fix then validate"
+depends = ["fix", "ci"]
 
 [tasks."publish:vsce"]
 description = "Publish .vsix to VS Code Marketplace"

@@ -1,6 +1,6 @@
 import type { ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("tinyexec", () => ({
   x: vi.fn(),
@@ -25,43 +25,39 @@ import type { ExecutablePath } from "./resolveExecutable";
 import { runExecutable, spawnExecutable } from "./runCommand";
 
 describe("runExecutable", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it("runs a direct command and returns stdout/stderr", async () => {
+    const expectedCommand = "/usr/local/bin/prism";
+    const expectedStdout = "output\n";
+    const expectedStderr = "";
     const executable: ExecutablePath = {
-      command: "/usr/local/bin/prism",
+      command: expectedCommand,
       args: [],
       isNpx: false,
     };
 
     vi.mocked(x).mockReturnValue({
-      stdout: "output\n",
-      stderr: "",
+      stdout: expectedStdout,
+      stderr: expectedStderr,
       exitCode: 0,
     } as ReturnType<typeof x>);
 
     const result = await runExecutable(executable, ["me"]);
 
     expect(vi.mocked(x)).toHaveBeenCalledWith(
-      "/usr/local/bin/prism",
+      expectedCommand,
       ["me"],
       expect.objectContaining({
         nodeOptions: expect.objectContaining({}),
       }),
     );
-    expect(result).toEqual({ stdout: "output\n", stderr: "" });
+    expect(result).toEqual({ stdout: expectedStdout, stderr: expectedStderr });
   });
 
   it("resolves npx commands correctly", async () => {
+    const expectedPackage = "@prismatic-io/prism";
     const executable: ExecutablePath = {
       command: "npx",
-      args: ["@prismatic-io/prism"],
+      args: [expectedPackage],
       isNpx: true,
     };
 
@@ -75,7 +71,7 @@ describe("runExecutable", () => {
 
     expect(vi.mocked(x)).toHaveBeenCalledWith(
       "npx",
-      ["@prismatic-io/prism", "login"],
+      [expectedPackage, "login"],
       expect.objectContaining({
         nodeOptions: expect.objectContaining({}),
       }),
@@ -83,6 +79,9 @@ describe("runExecutable", () => {
   });
 
   it("attaches stdout and stderr to errors on non-zero exit", async () => {
+    const expectedStdout = "partial output before failure";
+    const expectedStderr = "webpack not found";
+    const expectedExitCode = 127;
     const executable: ExecutablePath = {
       command: "/usr/local/bin/prism",
       args: [],
@@ -90,9 +89,9 @@ describe("runExecutable", () => {
     };
 
     vi.mocked(x).mockReturnValue({
-      stdout: "partial output before failure",
-      stderr: "webpack not found",
-      exitCode: 127,
+      stdout: expectedStdout,
+      stderr: expectedStderr,
+      exitCode: expectedExitCode,
     } as ReturnType<typeof x>);
 
     const error = await runExecutable(executable, ["build"]).catch(
@@ -105,16 +104,19 @@ describe("runExecutable", () => {
       stderr: string;
       exitCode: number;
     };
-    expect(err.message).toContain("exit code 127");
-    expect(err.message).toContain("webpack not found");
-    expect(err.stdout).toBe("partial output before failure");
-    expect(err.stderr).toBe("webpack not found");
-    expect(err.exitCode).toBe(127);
+    expect(err.message).toContain(`exit code ${expectedExitCode}`);
+    expect(err.message).toContain(expectedStderr);
+    expect(err.stdout).toBe(expectedStdout);
+    expect(err.stderr).toBe(expectedStderr);
+    expect(err.exitCode).toBe(expectedExitCode);
   });
 
   it("passes cwd and env options through", async () => {
+    const expectedCommand = "/usr/bin/npm";
+    const expectedCwd = "/project";
+    const expectedEnv = { PATH: "/usr/bin", NODE_ENV: "test" };
     const executable: ExecutablePath = {
-      command: "/usr/bin/npm",
+      command: expectedCommand,
       args: [],
       isNpx: false,
     };
@@ -126,17 +128,17 @@ describe("runExecutable", () => {
     } as ReturnType<typeof x>);
 
     await runExecutable(executable, ["run", "build"], {
-      cwd: "/project",
-      env: { PATH: "/usr/bin", NODE_ENV: "test" },
+      cwd: expectedCwd,
+      env: expectedEnv,
     });
 
     expect(vi.mocked(x)).toHaveBeenCalledWith(
-      "/usr/bin/npm",
+      expectedCommand,
       ["run", "build"],
       {
         nodeOptions: {
-          cwd: "/project",
-          env: { PATH: "/usr/bin", NODE_ENV: "test" },
+          cwd: expectedCwd,
+          env: expectedEnv,
         },
       },
     );
@@ -166,33 +168,31 @@ describe("runExecutable", () => {
 });
 
 describe("spawnExecutable", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it("returns a tinyexec result with process access", () => {
+    const expectedCommand = "/usr/local/bin/prism";
+    const expectedStdio = ["pipe", "pipe", "pipe"] as const;
     const mockChild = new EventEmitter() as ChildProcess;
-    vi.mocked(x).mockReturnValue({
-      process: mockChild,
-    } as ReturnType<typeof x>);
-
     const executable: ExecutablePath = {
-      command: "/usr/local/bin/prism",
+      command: expectedCommand,
       args: [],
       isNpx: false,
     };
 
+    vi.mocked(x).mockReturnValue({
+      process: mockChild,
+    } as ReturnType<typeof x>);
+
     const result = spawnExecutable(executable, ["login"], {
-      nodeOptions: { stdio: ["pipe", "pipe", "pipe"] },
+      nodeOptions: { stdio: [...expectedStdio] },
     });
 
     expect(result.process).toBe(mockChild);
     expect(vi.mocked(x)).toHaveBeenCalledWith(
-      "/usr/local/bin/prism",
+      expectedCommand,
       ["login"],
       expect.objectContaining({
         nodeOptions: expect.objectContaining({
-          stdio: ["pipe", "pipe", "pipe"],
+          stdio: [...expectedStdio],
         }),
       }),
     );
@@ -201,15 +201,15 @@ describe("spawnExecutable", () => {
 
 describe("logExecContext", () => {
   it("does not log when debug mode is off", async () => {
-    vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({
-      get: () => "off",
-    } as ReturnType<typeof vscode.workspace.getConfiguration>);
-
     const executable: ExecutablePath = {
       command: "/usr/bin/npm",
       args: [],
       isNpx: false,
     };
+
+    vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({
+      get: () => "off",
+    } as ReturnType<typeof vscode.workspace.getConfiguration>);
 
     vi.mocked(x).mockReturnValue({
       stdout: "ok",
@@ -223,16 +223,17 @@ describe("logExecContext", () => {
   });
 
   it("logs command info when debug mode is basic", async () => {
+    const expectedCommand = "/usr/bin/npm";
+    const executable: ExecutablePath = {
+      command: expectedCommand,
+      args: [],
+      isNpx: false,
+    };
+
     vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({
       get: (_key: string, defaultValue?: string) =>
         _key === "debugMode" ? "basic" : defaultValue,
     } as ReturnType<typeof vscode.workspace.getConfiguration>);
-
-    const executable: ExecutablePath = {
-      command: "/usr/bin/npm",
-      args: [],
-      isNpx: false,
-    };
 
     vi.mocked(x).mockReturnValue({
       stdout: "ok",
@@ -244,7 +245,7 @@ describe("logExecContext", () => {
 
     expect(vi.mocked(log)).toHaveBeenCalledWith(
       "DEBUG",
-      expect.stringContaining("COMMAND: /usr/bin/npm test"),
+      expect.stringContaining(`COMMAND: ${expectedCommand} test`),
     );
   });
 });

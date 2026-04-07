@@ -13,11 +13,14 @@ export const fetcher = async <T, V>(
     ...variables
   } = variablesBase;
 
-  const response = await fetch(`${prismaticUrl || variablePrismaticUrl}/api`, {
+  const effectiveUrl = prismaticUrl || variablePrismaticUrl;
+  const effectiveToken = accessToken || variableAccessToken;
+
+  const response = await fetch(`${effectiveUrl}/api`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken || variableAccessToken}`,
+      Authorization: `Bearer ${effectiveToken}`,
     },
     body: JSON.stringify({
       query,
@@ -32,25 +35,25 @@ export const fetcher = async <T, V>(
   return await response.json();
 };
 
-// Only add event listener if window is available (browser environment)
+// Only add event listener if window is available (browser/webview environment)
 if (typeof window !== "undefined") {
   window.addEventListener("message", (event) => {
     const message = event.data;
 
-    if (
-      message.type === "stateChange" &&
-      message.payload.scope === "global" &&
-      message.payload.key === "accessToken"
-    ) {
-      accessToken = message.payload.value;
+    if (message.type === "accessToken") {
+      accessToken = message.payload.token ?? undefined;
+    }
+
+    if (message.type === "stateChange" && message.payload.scope === "global") {
+      prismaticUrl = message.payload.value?.prismaticUrl ?? prismaticUrl;
     }
 
     if (
-      message.type === "stateChange" &&
+      message.type === "getState" &&
       message.payload.scope === "global" &&
-      message.payload.key === "prismaticUrl"
+      message.payload.value
     ) {
-      prismaticUrl = message.payload.value;
+      prismaticUrl = message.payload.value.prismaticUrl ?? prismaticUrl;
     }
   });
 }

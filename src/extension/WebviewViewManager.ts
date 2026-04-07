@@ -1,3 +1,4 @@
+import { AuthManager } from "@extension/AuthManager";
 import { StateManager } from "@extension/StateManager";
 import type { MessageType } from "@type/messages";
 import * as vscode from "vscode";
@@ -129,6 +130,33 @@ export class WebviewViewManager<T extends MessageType>
                           : "Unknown error",
                     },
                   } as T);
+                }
+                break;
+              }
+              case "requestAccessToken": {
+                try {
+                  const authManager = AuthManager.getInstance();
+                  const token = await authManager.getAccessToken();
+                  this.postMessage({
+                    type: "accessToken",
+                    payload: { token },
+                  } as T);
+                } catch {
+                  this.postMessage({
+                    type: "accessToken",
+                    payload: { token: null },
+                  } as T);
+                }
+                break;
+              }
+              case "requestLogin": {
+                try {
+                  const authManager = AuthManager.getInstance();
+                  await authManager.login();
+                } catch (error) {
+                  const msg =
+                    error instanceof Error ? error.message : "Login failed";
+                  vscode.window.showErrorMessage(msg);
                 }
                 break;
               }

@@ -115,6 +115,12 @@
         "enablement": "prismatic.workspaceEnabled"
       },
       {
+        "command": "prismatic.switchTenant",
+        "title": "Switch Tenant",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled"
+      },
+      {
         "command": "prismatic.integrations.openInBrowser",
         "title": "Open Integration in Browser",
         "category": "Prismatic",
@@ -339,7 +345,8 @@
     "react-dom": "^18.2.0",
     "styled-components": "^6.1.17",
     "tinyexec": "^1.1.1",
-    "xstate": "^5.19.3"
+    "xstate": "^5.19.3",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.2",

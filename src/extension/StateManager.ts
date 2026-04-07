@@ -7,8 +7,6 @@ import { CONFIG } from "@/config";
 const GLOBAL_STATE_KEY = "prismatic-global-state";
 
 const DEFAULT_GLOBAL_STATE: GlobalState = {
-  accessToken: undefined,
-  refreshToken: undefined,
   prismaticUrl: process.env.PRISMATIC_URL || CONFIG.prismaticUrl,
 };
 
