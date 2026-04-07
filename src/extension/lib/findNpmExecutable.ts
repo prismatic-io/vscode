@@ -15,7 +15,6 @@ export async function findNpmExecutable(): Promise<ExecutablePath | null> {
   }
 
   return findExecutable("npm", {
-    npxPackage: "npm",
     logPrefix: "findNpmExecutable",
   });
 }

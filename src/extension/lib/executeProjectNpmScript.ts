@@ -62,19 +62,18 @@ export const executeProjectNpmScript = async (
   } catch (error) {
     const execError = error as ExecError;
     const errorMessage = execError.message || String(error);
-    const errorStdOut = (execError.stdout || "").replace(/^\n+/, "");
+    const errorStdout = (execError.stdout || "").trim();
+    const errorStderr = (execError.stderr || "").trim();
 
-    if (
-      errorMessage.includes("command not found") ||
-      errorMessage.includes("ENOENT")
-    ) {
-      throw new Error(
-        `Failed to execute npm script '${scriptName}': npm command not found. Please ensure npm is installed and accessible. You can install npm by running 'brew install node' (macOS) or visiting https://nodejs.org/`,
-      );
-    }
+    const details = [
+      `Failed to execute npm script '${scriptName}'`,
+      errorMessage,
+      errorStdout && `stdout: ${errorStdout}`,
+      errorStderr && `stderr: ${errorStderr}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
 
-    throw new Error(
-      `Failed to execute npm script '${scriptName}': ${errorMessage} \n ${errorStdOut}`,
-    );
+    throw new Error(details);
   }
 };

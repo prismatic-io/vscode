@@ -16,6 +16,57 @@
         "NODE_ENV": "development"
       },
       "trace": true
+    },
+    {
+      "name": "Extension (Empty Workspace)",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "${workspaceFolder}/test-workspaces/empty-workspace",
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "--disable-extensions"
+      ],
+      "outFiles": ["${workspaceFolder}/extension/**/*.js"],
+      "preLaunchTask": "npm: build:dev",
+      "env": {
+        "VSCODE_DEBUG_MODE": "true",
+        "NODE_ENV": "development"
+      },
+      "trace": true
+    },
+    {
+      "name": "Extension (CNI Workspace)",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "${workspaceFolder}/test-workspaces/cni-workspace",
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "--disable-extensions"
+      ],
+      "outFiles": ["${workspaceFolder}/extension/**/*.js"],
+      "preLaunchTask": "build:dev + scaffold-cni",
+      "env": {
+        "VSCODE_DEBUG_MODE": "true",
+        "NODE_ENV": "development"
+      },
+      "trace": true
+    },
+    {
+      "name": "Extension (Monorepo Workspace)",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "${workspaceFolder}/test-workspaces/monorepo-workspace",
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "--disable-extensions"
+      ],
+      "outFiles": ["${workspaceFolder}/extension/**/*.js"],
+      "preLaunchTask": "build:dev + scaffold-monorepo",
+      "env": {
+        "VSCODE_DEBUG_MODE": "true",
+        "NODE_ENV": "development"
+      },
+      "trace": true
     }
   ]
 }

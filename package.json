@@ -181,7 +181,8 @@
         {
           "id": "prismaticIntegrations",
           "title": "Prismatic",
-          "icon": "resources/prismatic.svg"
+          "icon": "resources/prismatic.svg",
+          "when": "prismatic.workspaceEnabled"
         }
       ],
       "panel": [
@@ -199,20 +200,23 @@
           "id": "prismatic.integrationsView",
           "name": "Integrations",
           "icon": "resources/prismatic.svg",
-          "contextualTitle": "Prismatic Integrations"
+          "contextualTitle": "Prismatic Integrations",
+          "when": "prismatic.workspaceEnabled"
         },
         {
           "type": "webview",
           "id": "integrationDetails.webview",
           "name": "Development Instance",
           "icon": "resources/prismatic.svg",
-          "contextualTitle": "Development Instance"
+          "contextualTitle": "Development Instance",
+          "when": "prismatic.workspaceEnabled"
         },
         {
           "id": "prismatic.flowPayloadsView",
           "name": "Test Payloads",
           "icon": "resources/prismatic.svg",
-          "contextualTitle": "Flow Test Payloads"
+          "contextualTitle": "Flow Test Payloads",
+          "when": "prismatic.workspaceEnabled"
         }
       ],
       "executionResults": [

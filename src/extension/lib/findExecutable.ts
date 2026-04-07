@@ -20,25 +20,6 @@ export async function findExecutable(
 ): Promise<ExecutablePath | null> {
   const { npxPackage, logPrefix = "findExecutable" } = options;
 
-  // Test if the package is available via npx
-  if (npxPackage) {
-    try {
-      await execAsync(`npx ${npxPackage} --version`);
-
-      return {
-        command: "npx",
-        args: [npxPackage],
-        isNpx: true,
-      };
-    } catch (error) {
-      console.error(
-        `${logPrefix}: npx package ${npxPackage} not available:`,
-        error,
-      );
-    }
-  }
-
-  // Fallback to which/where for direct executable lookup
   try {
     const cmd =
       process.platform === "win32"
@@ -58,6 +39,23 @@ export async function findExecutable(
     }
   } catch (error) {
     console.error(`${logPrefix}: Error finding ${executable}:`, error);
+  }
+
+  if (npxPackage) {
+    try {
+      await execAsync(`npx ${npxPackage} --version`);
+
+      return {
+        command: "npx",
+        args: [npxPackage],
+        isNpx: true,
+      };
+    } catch (error) {
+      console.error(
+        `${logPrefix}: npx package ${npxPackage} not available:`,
+        error,
+      );
+    }
   }
 
   return null;
