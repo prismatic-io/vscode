@@ -17,21 +17,23 @@ The main intent of this extension is to offer:
 
 ## Features
 
-- **Authentication**: Secure login and token management through the Prismatic CLI.
+- **Authentication**: Secure login and token management via built-in OAuth 2.0 PKCE flow with multi-tenant support.
 - **Config Wizard**: Configure integration instances with a guided interface.
 - **Execution Results**: View detailed step-by-step outputs and logs.
-- **Integration Import**: Direct import of integrations from Prismatic.
-- **Message Passing**: Bi-directional communication between webviews and extension.
-- **React Integration**: Modern UI components using React and styled-components.
+- **Integration Import**: Direct import of integrations from Prismatic via the Prism CLI.
+- **Status Bar**: Displays the current organization and active integration at a glance.
+- **Integrations Sidebar**: Tree view listing all Code-Native Integrations in your workspace.
+- **Integration Details**: Sidebar panel showing configuration state, flows, and connections with inline OAuth.
+- **Flow Payloads**: Hierarchical tree view of flows and their test payload files.
 - **State Management**: Persistent state across extension sessions.
 - **VSCode Theming**: Seamless integration with VS Code's theme system.
 
 ## Prerequisites
 
 - A [Prismatic account](https://prismatic.io).
-- The Prismatic CLI installed globally [Prism](https://prismatic.io/docs/cli/#installing-the-cli-tool).
-- VSCode [version 1.96.0 or higher](https://code.visualstudio.com/updates/v1_96).
+- VSCode [version 1.96.0 or higher](https://code.visualstudio.com/updates/v1_96) or [Cursor](https://www.cursor.com/).
 - A [Prismatic Code-Native Integration (CNI) project](https://prismatic.io/docs/integrations/code-native/).
+- The Prismatic CLI ([Prism](https://prismatic.io/docs/cli/#installing-the-cli-tool)) installed globally — required for the **Import Integration** command.
 
 ## Usage
 
@@ -57,22 +59,31 @@ Executes a test for the Code-Native Integration (CNI). After the test is complet
 Generates a sample flow payload for testing purposes. This can be used to simulate real-world data inputs during integration testing.
 
 #### `Prismatic: Login`
-Logs in to your Prismatic account using your globally installed Prismatic CLI (Prism) then stores your authentication session.
+Opens your browser to authenticate with Prismatic via OAuth. After authenticating, the extension stores your session securely in VS Code's secret store. If your account has access to multiple tenants, you'll be prompted to select one.
 
 #### `Prismatic: Logout`
-Logs out of your Prismatic account using your globally installed Prismatic CLI (Prism) then clears your authentication session.
+Clears your stored authentication session.
+
+#### `Prismatic: Switch Tenant`
+Switch between Prismatic organizations or tenants without logging out and back in. Displays a quick pick with all available tenants.
 
 #### `Prismatic: Prismatic URL`
-Sets your systems PRISMATIC_URL environment variable for your Prismatic CLI (Prism) then syncs it to the extension. This allows you to change your Prismatic stack environment.
+Sets the Prismatic instance URL used by the extension. This allows you to change your Prismatic stack environment. Changing the URL triggers a re-authentication against the new instance.
+
+#### `Prismatic: Select Integration`
+Switch the active integration. Displays a quick pick listing all Code-Native Integrations found in your workspace.
 
 #### `Prismatic: Open Integration in Browser`
 Opens the Code-Native Integration (CNI) in the browser. This is useful for debugging and inspecting the integration from the Prismatic application.
 
+#### `Prismatic: Reveal in Explorer`
+Reveals the active integration's directory in the VS Code file explorer.
+
 #### `Prismatic: Me`
-Displays details about the currently authenticated Prismatic user, including name, organization, and Prismatic stack environment information using your globally installed Prismatic CLI (Prism).
+Displays details about the currently authenticated Prismatic user, including name, email, organization, and Prismatic stack endpoint URL.
 
 #### `Prismatic: Refresh Token`
-Refreshes your Prismatic authentication token to ensure continued access without needing to logout and log in again using your globally installed Prismatic CLI (Prism).
+Refreshes your Prismatic authentication token to ensure continued access without needing to log out and back in. The extension also refreshes tokens automatically before they expire.
 
 #### `Prismatic: Focus on Execution Results View`
 Displays the results of the Code-Native Integration (CNI) test. This includes the executions, step results (onTrigger and onExecution), and step outputs & logs.
@@ -93,9 +104,18 @@ Displays the Config Wizard to edit configuration values for your integration ins
 
 Configure the extension through VS Code's settings (`Cmd+,` on Mac or `Ctrl+,` on Windows/Linux) and search for "Prismatic".
 
-### `prismatic.npmPath`
+### `prismatic.prismCliPath`
 
-Path to the npm executable. If not specified, the extension will search for `npm` in your PATH and common installation locations (Homebrew, nvm, asdf, etc.).
+Path to the Prism CLI executable. If not specified, the extension searches for `prism` in your system PATH, falling back to npx. Only required for the **Import Integration** command.
+
+Examples:
+- `/usr/local/bin/prism`
+- `/opt/homebrew/bin/prism`
+- `${userHome}/.npm-global/bin/prism`
+
+### `prismatic.npmCliPath`
+
+Path to the npm executable. If not specified, the extension searches for `npm` in your PATH and common installation locations (Homebrew, nvm, asdf, etc.).
 
 Examples:
 - `/usr/local/bin/npm`
@@ -116,14 +136,13 @@ Debug output appears in the Prismatic output channel (View → Output → select
 
 ## Troubleshooting
 
-If you encounter issues with the Prismatic CLI:
+If you encounter issues:
 
 1. Enable debug mode by setting `prismatic.debugMode` to `basic` or `verbose` in your VS Code settings
 2. Check the Prismatic output channel (View → Output → "Prismatic") for detailed logs
-3. Ensure the CLI is installed globally: `npm install -g @prismatic-io/prism`
-4. Verify the installation: `prism --version`
-5. Check your PATH environment variable includes the npm global bin directory
-6. Try reinstalling the extension
+3. If **Import Integration** fails, ensure the Prism CLI is installed globally (`npm install -g @prismatic-io/prism`) and verify with `prism --version`
+4. If authentication fails, check that your Prismatic URL is set correctly via the **Prismatic: Prismatic URL** command
+5. Try reinstalling the extension
 
 ## What is Prismatic?
 
