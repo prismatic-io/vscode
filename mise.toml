@@ -55,14 +55,18 @@ run = "npm run publish:ovsx"
 description = "Publish to both VS Code Marketplace and OpenVSX"
 depends = ["publish:vsce", "publish:ovsx"]
 
-[tasks.version-check]
-description = "Verify release tag matches package.json version"
+[tasks.version-bump]
+description = "Bump package.json version (set BUMP_TYPE=patch|minor|major)"
+run = "npm version $BUMP_TYPE --no-git-tag-version"
+
+[tasks.release]
+description = "Trigger a release (usage: mise run release -- patch|minor|major)"
 run = """
-PKG_VERSION=$(node --input-type=commonjs -p "require('./package.json').version")
-TAG_VERSION="${RELEASE_TAG#v}"
-if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
-  echo "ERROR: package.json version ($PKG_VERSION) does not match release tag ($TAG_VERSION)"
+BUMP="${1:?Usage: mise run release -- patch|minor|major}"
+if [ "$BUMP" != "patch" ] && [ "$BUMP" != "minor" ] && [ "$BUMP" != "major" ]; then
+  echo "ERROR: Invalid bump type '$BUMP'. Must be patch, minor, or major."
   exit 1
 fi
-echo "Version check passed: $PKG_VERSION"
+gh workflow run release.yml -f bump="$BUMP"
+echo "Release workflow triggered with bump=$BUMP"
 """
