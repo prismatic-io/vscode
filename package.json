@@ -97,12 +97,6 @@
         "enablement": "prismatic.workspaceEnabled"
       },
       {
-        "command": "prismatic.refreshToken",
-        "title": "Refresh Token",
-        "category": "Prismatic",
-        "enablement": "prismatic.workspaceEnabled"
-      },
-      {
         "command": "prismatic.login",
         "title": "Login",
         "category": "Prismatic",

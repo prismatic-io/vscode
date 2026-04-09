@@ -210,7 +210,7 @@ export class AuthManager {
     return tokens.accessToken;
   }
 
-  public async refreshAccessToken(): Promise<string> {
+  private async refreshAccessToken(): Promise<string> {
     const tokens = await this.secretStore.getTokens();
     if (!tokens?.refreshToken) {
       throw new Error("No refresh token found. Please login again.");

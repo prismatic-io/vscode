@@ -302,24 +302,6 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(switchTenantCommand);
 
     /**
-     * command: prismatic.refreshToken
-     * This command is used to manually refresh the access token.
-     */
-    const prismRefreshTokenCommand = vscode.commands.registerCommand(
-      "prismatic.refreshToken",
-      async () => {
-        try {
-          await authManager.refreshAccessToken();
-
-          log("SUCCESS", "Successfully refreshed tokens!", true);
-        } catch (error) {
-          log("ERROR", String(error), true);
-        }
-      },
-    );
-    context.subscriptions.push(prismRefreshTokenCommand);
-
-    /**
      * This command is used to open the integration in browser.
      */
     const integrationOpenInBrowserCommand = vscode.commands.registerCommand(
