@@ -62,7 +62,7 @@ run = "npm version $BUMP_TYPE --no-git-tag-version"
 [tasks.release]
 description = "Trigger a release (usage: mise run release -- patch|minor|major)"
 run = """
-BUMP="${1:?Usage: mise run release -- patch|minor|major}"
+BUMP="{{arg(i=0, name='bump', required=true)}}"
 if [ "$BUMP" != "patch" ] && [ "$BUMP" != "minor" ] && [ "$BUMP" != "major" ]; then
   echo "ERROR: Invalid bump type '$BUMP'. Must be patch, minor, or major."
   exit 1
