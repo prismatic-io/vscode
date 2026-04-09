@@ -7,7 +7,7 @@ This guide is for internal Prismatic developers working on the VS Code extension
 - **Node.js**: Version specified in `mise.toml` (currently 22.11.0)
 - **VS Code**: Version 1.96.0 or higher
 - **mise**: Installed globally for Node.js version management (recommended)
-- **Prismatic CLI**: Installed globally (`npm install -g @prismatic-io/prism`)
+- **Prismatic CLI**: Installed globally (`npm install -g @prismatic-io/prism`) — required for the Import Integration command
 - **Git**: For version control
 
 ## Development Setup
@@ -42,7 +42,7 @@ node --version  # Should show 22.11.0
 
 ```bash
 # Build for production
-npm run build:prod
+npm run build
 
 # Start development mode with watch
 npm run watch
@@ -126,7 +126,7 @@ npm run check-types
 npm run check:fix
 
 # Build verification
-npm run build:prod
+npm run build
 ```
 
 ### 4. Commit Message Conventions
@@ -217,71 +217,22 @@ This creates a `.vsix` file in the project root.
 
 ## Release Process
 
-### Automated Changelog Generation
+Releases are handled end-to-end by the **Release** GitHub Actions workflow (`.github/workflows/release.yml`).
 
-The project uses GitHub CLI (`gh`) to automatically generate changelogs from git commits and tags.
+1. Merge your work into `main` — ensure CI passes.
+2. Go to **Actions → Release** in the GitHub repository.
+3. Run the workflow and select a version bump type: `patch`, `minor`, or `major`.
 
-#### Prerequisites
-```bash
-# Install GitHub CLI (if not already installed)
-# macOS: brew install gh
-# Windows: winget install GitHub.cli
-# Linux: See https://cli.github.com/manual/installation
-
-# Authenticate with GitHub
-gh auth login
-```
-
-#### Release Workflow
-
-1. **Finish your work and bump version on branch**:
-   ```bash
-   git checkout feature/your-feature-name
-   ```
-
-2. **Review and finalize**:
-   ```bash
-   # Build and test
-   npm run build:prod
-   npm run package
-   ```
-
-3. **Bump version on branch**:
-   ```bash
-   # Updates package.json and creates git tag
-   npm version patch // or minor/major
-
-   # Commit changes
-   git add .
-   git commit -m "chore: bump version to v0.0.24" // this is a example version, use the actual version
-
-   # Push the feature branch and the new tag
-   git push origin feature/your-feature-name --follow-tags
-   ```
-
-4. **Merge to main (includes the version bump)**
-
-5. **Create release from the tag (which now points to main after merge)e**:
-   ```bash
-   gh release create v0.0.24 --generate-notes
-   ```
-
-### Internal Release Checklist
-
-- [ ] All tests pass
-- [ ] Code is formatted and linted (`npm run check:fix`)
-- [ ] Version bumped in `package.json`
-- [ ] VSIX package created and tested
-- [ ] GitHub release created with notes
-- [ ] Internal team notified
+The workflow handles everything from there — version bump, tagging, CI, packaging, GitHub Release creation, and publishing to both the VS Code Marketplace and Open VSX Registry.
 
 ## Architecture Notes
 
 ### Key Components
 
-- **AuthManager**: Handles Prismatic authentication and token management.
+- **AuthManager**: Handles Prismatic authentication via OAuth 2.0 PKCE, token storage, refresh, and multi-tenant support.
 - **StateManager**: Wrapper around VSCode State that manages extension state persistence.
-- **PrismCLIManager**: Interfaces with the Prismatic CLI to perform authentication and other CLI commands.
+- **PrismCLIManager**: Interfaces with the Prismatic CLI for the `integrations:import` command.
+- **StatusBarManager**: Manages status bar items showing the current organization and active integration.
 - **WebviewPanelManager**: Manages webview panel lifecycle and communication with the extension.
 - **WebviewViewManager**: Manages webview view lifecycle and communication with the extension.
 - **XState Machines**: Handle complex state logic for integrations and execution results.
