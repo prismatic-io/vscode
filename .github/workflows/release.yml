@@ -27,17 +27,17 @@ jobs:
       version: ${{ steps.bump.outputs.version }}
       tag: ${{ steps.bump.outputs.tag }}
     steps:
-      - uses: actions/create-github-app-token@v2
+      - uses: actions/create-github-app-token@v3
         id: app-token
         with:
           app-id: ${{ secrets.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           token: ${{ steps.app-token.outputs.token }}
 
-      - uses: jdx/mise-action@v3
+      - uses: jdx/mise-action@v4
 
       - run: npm ci
 
@@ -66,11 +66,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: v${{ needs.release.outputs.version }}
 
-      - uses: jdx/mise-action@v3
+      - uses: jdx/mise-action@v4
 
       - run: npm ci
 
