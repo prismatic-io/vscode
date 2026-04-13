@@ -16,6 +16,7 @@ import {
   startCallbackServer,
 } from "./auth/pkce";
 import { SecretStore } from "./auth/secretStore";
+import { resolveSwitchTenantOutcome } from "./auth/switchTenant";
 import type { PrismaticUserInfo, Tenant } from "./auth/types";
 import { fetchPrismaticUser, fetchUserTenants } from "./auth/userInfo";
 
@@ -29,6 +30,22 @@ class PrismaticUrlNotConfiguredError extends Error {
     this.name = "PrismaticUrlNotConfiguredError";
   }
 }
+
+const waitForQuickPickSelection = <T extends vscode.QuickPickItem>(
+  quickPick: vscode.QuickPick<T>,
+): Promise<T | undefined> =>
+  new Promise((resolve) => {
+    let accepted = false;
+    quickPick.onDidAccept(() => {
+      accepted = true;
+      resolve(quickPick.selectedItems[0]);
+    });
+    quickPick.onDidHide(() => {
+      if (!accepted) {
+        resolve(undefined);
+      }
+    });
+  });
 
 export class AuthManager {
   private static instance: AuthManager | null = null;
@@ -273,71 +290,50 @@ export class AuthManager {
     return selected?.tenantId;
   }
 
-  public async switchTenant(): Promise<string> {
+  public async switchTenant(): Promise<string | undefined> {
     const tokens = await this.secretStore.getTokens();
     if (!tokens?.refreshToken) {
       throw new Error("Not logged in. Please login first.");
     }
 
     const prismaticUrl = await this.requirePrismaticUrl();
-
     const accessToken = await this.getAccessToken();
 
-    // Show QuickPick immediately with a loading indicator while tenants load
-    const selectedTenantId = await new Promise<string | undefined>(
-      (resolve, reject) => {
-        const quickPick = vscode.window.createQuickPick<
-          vscode.QuickPickItem & { tenantId: string }
-        >();
-        quickPick.title = "Prismatic Tenant Selection";
-        quickPick.placeholder = "Loading tenants…";
-        quickPick.busy = true;
-        quickPick.enabled = false;
-        quickPick.show();
+    // Show the picker immediately so the click has visible feedback while we
+    // load tenants. The selection promise is installed up-front so that hitting
+    // escape during the fetch is handled cleanly.
+    const quickPick = vscode.window.createQuickPick<
+      vscode.QuickPickItem & { tenantId: string }
+    >();
+    quickPick.title = "Prismatic Tenant Selection";
+    quickPick.placeholder = "Loading tenants…";
+    quickPick.busy = true;
+    quickPick.enabled = false;
+    quickPick.show();
 
-        fetchUserTenants(prismaticUrl, accessToken)
-          .then((tenants) => {
-            if (tenants.length <= 1) {
-              quickPick.dispose();
-              reject(new Error("No other tenants available to switch to."));
-              return;
-            }
+    const selectionPromise = waitForQuickPickSelection(quickPick);
 
-            quickPick.items = tenants.map((t) => ({
-              label: t.orgName,
-              description: `${t.url} (${t.awsRegion})`,
-              detail: t.tenantId === tokens.tenantId ? "Current" : undefined,
-              tenantId: t.tenantId,
-            }));
-            quickPick.placeholder = "Select a tenant";
-            quickPick.busy = false;
-            quickPick.enabled = true;
-          })
-          .catch((err) => {
-            quickPick.dispose();
-            reject(err);
-          });
+    let selectedTenantId: string;
+    try {
+      const tenants = await fetchUserTenants(prismaticUrl, accessToken);
+      const outcome = resolveSwitchTenantOutcome(tenants, tokens.tenantId);
 
-        let accepted = false;
+      if (outcome.kind === "single") {
+        return outcome.message;
+      }
 
-        quickPick.onDidAccept(() => {
-          accepted = true;
-          const selected = quickPick.selectedItems[0];
-          quickPick.dispose();
-          resolve(selected?.tenantId);
-        });
+      quickPick.items = outcome.items;
+      quickPick.placeholder = "Select a tenant";
+      quickPick.busy = false;
+      quickPick.enabled = true;
 
-        quickPick.onDidHide(() => {
-          quickPick.dispose();
-          if (!accepted) {
-            resolve(undefined);
-          }
-        });
-      },
-    );
-
-    if (!selectedTenantId) {
-      throw new Error("Tenant selection cancelled.");
+      const selected = await selectionPromise;
+      if (!selected) {
+        return undefined;
+      }
+      selectedTenantId = selected.tenantId;
+    } finally {
+      quickPick.dispose();
     }
 
     if (selectedTenantId === tokens.tenantId) {
