@@ -290,6 +290,9 @@ export async function activate(context: vscode.ExtensionContext) {
       async () => {
         try {
           const result = await authManager.switchTenant();
+          if (result === undefined) {
+            return;
+          }
 
           await statusBarManager?.updateUserStatusBar();
 

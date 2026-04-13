@@ -22,7 +22,7 @@ export class StatusBarManager {
       0,
     );
     this.userStatusBarItem.name = "Prismatic User";
-    this.userStatusBarItem.command = "prismatic.me";
+    this.userStatusBarItem.command = "prismatic.switchTenant";
 
     // Create Active Integration status bar item (left side, priority -1 = right of user item)
     this.integrationStatusBarItem = vscode.window.createStatusBarItem(
