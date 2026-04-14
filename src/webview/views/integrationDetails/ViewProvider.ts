@@ -1,3 +1,4 @@
+import { AuthManager } from "@extension/AuthManager";
 import { WebviewViewManager } from "@extension/WebviewViewManager";
 import * as vscode from "vscode";
 import { CONFIG } from "@/config";
@@ -41,6 +42,12 @@ export function createIntegrationDetailsViewProvider(
         }
       },
     });
+
+  context.subscriptions.push(
+    AuthManager.getInstance().onDidChangeAuth(() => {
+      vscode.commands.executeCommand("prismatic.integrationDetails.refresh");
+    }),
+  );
 
   return vscode.window.registerWebviewViewProvider(
     WEBVIEW_CONFIG.viewType,

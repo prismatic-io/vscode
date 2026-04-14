@@ -43,20 +43,21 @@ export class StatusBarManager {
     context: vscode.ExtensionContext,
   ): Promise<StatusBarManager> {
     if (!StatusBarManager.instance) {
-      StatusBarManager.instance = new StatusBarManager(
-        authManager,
-        stateManager,
-      );
+      const instance = new StatusBarManager(authManager, stateManager);
+      StatusBarManager.instance = instance;
 
       // Register for disposal
       context.subscriptions.push(
-        StatusBarManager.instance.userStatusBarItem,
-        StatusBarManager.instance.integrationStatusBarItem,
+        instance.userStatusBarItem,
+        instance.integrationStatusBarItem,
+        authManager.onDidChangeAuth(() => {
+          void instance.updateUserStatusBar();
+        }),
       );
 
       // Initial update
-      await StatusBarManager.instance.updateUserStatusBar();
-      await StatusBarManager.instance.updateIntegrationStatusBar();
+      await instance.updateUserStatusBar();
+      await instance.updateIntegrationStatusBar();
     }
     return StatusBarManager.instance;
   }

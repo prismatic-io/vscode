@@ -1,3 +1,5 @@
+import { AuthManager } from "@extension/AuthManager";
+import { StateManager } from "@extension/StateManager";
 import { WebviewViewManager } from "@extension/WebviewViewManager";
 import * as vscode from "vscode";
 import { CONFIG } from "@/config";
@@ -22,6 +24,15 @@ export function createExecutionResultsViewProvider(
         }
       },
     });
+
+  context.subscriptions.push(
+    AuthManager.getInstance().onDidChangeAuth(() => {
+      StateManager.getInstance().notifyWebviews({
+        type: "executionResults.refetch",
+        payload: new Date().toISOString(),
+      });
+    }),
+  );
 
   return vscode.window.registerWebviewViewProvider(
     WEBVIEW_CONFIG.viewType,

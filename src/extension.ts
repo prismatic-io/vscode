@@ -248,10 +248,6 @@ export async function activate(context: vscode.ExtensionContext) {
       async () => {
         try {
           const result = await authManager.login();
-
-          // Update status bar after successful login
-          await statusBarManager?.updateUserStatusBar();
-
           log("SUCCESS", result, true);
         } catch (error) {
           log("ERROR", String(error), true);
@@ -269,10 +265,6 @@ export async function activate(context: vscode.ExtensionContext) {
       async () => {
         try {
           const result = await authManager.logout();
-
-          // Update status bar after logout
-          await statusBarManager?.updateUserStatusBar();
-
           log("SUCCESS", result, true);
         } catch (error) {
           log("ERROR", String(error), true);
@@ -293,8 +285,6 @@ export async function activate(context: vscode.ExtensionContext) {
           if (result === undefined) {
             return;
           }
-
-          await statusBarManager?.updateUserStatusBar();
 
           log("SUCCESS", result, true);
         } catch (error) {
@@ -558,10 +548,6 @@ export async function activate(context: vscode.ExtensionContext) {
         try {
           await authManager.logout();
           const result = await authManager.login();
-
-          // Update status bar after re-login with new URL
-          await statusBarManager?.updateUserStatusBar();
-
           log("SUCCESS", result, true);
         } catch (error) {
           log("ERROR", String(error), true);
