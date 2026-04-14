@@ -53,6 +53,8 @@ export class AuthManager {
   private secretStore: SecretStore;
   private cachedUserInfo: PrismaticUserInfo | null = null;
   private refreshTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly _onDidChangeAuth = new vscode.EventEmitter<void>();
+  public readonly onDidChangeAuth = this._onDidChangeAuth.event;
 
   private constructor(
     context: vscode.ExtensionContext,
@@ -60,6 +62,7 @@ export class AuthManager {
   ) {
     this.stateManager = stateManager;
     this.secretStore = new SecretStore(context);
+    context.subscriptions.push(this._onDidChangeAuth);
   }
 
   static async initialize(
@@ -186,7 +189,7 @@ export class AuthManager {
         // Non-fatal — continue with initial tenant
       }
 
-      this.notifyWebviewsAuthChanged();
+      this.notifyAuthChanged();
       this.scheduleProactiveRefresh(tokens.expiresAt);
 
       // Re-fetch user info for the selected tenant context
@@ -210,7 +213,7 @@ export class AuthManager {
     this.clearRefreshTimer();
     await this.secretStore.clearTokens();
     this.cachedUserInfo = null;
-    this.notifyWebviewsAuthChanged();
+    this.notifyAuthChanged();
     return "Successfully logged out.";
   }
 
@@ -246,7 +249,7 @@ export class AuthManager {
       );
 
       await this.secretStore.storeTokens(newTokens);
-      this.notifyWebviewsAuthChanged();
+      this.notifyAuthChanged();
       this.scheduleProactiveRefresh(newTokens.expiresAt);
       return newTokens.accessToken;
     } catch (error) {
@@ -254,7 +257,7 @@ export class AuthManager {
       this.clearRefreshTimer();
       await this.secretStore.clearTokens();
       this.cachedUserInfo = null;
-      this.notifyWebviewsAuthChanged();
+      this.notifyAuthChanged();
       throw new Error(
         `Session expired. Please login again. (${error instanceof Error ? error.message : String(error)})`,
       );
@@ -351,7 +354,7 @@ export class AuthManager {
 
     await this.secretStore.storeTokens(newTokens);
     this.cachedUserInfo = null;
-    this.notifyWebviewsAuthChanged();
+    this.notifyAuthChanged();
     this.scheduleProactiveRefresh(newTokens.expiresAt);
 
     // Re-fetch user info for the new tenant
@@ -439,7 +442,8 @@ export class AuthManager {
     }
   }
 
-  private notifyWebviewsAuthChanged(): void {
+  private notifyAuthChanged(): void {
+    this._onDidChangeAuth.fire();
     this.stateManager.notifyWebviews({
       type: "authStateChanged",
       payload: undefined,
