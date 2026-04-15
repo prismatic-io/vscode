@@ -25,3 +25,15 @@ jobs:
       - uses: jdx/mise-action@v4
       - run: npm ci
       - run: mise run ci
+
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v3
+      - run: npm ci
+      - run: npm install -g @prismatic-io/prism
+      # @vscode/test-electron launches a real VS Code instance, which needs a display.
+      # xvfb-run wraps the command in a virtual X server; -a picks a free display number.
+      - run: xvfb-run -a mise run test:integration
