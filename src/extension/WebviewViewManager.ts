@@ -1,5 +1,5 @@
-import { AuthManager } from "@extension/AuthManager";
-import { StateManager } from "@extension/StateManager";
+import type { AuthManager } from "@extension/AuthManager";
+import type { StateManager } from "@extension/StateManager";
 import type { MessageType } from "@type/messages";
 import * as vscode from "vscode";
 
@@ -17,14 +17,11 @@ export class WebviewViewManager<T extends MessageType>
   private _view?: vscode.WebviewView;
   private _disposables: vscode.Disposable[] = [];
 
-  /**
-   * Creates a new WebviewViewManager instance.
-   * @param _extensionUri - The URI of the extension
-   * @param _config - Configuration options for the webview
-   */
   constructor(
     private readonly _extensionUri: vscode.Uri,
     private readonly _config: WebviewViewManagerConfig<T>,
+    private readonly _stateManager: StateManager,
+    private readonly _authManager: AuthManager,
   ) {}
 
   /**
@@ -55,8 +52,7 @@ export class WebviewViewManager<T extends MessageType>
     _token: vscode.CancellationToken,
   ) {
     this._view = webviewView;
-    const stateManager = StateManager.getInstance();
-    stateManager.registerWebview(webviewView.webview);
+    this._stateManager.registerWebview(webviewView.webview);
 
     webviewView.webview.options = {
       enableScripts: true,
@@ -76,17 +72,15 @@ export class WebviewViewManager<T extends MessageType>
       this._disposables.push(
         webviewView.webview.onDidReceiveMessage(
           async (message: MessageType) => {
-            const stateManager = StateManager.getInstance();
-
             switch (message.type) {
               case "stateChange": {
                 const { scope, value } = message.payload;
 
                 try {
                   if (scope === "global") {
-                    await stateManager.updateGlobalState(value);
+                    await this._stateManager.updateGlobalState(value);
                   } else {
-                    await stateManager.updateWorkspaceState(value);
+                    await this._stateManager.updateWorkspaceState(value);
                   }
                 } catch (error) {
                   this.postMessage({
@@ -95,8 +89,8 @@ export class WebviewViewManager<T extends MessageType>
                       scope,
                       value:
                         scope === "global"
-                          ? await stateManager.getGlobalState()
-                          : await stateManager.getWorkspaceState(),
+                          ? await this._stateManager.getGlobalState()
+                          : await this._stateManager.getWorkspaceState(),
                       error:
                         error instanceof Error
                           ? error.message
@@ -112,8 +106,8 @@ export class WebviewViewManager<T extends MessageType>
                 try {
                   const value =
                     scope === "global"
-                      ? await stateManager.getGlobalState()
-                      : await stateManager.getWorkspaceState();
+                      ? await this._stateManager.getGlobalState()
+                      : await this._stateManager.getWorkspaceState();
 
                   this.postMessage({
                     type: "getState",
@@ -135,8 +129,7 @@ export class WebviewViewManager<T extends MessageType>
               }
               case "requestAccessToken": {
                 try {
-                  const authManager = AuthManager.getInstance();
-                  const token = await authManager.getAccessToken();
+                  const token = await this._authManager.getAccessToken();
                   this.postMessage({
                     type: "accessToken",
                     payload: { token },
@@ -151,8 +144,7 @@ export class WebviewViewManager<T extends MessageType>
               }
               case "requestLogin": {
                 try {
-                  const authManager = AuthManager.getInstance();
-                  await authManager.login();
+                  await this._authManager.login();
                 } catch (error) {
                   const msg =
                     error instanceof Error ? error.message : "Login failed";
@@ -206,9 +198,7 @@ export class WebviewViewManager<T extends MessageType>
    */
   public dispose() {
     if (this._view) {
-      const stateManager = StateManager.getInstance();
-
-      stateManager.unregisterWebview(this._view.webview);
+      this._stateManager.unregisterWebview(this._view.webview);
     }
     for (const disposable of this._disposables) {
       disposable.dispose();

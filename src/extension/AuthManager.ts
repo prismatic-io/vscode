@@ -1,4 +1,4 @@
-import { StateManager } from "@extension/StateManager";
+import type { StateManager } from "@extension/StateManager";
 import * as vscode from "vscode";
 import { log } from "../extension";
 import {
@@ -48,7 +48,6 @@ const waitForQuickPickSelection = <T extends vscode.QuickPickItem>(
   });
 
 export class AuthManager {
-  private static instance: AuthManager | null = null;
   private stateManager: StateManager;
   private secretStore: SecretStore;
   private cachedUserInfo: PrismaticUserInfo | null = null;
@@ -56,30 +55,10 @@ export class AuthManager {
   private readonly _onDidChangeAuth = new vscode.EventEmitter<void>();
   public readonly onDidChangeAuth = this._onDidChangeAuth.event;
 
-  private constructor(
-    context: vscode.ExtensionContext,
-    stateManager: StateManager,
-  ) {
+  constructor(context: vscode.ExtensionContext, stateManager: StateManager) {
     this.stateManager = stateManager;
     this.secretStore = new SecretStore(context);
     context.subscriptions.push(this._onDidChangeAuth);
-  }
-
-  static async initialize(
-    context: vscode.ExtensionContext,
-  ): Promise<AuthManager> {
-    if (!AuthManager.instance) {
-      const stateManager = StateManager.getInstance();
-      AuthManager.instance = new AuthManager(context, stateManager);
-    }
-    return AuthManager.instance;
-  }
-
-  static getInstance(): AuthManager {
-    if (!AuthManager.instance) {
-      throw new Error("AuthManager not initialized. Call initialize() first.");
-    }
-    return AuthManager.instance;
   }
 
   public async hasTokens(): Promise<boolean> {
@@ -453,6 +432,5 @@ export class AuthManager {
   public dispose(): void {
     this.clearRefreshTimer();
     this.cachedUserInfo = null;
-    AuthManager.instance = null;
   }
 }

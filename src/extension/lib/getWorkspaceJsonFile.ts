@@ -1,9 +1,8 @@
 import fs, { existsSync } from "node:fs";
 import path from "node:path";
-import { getActiveIntegrationPath } from "@/extension/lib/getActiveIntegrationPath";
 
 interface GetWorkspaceJsonFileProps {
-  workspaceFolderPath?: string;
+  workspaceFolderPath: string;
   directory?: string;
   fileName: string;
 }
@@ -17,19 +16,16 @@ export const getWorkspaceJsonFile = <T = Record<string, unknown>>({
   filePath: string;
   fileData: T | null;
 } => {
-  // Use provided path or fall back to active integration path
-  const resolvedPath = workspaceFolderPath ?? getActiveIntegrationPath();
-
-  if (!resolvedPath) {
+  if (!workspaceFolderPath) {
     throw new Error("No workspace folder found.");
   }
 
   try {
-    const filePath = path.join(resolvedPath, directory, fileName);
+    const filePath = path.join(workspaceFolderPath, directory, fileName);
 
     if (!existsSync(filePath)) {
       return {
-        workspaceFolderPath: resolvedPath,
+        workspaceFolderPath,
         filePath,
         fileData: null,
       };
@@ -39,7 +35,7 @@ export const getWorkspaceJsonFile = <T = Record<string, unknown>>({
     const fileData = JSON.parse(file) as T;
 
     return {
-      workspaceFolderPath: resolvedPath,
+      workspaceFolderPath,
       filePath,
       fileData,
     };

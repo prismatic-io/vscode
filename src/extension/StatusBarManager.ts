@@ -4,14 +4,16 @@ import type { StateManager } from "@extension/StateManager";
 import * as vscode from "vscode";
 
 export class StatusBarManager {
-  private static instance: StatusBarManager | null = null;
-
   private userStatusBarItem: vscode.StatusBarItem;
   private integrationStatusBarItem: vscode.StatusBarItem;
   private authManager: AuthManager;
   private stateManager: StateManager;
 
-  private constructor(authManager: AuthManager, stateManager: StateManager) {
+  constructor(
+    authManager: AuthManager,
+    stateManager: StateManager,
+    context: vscode.ExtensionContext,
+  ) {
     this.authManager = authManager;
     this.stateManager = stateManager;
 
@@ -32,46 +34,16 @@ export class StatusBarManager {
     );
     this.integrationStatusBarItem.name = "Prismatic Integration";
     this.integrationStatusBarItem.command = "prismatic.integrations.select";
-  }
 
-  /**
-   * Initializes and returns the singleton StatusBarManager instance.
-   */
-  public static async initialize(
-    authManager: AuthManager,
-    stateManager: StateManager,
-    context: vscode.ExtensionContext,
-  ): Promise<StatusBarManager> {
-    if (!StatusBarManager.instance) {
-      const instance = new StatusBarManager(authManager, stateManager);
-      StatusBarManager.instance = instance;
+    context.subscriptions.push(
+      this,
+      authManager.onDidChangeAuth(() => {
+        void this.updateUserStatusBar();
+      }),
+    );
 
-      // Register for disposal
-      context.subscriptions.push(
-        instance.userStatusBarItem,
-        instance.integrationStatusBarItem,
-        authManager.onDidChangeAuth(() => {
-          void instance.updateUserStatusBar();
-        }),
-      );
-
-      // Initial update
-      await instance.updateUserStatusBar();
-      await instance.updateIntegrationStatusBar();
-    }
-    return StatusBarManager.instance;
-  }
-
-  /**
-   * Gets the singleton instance.
-   */
-  public static getInstance(): StatusBarManager {
-    if (!StatusBarManager.instance) {
-      throw new Error(
-        "StatusBarManager not initialized. Call initialize() first.",
-      );
-    }
-    return StatusBarManager.instance;
+    void this.updateUserStatusBar();
+    void this.updateIntegrationStatusBar();
   }
 
   /**
@@ -146,12 +118,8 @@ export class StatusBarManager {
     this.integrationStatusBarItem.show();
   }
 
-  /**
-   * Disposes of the StatusBarManager.
-   */
   public dispose(): void {
     this.userStatusBarItem.dispose();
     this.integrationStatusBarItem.dispose();
-    StatusBarManager.instance = null;
   }
 }

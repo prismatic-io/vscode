@@ -1,12 +1,14 @@
 import * as vscode from "vscode";
 import { type ActorRefFrom, assign, setup } from "xstate";
 import { log } from "@/extension";
-import { StateManager } from "@/extension/StateManager";
+import type { StateManager } from "@/extension/StateManager";
 import type { Flow } from "@/types/flows";
 import { InstanceConfigState } from "@/types/state";
 import { testIntegrationFlow } from "./testIntegrationFlow";
 
-type TestIntegrationFlowInput = {};
+type TestIntegrationFlowInput = {
+  stateManager: StateManager;
+};
 
 interface TestIntegrationFlowContext {
   configState: InstanceConfigState | null;
@@ -160,8 +162,8 @@ export const testIntegrationFlowMachine = setup({
                     "Integration flow test completed successfully!",
                     true,
                   ),
-                () => {
-                  StateManager.getInstance().notifyWebviews({
+                ({ context }) => {
+                  context["@input"].stateManager.notifyWebviews({
                     type: "executionResults.refetch",
                     payload: new Date().toISOString(),
                   });

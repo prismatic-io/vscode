@@ -1,3 +1,5 @@
+import type { AuthManager } from "@extension/AuthManager";
+import type { StateManager } from "@extension/StateManager";
 import * as vscode from "vscode";
 import { CONFIG } from "@/config";
 import { WebviewPanelManager } from "@/extension/WebviewPanelManager";
@@ -5,7 +7,11 @@ import type { ConfigWizardMessage } from "@/webview/views/configWizard/types";
 
 const WEBVIEW_CONFIG = CONFIG.webviews.configWizard;
 
-export function createConfigWizardPanel(context: vscode.ExtensionContext) {
+export const createConfigWizardPanel = (
+  context: vscode.ExtensionContext,
+  stateManager: StateManager,
+  authManager: AuthManager,
+) => {
   const configWizardProvider = new WebviewPanelManager<ConfigWizardMessage>(
     context,
     {
@@ -29,9 +35,11 @@ export function createConfigWizardPanel(context: vscode.ExtensionContext) {
         }
       },
     },
+    stateManager,
+    authManager,
   );
 
   return vscode.commands.registerCommand(WEBVIEW_CONFIG.command, () =>
     configWizardProvider.createPanel(),
   );
-}
+};

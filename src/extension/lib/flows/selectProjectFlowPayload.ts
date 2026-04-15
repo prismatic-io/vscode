@@ -11,17 +11,19 @@ import type { FlowPayload } from "@/types/flows";
 
 /**
  * Select a Flow payload from the project
+ * @param integrationPath - The path to the active integration (parent of .spectral)
  * @param stableKey - The flow stable key to get the payload for
  * @returns {Promise<FlowPayload | null>} The Flow payload
  */
 export const selectProjectFlowPayload = async (
+  integrationPath: string,
   stableKey?: string,
 ): Promise<FlowPayload | null> => {
   if (!stableKey) {
     return null;
   }
 
-  const flowPayloads = await getProjectFlowPayloads(stableKey);
+  const flowPayloads = await getProjectFlowPayloads(integrationPath, stableKey);
 
   if (flowPayloads.length === 0) {
     return null;
@@ -54,6 +56,7 @@ export const selectProjectFlowPayload = async (
   );
 
   return getWorkspaceJsonFile<FlowPayload>({
+    workspaceFolderPath: integrationPath,
     directory: `${SPECTRAL_DIR}/${FLOW_DIR}/${stableKey}/${FLOW_PAYLOADS_DIR}`,
     fileName: selectedFlowPayload.payload.fileName,
   }).fileData;

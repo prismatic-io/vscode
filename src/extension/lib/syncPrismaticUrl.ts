@@ -1,9 +1,10 @@
 import { log } from "@/extension";
-import { StateManager } from "@/extension/StateManager";
+import type { StateManager } from "@/extension/StateManager";
 
-export const syncPrismaticUrl = async (): Promise<void> => {
+export const syncPrismaticUrl = async (
+  stateManager: StateManager,
+): Promise<void> => {
   // step 1. check if prismatic url is already in global state
-  const stateManager = StateManager.getInstance();
   const globalStatePrismaticUrl = (await stateManager.getGlobalState())
     ?.prismaticUrl;
 
