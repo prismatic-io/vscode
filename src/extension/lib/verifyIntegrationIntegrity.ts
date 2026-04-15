@@ -1,18 +1,20 @@
 import { createActor, toPromise } from "xstate";
 import { log } from "@/extension";
-import { AuthManager } from "@/extension/AuthManager";
+import type { AuthManager } from "@/extension/AuthManager";
 import { getWorkspaceJsonFile } from "@/extension/lib/getWorkspaceJsonFile";
 import { getIntegration } from "@/extension/machines/integrationsFlowsTest/getIntegration";
-import { StateManager } from "@/extension/StateManager";
+import type { StateManager } from "@/extension/StateManager";
 import { SPECTRAL_DIR } from "../constants";
 
 /**
  * Verifies that the current integration ID exists and is accessible in Prismatic.
  * If the integration is not found, clears the workspace state.
  */
-export const verifyIntegrationIntegrity = async (): Promise<void> => {
-  const integrationId = await syncIntegrationId();
-  const stateManager = StateManager.getInstance();
+export const verifyIntegrationIntegrity = async (
+  stateManager: StateManager,
+  authManager: AuthManager,
+): Promise<void> => {
+  const integrationId = await syncIntegrationId(stateManager);
   const globalState = await stateManager.getGlobalState();
 
   // if Prismatic URL is not configured, skip verification
@@ -27,7 +29,6 @@ export const verifyIntegrationIntegrity = async (): Promise<void> => {
 
   let accessToken: string;
   try {
-    const authManager = AuthManager.getInstance();
     accessToken = await authManager.getAccessToken();
   } catch {
     // Not logged in, skip verification
@@ -75,8 +76,9 @@ export const verifyIntegrationIntegrity = async (): Promise<void> => {
  * Uses the active integration path from workspace state.
  * @returns Promise that resolves to the current integration ID, or undefined if none found
  */
-export const syncIntegrationId = async (): Promise<string | undefined> => {
-  const stateManager = StateManager.getInstance();
+export const syncIntegrationId = async (
+  stateManager: StateManager,
+): Promise<string | undefined> => {
   const workspaceState = await stateManager.getWorkspaceState();
 
   // If no active integration is selected, return existing integrationId
@@ -88,6 +90,7 @@ export const syncIntegrationId = async (): Promise<string | undefined> => {
   let fileData: Record<string, unknown> | null = null;
   try {
     const result = getWorkspaceJsonFile({
+      workspaceFolderPath: workspaceState.activeIntegrationPath,
       directory: SPECTRAL_DIR,
       fileName: "prism.json",
     });

@@ -1,5 +1,5 @@
-import { AuthManager } from "@extension/AuthManager";
-import { StateManager } from "@extension/StateManager";
+import type { AuthManager } from "@extension/AuthManager";
+import type { StateManager } from "@extension/StateManager";
 import type { MessageType } from "@type/messages";
 import * as vscode from "vscode";
 
@@ -15,14 +15,11 @@ export class WebviewPanelManager<T extends MessageType> {
   private _panel?: vscode.WebviewPanel;
   private _disposables: vscode.Disposable[] = [];
 
-  /**
-   * Creates a new WebviewPanelManager instance.
-   * @param _context - The extension context
-   * @param _config - Configuration object for the panel
-   */
   constructor(
     private readonly _context: vscode.ExtensionContext,
     private readonly _config: WebviewPanelManagerConfig<T>,
+    private readonly _stateManager: StateManager,
+    private readonly _authManager: AuthManager,
   ) {}
 
   /**
@@ -59,8 +56,7 @@ export class WebviewPanelManager<T extends MessageType> {
       },
     );
 
-    const stateManager = StateManager.getInstance();
-    stateManager.registerWebview(this._panel.webview);
+    this._stateManager.registerWebview(this._panel.webview);
 
     const scriptPath = this._panel.webview.asWebviewUri(
       vscode.Uri.joinPath(this._context.extensionUri, this._config.scriptPath),
@@ -75,17 +71,15 @@ export class WebviewPanelManager<T extends MessageType> {
       this._disposables.push(
         this._panel.webview.onDidReceiveMessage(
           async (message: MessageType) => {
-            const stateManager = StateManager.getInstance();
-
             switch (message.type) {
               case "stateChange": {
                 const { scope, value } = message.payload;
 
                 try {
                   if (scope === "global") {
-                    await stateManager.updateGlobalState(value);
+                    await this._stateManager.updateGlobalState(value);
                   } else {
-                    await stateManager.updateWorkspaceState(value);
+                    await this._stateManager.updateWorkspaceState(value);
                   }
                 } catch (error) {
                   this.postMessage({
@@ -94,8 +88,8 @@ export class WebviewPanelManager<T extends MessageType> {
                       scope,
                       value:
                         scope === "global"
-                          ? await stateManager.getGlobalState()
-                          : await stateManager.getWorkspaceState(),
+                          ? await this._stateManager.getGlobalState()
+                          : await this._stateManager.getWorkspaceState(),
                       error:
                         error instanceof Error
                           ? error.message
@@ -111,8 +105,8 @@ export class WebviewPanelManager<T extends MessageType> {
                 try {
                   const value =
                     scope === "global"
-                      ? await stateManager.getGlobalState()
-                      : await stateManager.getWorkspaceState();
+                      ? await this._stateManager.getGlobalState()
+                      : await this._stateManager.getWorkspaceState();
 
                   this.postMessage({
                     type: "getState",
@@ -134,8 +128,7 @@ export class WebviewPanelManager<T extends MessageType> {
               }
               case "requestAccessToken": {
                 try {
-                  const authManager = AuthManager.getInstance();
-                  const token = await authManager.getAccessToken();
+                  const token = await this._authManager.getAccessToken();
                   this.postMessage({
                     type: "accessToken",
                     payload: { token },
@@ -150,8 +143,7 @@ export class WebviewPanelManager<T extends MessageType> {
               }
               case "requestLogin": {
                 try {
-                  const authManager = AuthManager.getInstance();
-                  await authManager.login();
+                  await this._authManager.login();
                 } catch (error) {
                   const msg =
                     error instanceof Error ? error.message : "Login failed";
@@ -212,9 +204,7 @@ export class WebviewPanelManager<T extends MessageType> {
    */
   public dispose() {
     if (this._panel) {
-      const stateManager = StateManager.getInstance();
-
-      stateManager.unregisterWebview(this._panel.webview);
+      this._stateManager.unregisterWebview(this._panel.webview);
     }
 
     for (const disposable of this._disposables) {

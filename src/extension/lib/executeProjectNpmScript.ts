@@ -1,13 +1,11 @@
-import { getActiveIntegrationPath } from "@/extension/lib/getActiveIntegrationPath";
 import { getWorkspaceJsonFile } from "@/extension/lib/getWorkspaceJsonFile";
 import { resolveNpmExecutable } from "@/extension/lib/resolveExecutable";
 import { runExecutable } from "@/extension/lib/runCommand";
 
 export const executeProjectNpmScript = async (
+  integrationPath: string,
   scriptName: string,
 ): Promise<{ stdout: string; stderr: string }> => {
-  const integrationPath = getActiveIntegrationPath();
-
   const { workspaceFolderPath, fileData: packageFileData } =
     getWorkspaceJsonFile({
       workspaceFolderPath: integrationPath,

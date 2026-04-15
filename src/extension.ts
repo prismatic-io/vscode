@@ -30,10 +30,6 @@ import {
 } from "./extension/machines/integrationsFlowsTest/testIntegrationFlow.machine";
 import type { Flow } from "./types/flows";
 
-// Disposables
-let executionResultsViewProvider: vscode.Disposable | undefined;
-let integrationDetailsViewProvider: vscode.Disposable | undefined;
-let configWizardPanel: vscode.Disposable | undefined;
 let outputChannel: vscode.OutputChannel;
 let authManager: AuthManager;
 let stateManager: StateManager;
@@ -76,48 +72,29 @@ export async function activate(context: vscode.ExtensionContext) {
     `,
     );
 
-    /**
-     * Initialize state manager
-     */
     log("INFO", "Initializing State Manager...");
-    stateManager = await StateManager.initialize(context);
+    stateManager = new StateManager(context);
 
-    /**
-     * Initialize Auth Manager
-     */
     log("INFO", "Initializing Auth Manager...");
-    authManager = await AuthManager.initialize(context);
+    authManager = new AuthManager(context, stateManager);
 
-    /**
-     * Initialize Prism CLI (used for integrations:import)
-     */
     log("INFO", "Initializing Prism CLI...");
-    prismCLIManager = await PrismCLIManager.getInstance();
+    prismCLIManager = new PrismCLIManager(stateManager);
 
-    /**
-     * Perform initial auth flow
-     */
     await authManager.performInitialAuthFlow();
 
-    /**
-     * Initialize Status Bar Manager
-     */
     log("INFO", "Initializing Status Bar Manager...");
-    statusBarManager = await StatusBarManager.initialize(
-      authManager,
-      stateManager,
-      context,
-    );
+    statusBarManager = new StatusBarManager(authManager, stateManager, context);
 
     /**
      * Sync the prismatic url
      */
-    await syncPrismaticUrl();
+    await syncPrismaticUrl(stateManager);
 
     /**
      * Sync the integration id between workspace state and file system
      */
-    await verifyIntegrationIntegrity();
+    await verifyIntegrationIntegrity(stateManager, authManager);
 
     /**
      * Register views
@@ -206,15 +183,11 @@ export async function activate(context: vscode.ExtensionContext) {
       }
     }
 
-    executionResultsViewProvider = createExecutionResultsViewProvider(context);
-    context.subscriptions.push(executionResultsViewProvider);
-
-    integrationDetailsViewProvider =
-      createIntegrationDetailsViewProvider(context);
-    context.subscriptions.push(integrationDetailsViewProvider);
-
-    configWizardPanel = createConfigWizardPanel(context);
-    context.subscriptions.push(configWizardPanel);
+    context.subscriptions.push(
+      createExecutionResultsViewProvider(context, stateManager, authManager),
+      createIntegrationDetailsViewProvider(context, stateManager, authManager),
+      createConfigWizardPanel(context, stateManager, authManager),
+    );
 
     /**
      * command: prismatic.me
@@ -347,9 +320,19 @@ export async function activate(context: vscode.ExtensionContext) {
         log("INFO", "Starting integration build and import process...");
 
         try {
+          const workspaceState = await stateManager.getWorkspaceState();
+          if (!workspaceState?.activeIntegrationPath) {
+            throw new Error(
+              "No active integration. Please select an integration first.",
+            );
+          }
+
           // build the project
           const { stdout: buildStdout, stderr: buildStderr } =
-            await executeProjectNpmScript("build");
+            await executeProjectNpmScript(
+              workspaceState.activeIntegrationPath,
+              "build",
+            );
 
           if (buildStderr) {
             log("WARN", `Build warnings/errors: ${buildStderr}`);
@@ -390,7 +373,7 @@ export async function activate(context: vscode.ExtensionContext) {
      */
     if (!testIntegrationFlowActor) {
       testIntegrationFlowActor = createActor(testIntegrationFlowMachine, {
-        input: {},
+        input: { stateManager },
       });
 
       // Subscribe to state changes for managing running state
@@ -473,6 +456,7 @@ export async function activate(context: vscode.ExtensionContext) {
           vscode.commands.executeCommand("executionResults.webview.focus");
 
           const selectedFlowPayload = await selectProjectFlowPayload(
+            workspaceState!.activeIntegrationPath!,
             targetFlow.stableKey,
           );
 
@@ -554,7 +538,7 @@ export async function activate(context: vscode.ExtensionContext) {
         }
 
         // Re-sync the integration id
-        await verifyIntegrationIntegrity();
+        await verifyIntegrationIntegrity(stateManager, authManager);
       },
     );
     context.subscriptions.push(prismPrismaticUrlCommand);
@@ -680,7 +664,7 @@ export async function activate(context: vscode.ExtensionContext) {
           flowPayloadsTreeDataProvider?.setFlows([]);
 
           // Re-verify integration integrity for the new path (also fetches integration data)
-          await verifyIntegrationIntegrity();
+          await verifyIntegrationIntegrity(stateManager, authManager);
 
           // Set flows from newly fetched workspace state
           const updatedState = await stateManager.getWorkspaceState();
@@ -809,28 +793,9 @@ export async function deactivate() {
   try {
     log("INFO", `Extension deactivated at: ${new Date().toISOString()}`);
 
-    // Dispose of auth manager
     await authManager.dispose();
-
-    // Dispose of state manager
     await stateManager.dispose();
-
-    // Dispose of prism CLI
-    prismCLIManager.dispose();
-
-    // Dispose of status bar manager
-    statusBarManager?.dispose();
-
-    // Dispose of test integration flow actor
     testIntegrationFlowActor?.stop();
-
-    // Dispose of views
-    executionResultsViewProvider?.dispose();
-    integrationDetailsViewProvider?.dispose();
-    configWizardPanel?.dispose();
-
-    // Dispose of output channel
-    outputChannel?.dispose();
   } catch (error) {
     console.error("Deactivation error:", error);
   }

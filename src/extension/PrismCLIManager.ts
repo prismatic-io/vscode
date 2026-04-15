@@ -1,45 +1,35 @@
-import { StateManager } from "@extension/StateManager";
+import type { StateManager } from "@extension/StateManager";
 import { getActiveIntegrationPath } from "@/extension/lib/getActiveIntegrationPath";
 import type { ExecutablePath } from "@/extension/lib/resolveExecutable";
 import { resolvePrismExecutable } from "@/extension/lib/resolveExecutable";
 import { runExecutable } from "@/extension/lib/runCommand";
 
 export class PrismCLIManager {
-  private static instance: PrismCLIManager | null = null;
   private stateManager: StateManager;
-  private prismExecutable: ExecutablePath;
+  private cachedExecutable: ExecutablePath | null = null;
 
-  private constructor(
-    prismExecutable: ExecutablePath,
-    stateManager: StateManager,
-  ) {
-    this.prismExecutable = prismExecutable;
+  constructor(stateManager: StateManager) {
     this.stateManager = stateManager;
   }
 
   /**
-   * Gets the singleton instance of PrismCLIManager.
-   * @returns {Promise<PrismCLIManager>} A promise that resolves to the singleton instance of PrismCLIManager
+   * Resolves the prism CLI executable, caching the result for subsequent calls.
    */
-  public static async getInstance(): Promise<PrismCLIManager> {
-    if (!PrismCLIManager.instance) {
-      const prismExecutable = await resolvePrismExecutable();
+  private async getExecutable(): Promise<ExecutablePath> {
+    if (this.cachedExecutable) {
+      return this.cachedExecutable;
+    }
 
-      if (!prismExecutable) {
-        throw new Error(
-          "Prismatic CLI is not properly installed. Please ensure @prismatic-io/prism is installed on your system. Run 'npm install -g @prismatic-io/prism' to install it.",
-        );
-      }
+    const prismExecutable = await resolvePrismExecutable();
 
-      const stateManager = StateManager.getInstance();
-
-      PrismCLIManager.instance = new PrismCLIManager(
-        prismExecutable,
-        stateManager,
+    if (!prismExecutable) {
+      throw new Error(
+        "Prismatic CLI is not properly installed. Please ensure @prismatic-io/prism is installed on your system. Run 'npm install -g @prismatic-io/prism' to install it.",
       );
     }
 
-    return PrismCLIManager.instance;
+    this.cachedExecutable = prismExecutable;
+    return prismExecutable;
   }
 
   /**
@@ -60,13 +50,17 @@ export class PrismCLIManager {
       );
     }
 
-    const cwd = options?.fromWorkspace ? getActiveIntegrationPath() : undefined;
+    const cwd = options?.fromWorkspace
+      ? getActiveIntegrationPath(this.stateManager)
+      : undefined;
 
     // Exclude DEBUG to prevent debug noise from CNI projects
     const { DEBUG: _, ...execEnv } = process.env;
 
+    const prismExecutable = await this.getExecutable();
+
     try {
-      return await runExecutable(this.prismExecutable, [command], {
+      return await runExecutable(prismExecutable, [command], {
         cwd,
         env: {
           ...execEnv,
@@ -97,12 +91,5 @@ export class PrismCLIManager {
     });
 
     return stdout.trim();
-  }
-
-  /**
-   * Disposes of the PrismCLIManager instance.
-   */
-  public dispose(): void {
-    PrismCLIManager.instance = null;
   }
 }
