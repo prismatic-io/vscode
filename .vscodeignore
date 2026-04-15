@@ -32,8 +32,11 @@ node_modules/
 Thumbs.db
 
 # Testing and coverage
+out/
 coverage/
 .nyc_output/
+.vscode-test.mjs
+tsconfig.integration.json
 
 # Logs and debug
 logs/

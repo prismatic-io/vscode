@@ -1,0 +1,26 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "out",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "rootDir": "src",
+    "sourceMap": true,
+    "types": ["node", "mocha"]
+  },
+  "include": [
+    "src/test/integration/**/*",
+    "src/extension/**/*",
+    "src/shared/**/*",
+    "src/types/**/*"
+  ],
+  "exclude": [
+    "src/extension/**/*.test.ts",
+    "src/extension/**/*.test.tsx",
+    "src/shared/**/*.test.ts",
+    "src/shared/**/*.test.tsx",
+    "src/webview/**/*.test.ts",
+    "src/webview/**/*.test.tsx",
+    "node_modules"
+  ]
+}

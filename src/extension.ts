@@ -783,6 +783,15 @@ export async function activate(context: vscode.ExtensionContext) {
     );
     context.subscriptions.push(createPayloadFromFlowCommand);
 
+    if (context.extensionMode === vscode.ExtensionMode.Test) {
+      context.subscriptions.push(
+        vscode.commands.registerCommand("prismatic._test.getApi", () => ({
+          authManager,
+          statusBarManager,
+        })),
+      );
+    }
+
     log("SUCCESS", "Extension initialization complete!");
   } catch (error) {
     console.error("Activation error:", error);

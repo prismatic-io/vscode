@@ -39,6 +39,14 @@ run = "npm run check:fix"
 description = "Run full CI validation pipeline"
 depends = ["lint", "check-types", "test", "package"]
 
+[tasks."test:integration"]
+description = "Run integration tests (requires a display; use xvfb-run on Linux CI)"
+run = "npm run test:integration"
+
+[tasks."ci:integration"]
+description = "Full CI + integration tests"
+depends = ["ci", "test:integration"]
+
 [tasks."ci:fix"]
 description = "Auto-fix then validate"
 depends = ["fix", "ci"]
