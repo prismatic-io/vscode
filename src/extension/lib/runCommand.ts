@@ -19,7 +19,7 @@ function resolveCommandAndArgs(
   additionalArgs: string[],
 ): { command: string; args: string[] } {
   return {
-    command: executable.isNpx ? "npx" : executable.command,
+    command: executable.command,
     args: [...executable.args, ...additionalArgs],
   };
 }

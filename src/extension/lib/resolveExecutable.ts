@@ -1,14 +1,22 @@
 import { existsSync } from "node:fs";
+import { detect, type Agent as PackageManager } from "package-manager-detector";
 import { x } from "tinyexec";
 import * as vscode from "vscode";
+
+export type { PackageManager };
 
 export interface ExecutablePath {
   command: string;
   args: string[];
-  isNpx: boolean;
 }
 
-function getConfiguredPath(configKey: string): ExecutablePath | null {
+export interface PackageManagerResolution {
+  packageManager: PackageManager;
+  executable: ExecutablePath | null;
+  detectedFromProject: boolean;
+}
+
+const getConfiguredPath = (configKey: string): ExecutablePath | null => {
   const config = vscode.workspace.getConfiguration("prismatic");
   const customPath = config.get<string>(configKey);
 
@@ -19,16 +27,16 @@ function getConfiguredPath(configKey: string): ExecutablePath | null {
   const resolvedPath = customPath.trim();
 
   if (existsSync(resolvedPath)) {
-    return { command: resolvedPath, args: [], isNpx: false };
+    return { command: resolvedPath, args: [] };
   }
 
   console.warn(
     `Configured path '${resolvedPath}' does not exist. Falling back to PATH lookup.`,
   );
   return null;
-}
+};
 
-async function findOnPath(name: string): Promise<string | null> {
+const findOnPath = async (name: string): Promise<string | null> => {
   try {
     const cmd = process.platform === "win32" ? "where" : "which";
     const result = await x(cmd, [name], { throwOnError: true });
@@ -37,37 +45,46 @@ async function findOnPath(name: string): Promise<string | null> {
   } catch {
     return null;
   }
-}
+};
 
-async function isNpxAvailable(packageName: string): Promise<boolean> {
+const isNpxAvailable = async (packageName: string): Promise<boolean> => {
   try {
     await x("npx", [packageName, "--version"], { throwOnError: true });
     return true;
   } catch {
     return false;
   }
-}
+};
 
-export async function resolveNpmExecutable(): Promise<ExecutablePath | null> {
-  const configured = getConfiguredPath("npmCliPath");
-  if (configured) return configured;
+export const packageManagerBinary = (pm: PackageManager): string =>
+  pm.split("@")[0];
 
-  const npmPath = await findOnPath("npm");
-  if (npmPath) return { command: npmPath, args: [], isNpx: false };
+export const resolvePackageManager = async (
+  cwd: string,
+): Promise<PackageManagerResolution> => {
+  const detected = await detect({ cwd });
+  const packageManager: PackageManager = detected?.agent ?? "npm";
+  const detectedFromProject = detected !== null;
 
-  return null;
-}
+  const found = await findOnPath(packageManagerBinary(packageManager));
+  const executable: ExecutablePath | null = found
+    ? { command: found, args: [] }
+    : null;
 
-export async function resolvePrismExecutable(): Promise<ExecutablePath | null> {
-  const configured = getConfiguredPath("prismCliPath");
-  if (configured) return configured;
+  return { packageManager, executable, detectedFromProject };
+};
 
-  const prismPath = await findOnPath("prism");
-  if (prismPath) return { command: prismPath, args: [], isNpx: false };
+export const resolvePrismExecutable =
+  async (): Promise<ExecutablePath | null> => {
+    const configured = getConfiguredPath("prismCliPath");
+    if (configured) return configured;
 
-  if (await isNpxAvailable("@prismatic-io/prism")) {
-    return { command: "npx", args: ["@prismatic-io/prism"], isNpx: true };
-  }
+    const prismPath = await findOnPath("prism");
+    if (prismPath) return { command: prismPath, args: [] };
 
-  return null;
-}
+    if (await isNpxAvailable("@prismatic-io/prism")) {
+      return { command: "npx", args: ["@prismatic-io/prism"] };
+    }
+
+    return null;
+  };

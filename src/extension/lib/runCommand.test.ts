@@ -2,11 +2,11 @@ import type { ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("tinyexec", () => ({
+vi.mock(import("tinyexec"), () => ({
   x: vi.fn(),
 }));
 
-vi.mock("vscode", () => ({
+vi.mock(import("vscode"), () => ({
   workspace: {
     getConfiguration: vi.fn(() => ({
       get: () => "off",
@@ -14,7 +14,7 @@ vi.mock("vscode", () => ({
   },
 }));
 
-vi.mock("@/extension", () => ({
+vi.mock(import("@/extension"), () => ({
   log: vi.fn(),
 }));
 
@@ -32,7 +32,6 @@ describe("runExecutable", () => {
     const executable: ExecutablePath = {
       command: expectedCommand,
       args: [],
-      isNpx: false,
     };
 
     vi.mocked(x).mockReturnValue({
@@ -58,7 +57,6 @@ describe("runExecutable", () => {
     const executable: ExecutablePath = {
       command: "npx",
       args: [expectedPackage],
-      isNpx: true,
     };
 
     vi.mocked(x).mockReturnValue({
@@ -85,7 +83,6 @@ describe("runExecutable", () => {
     const executable: ExecutablePath = {
       command: "/usr/local/bin/prism",
       args: [],
-      isNpx: false,
     };
 
     vi.mocked(x).mockReturnValue({
@@ -118,7 +115,6 @@ describe("runExecutable", () => {
     const executable: ExecutablePath = {
       command: expectedCommand,
       args: [],
-      isNpx: false,
     };
 
     vi.mocked(x).mockReturnValue({
@@ -153,7 +149,6 @@ describe("runExecutable", () => {
     const executable: ExecutablePath = {
       command: process.execPath,
       args: [],
-      isNpx: false,
     };
 
     const result = await runExecutable(
@@ -175,7 +170,6 @@ describe("spawnExecutable", () => {
     const executable: ExecutablePath = {
       command: expectedCommand,
       args: [],
-      isNpx: false,
     };
 
     vi.mocked(x).mockReturnValue({
@@ -204,7 +198,6 @@ describe("logExecContext", () => {
     const executable: ExecutablePath = {
       command: "/usr/bin/npm",
       args: [],
-      isNpx: false,
     };
 
     vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({
@@ -227,7 +220,6 @@ describe("logExecContext", () => {
     const executable: ExecutablePath = {
       command: expectedCommand,
       args: [],
-      isNpx: false,
     };
 
     vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({

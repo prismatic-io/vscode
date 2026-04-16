@@ -10,7 +10,7 @@ import * as vscode from "vscode";
 import { createActor, toPromise } from "xstate";
 import { CONFIG } from "@/config";
 import { enableWorkspace } from "@/extension/lib/enableWorkspace";
-import { executeProjectNpmScript } from "@/extension/lib/executeProjectNpmScript";
+import { runProjectScript } from "@/extension/lib/runProjectScript";
 import { syncPrismaticUrl } from "@/extension/lib/syncPrismaticUrl";
 import { verifyIntegrationIntegrity } from "@/extension/lib/verifyIntegrationIntegrity";
 import { getIntegration } from "@/extension/machines/integrationsFlowsTest/getIntegration";
@@ -329,7 +329,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
           // build the project
           const { stdout: buildStdout, stderr: buildStderr } =
-            await executeProjectNpmScript(
+            await runProjectScript(
               workspaceState.activeIntegrationPath,
               "build",
             );

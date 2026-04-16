@@ -113,15 +113,6 @@ Examples:
 - `/opt/homebrew/bin/prism`
 - `${userHome}/.npm-global/bin/prism`
 
-### `prismatic.npmCliPath`
-
-Path to the npm executable. If not specified, the extension searches for `npm` in your PATH and common installation locations (Homebrew, nvm, asdf, etc.).
-
-Examples:
-- `/usr/local/bin/npm`
-- `/opt/homebrew/bin/npm`
-- `${userHome}/.npm-global/bin/npm`
-
 ### `prismatic.debugMode`
 
 Debug logging level for command execution. Useful for troubleshooting CLI or environment issues.
