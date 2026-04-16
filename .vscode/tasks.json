@@ -2,9 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "npm: build:dev",
-      "type": "npm",
-      "script": "build:dev",
+      "label": "bun: build:dev",
+      "type": "shell",
+      "command": "bun run build:dev",
       "problemMatcher": "$tsc",
       "group": {
         "kind": "build",
@@ -15,9 +15,9 @@
       }
     },
     {
-      "label": "npm: watch",
-      "type": "npm",
-      "script": "watch",
+      "label": "bun: watch",
+      "type": "shell",
+      "command": "bun run watch",
       "problemMatcher": "$tsc-watch",
       "isBackground": true,
       "group": "build",
@@ -27,9 +27,9 @@
       }
     },
     {
-      "label": "npm: build:prod",
-      "type": "npm",
-      "script": "build:prod",
+      "label": "bun: build:prod",
+      "type": "shell",
+      "command": "bun run build:prod",
       "problemMatcher": "$tsc",
       "group": "build",
       "presentation": {
@@ -46,7 +46,7 @@
     },
     {
       "label": "prepare-dev-environment",
-      "dependsOn": ["get-npm-global-bin", "npm: build:dev"],
+      "dependsOn": ["get-npm-global-bin", "bun: build:dev"],
       "dependsOrder": "sequence"
     },
     {
@@ -59,7 +59,7 @@
     },
     {
       "label": "build:dev + scaffold-cni",
-      "dependsOn": ["npm: build:dev", "scaffold-cni-workspace"],
+      "dependsOn": ["bun: build:dev", "scaffold-cni-workspace"],
       "dependsOrder": "parallel"
     },
     {
@@ -72,7 +72,7 @@
     },
     {
       "label": "build:dev + scaffold-monorepo",
-      "dependsOn": ["npm: build:dev", "scaffold-monorepo-workspace"],
+      "dependsOn": ["bun: build:dev", "scaffold-monorepo-workspace"],
       "dependsOrder": "parallel"
     }
   ]

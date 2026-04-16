@@ -1,17 +1,17 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run check-types)",
-      "Bash(npm run build:dev)",
-      "Bash(npm run build:prod)",
-      "Bash(npm run format)",
-      "Bash(npm run format:fix)",
-      "Bash(npm run lint)",
-      "Bash(npm run lint:fix)",
-      "Bash(npm run check)",
-      "Bash(npm run check:fix)",
-      "Bash(npm run watch)",
-      "Bash(npm test*)"
+      "Bash(bun run check-types)",
+      "Bash(bun run build:dev)",
+      "Bash(bun run build:prod)",
+      "Bash(bun run format)",
+      "Bash(bun run format:fix)",
+      "Bash(bun run lint)",
+      "Bash(bun run lint:fix)",
+      "Bash(bun run check)",
+      "Bash(bun run check:fix)",
+      "Bash(bun run watch)",
+      "Bash(bun run test*)"
     ],
     "deny": []
   }
