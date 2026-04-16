@@ -1,24 +1,29 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("vscode", () => ({
+vi.mock(import("vscode"), () => ({
   workspace: {
     getConfiguration: vi.fn(),
   },
 }));
 
-vi.mock("tinyexec", () => ({
+vi.mock(import("tinyexec"), () => ({
   x: vi.fn(),
 }));
 
-vi.mock("node:fs", () => ({
+vi.mock(import("node:fs"), () => ({
   existsSync: vi.fn(),
 }));
 
+vi.mock(import("package-manager-detector"), () => ({
+  detect: vi.fn(),
+}));
+
 import { existsSync } from "node:fs";
+import { detect } from "package-manager-detector";
 import { x } from "tinyexec";
 import * as vscode from "vscode";
 import {
-  resolveNpmExecutable,
+  resolvePackageManager,
   resolvePrismExecutable,
 } from "./resolveExecutable";
 
@@ -48,70 +53,88 @@ const mockWhichResult = (results: Record<string, string | null>) => {
   });
 };
 
-describe("resolveNpmExecutable", () => {
-  it("returns configured path when valid", async () => {
-    const expectedPath = "/custom/npm";
-    const expectedResult = { command: expectedPath, args: [], isNpx: false };
+describe("resolvePackageManager", () => {
+  it.each([
+    {
+      name: "npm",
+      detectName: "npm" as const,
+      agent: "npm" as const,
+      binary: "npm",
+      path: "/usr/bin/npm",
+    },
+    {
+      name: "pnpm",
+      detectName: "pnpm" as const,
+      agent: "pnpm" as const,
+      binary: "pnpm",
+      path: "/opt/homebrew/bin/pnpm",
+    },
+    {
+      name: "bun",
+      detectName: "bun" as const,
+      agent: "bun" as const,
+      binary: "bun",
+      path: "/opt/homebrew/bin/bun",
+    },
+    {
+      name: "yarn@berry (strips version from PATH lookup)",
+      detectName: "yarn" as const,
+      agent: "yarn@berry" as const,
+      binary: "yarn",
+      path: "/opt/homebrew/bin/yarn",
+    },
+  ])("resolves $name on PATH when detected", async (tc) => {
+    mockConfig({});
+    vi.mocked(detect).mockResolvedValue({
+      name: tc.detectName,
+      agent: tc.agent,
+    });
+    mockWhichResult({ [tc.binary]: tc.path });
 
-    mockConfig({ npmCliPath: expectedPath });
-    vi.mocked(existsSync).mockReturnValue(true);
+    const result = await resolvePackageManager("/project");
 
-    const result = await resolveNpmExecutable();
-
-    expect(result).toEqual(expectedResult);
+    expect(result).toEqual({
+      packageManager: tc.agent,
+      executable: { command: tc.path, args: [] },
+      detectedFromProject: true,
+    });
   });
 
-  it("falls through when configured path does not exist", async () => {
-    const expectedPath = "/usr/bin/npm";
-    const expectedResult = { command: expectedPath, args: [], isNpx: false };
-
-    mockConfig({ npmCliPath: "/nonexistent/npm" });
-    vi.mocked(existsSync).mockReturnValue(false);
-    mockWhichResult({ npm: expectedPath });
-
-    const result = await resolveNpmExecutable();
-
-    expect(result).toEqual(expectedResult);
-  });
-
-  it("falls through when config is empty", async () => {
+  it("defaults to npm when no package manager is detected", async () => {
     const expectedPath = "/usr/local/bin/npm";
-    const expectedResult = { command: expectedPath, args: [], isNpx: false };
 
     mockConfig({});
+    vi.mocked(detect).mockResolvedValue(null);
     mockWhichResult({ npm: expectedPath });
 
-    const result = await resolveNpmExecutable();
+    const result = await resolvePackageManager("/project");
 
-    expect(result).toEqual(expectedResult);
+    expect(result).toEqual({
+      packageManager: "npm",
+      executable: { command: expectedPath, args: [] },
+      detectedFromProject: false,
+    });
   });
 
-  it("finds npm on PATH", async () => {
-    const expectedPath = "/opt/homebrew/bin/npm";
-    const expectedResult = { command: expectedPath, args: [], isNpx: false };
-
+  it("returns executable null when the detected package manager is not installed", async () => {
     mockConfig({});
-    mockWhichResult({ npm: expectedPath });
-
-    const result = await resolveNpmExecutable();
-
-    expect(result).toEqual(expectedResult);
-  });
-
-  it("returns null when npm is not found anywhere", async () => {
-    mockConfig({});
+    vi.mocked(detect).mockResolvedValue({ name: "pnpm", agent: "pnpm" });
     mockWhichResult({});
 
-    const result = await resolveNpmExecutable();
+    const result = await resolvePackageManager("/project");
 
-    expect(result).toBeNull();
+    expect(result).toEqual({
+      packageManager: "pnpm",
+      executable: null,
+      detectedFromProject: true,
+    });
   });
 });
 
 describe("resolvePrismExecutable", () => {
   it("returns configured path when valid", async () => {
     const expectedPath = "/custom/prism";
-    const expectedResult = { command: expectedPath, args: [], isNpx: false };
+    const expectedResult = { command: expectedPath, args: [] };
 
     mockConfig({ prismCliPath: expectedPath });
     vi.mocked(existsSync).mockReturnValue(true);
@@ -123,7 +146,7 @@ describe("resolvePrismExecutable", () => {
 
   it("finds prism on PATH", async () => {
     const expectedPath = "/usr/local/bin/prism";
-    const expectedResult = { command: expectedPath, args: [], isNpx: false };
+    const expectedResult = { command: expectedPath, args: [] };
 
     mockConfig({});
     mockWhichResult({ prism: expectedPath });
@@ -137,7 +160,6 @@ describe("resolvePrismExecutable", () => {
     const expectedResult = {
       command: "npx",
       args: ["@prismatic-io/prism"],
-      isNpx: true,
     };
 
     mockConfig({});

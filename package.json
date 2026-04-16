@@ -55,12 +55,6 @@
           "default": "",
           "markdownDescription": "Path to the Prism CLI executable. If not specified, the extension will search for `prism` in your system PATH, falling back to npx.\n\nExamples:\n- `/usr/local/bin/prism`\n- `/opt/homebrew/bin/prism`\n- `${userHome}/.npm-global/bin/prism`"
         },
-        "prismatic.npmCliPath": {
-          "type": "string",
-          "scope": "machine-overridable",
-          "default": "",
-          "markdownDescription": "Path to the npm executable. If not specified, the extension will search for `npm` in your system PATH.\n\nExamples:\n- `/usr/local/bin/npm`\n- `/opt/homebrew/bin/npm`\n- `${userHome}/.npm-global/bin/npm`"
-        },
         "prismatic.debugMode": {
           "type": "string",
           "enum": [
@@ -334,6 +328,7 @@
     "@msgpack/msgpack": "^3.1.2",
     "@xstate/react": "^5.0.4",
     "date-fns": "^4.1.0",
+    "package-manager-detector": "^1.6.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "styled-components": "^6.1.17",

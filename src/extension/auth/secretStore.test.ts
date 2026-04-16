@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("vscode", () => ({}));
+vi.mock(import("vscode"), () => ({}));
 
 import type * as vscode from "vscode";
 import { SecretStore } from "./secretStore";
