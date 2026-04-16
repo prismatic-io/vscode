@@ -10,6 +10,7 @@ import * as vscode from "vscode";
 import { createActor, toPromise } from "xstate";
 import { CONFIG } from "@/config";
 import { enableWorkspace } from "@/extension/lib/enableWorkspace";
+import { revealIntegrationInExplorer } from "@/extension/lib/revealIntegrationInExplorer";
 import { runProjectScript } from "@/extension/lib/runProjectScript";
 import { syncPrismaticUrl } from "@/extension/lib/syncPrismaticUrl";
 import { verifyIntegrationIntegrity } from "@/extension/lib/verifyIntegrationIntegrity";
@@ -296,7 +297,7 @@ export async function activate(context: vscode.ExtensionContext) {
           // open the integration in browser
           vscode.env.openExternal(
             vscode.Uri.parse(
-              `${prismaticUrl}/integrations/${workspaceState.integrationId}/`,
+              `${prismaticUrl}/designer/${workspaceState.integrationId}/`,
             ),
           );
 
@@ -697,8 +698,7 @@ export async function activate(context: vscode.ExtensionContext) {
         }
 
         try {
-          const uri = vscode.Uri.file(item.integrationPath);
-          await vscode.commands.executeCommand("revealInExplorer", uri);
+          await revealIntegrationInExplorer(item.integrationPath);
         } catch (error) {
           log("ERROR", `Failed to reveal in explorer: ${String(error)}`, true);
         }

@@ -281,12 +281,47 @@
         {
           "command": "prismatic.integrations.select",
           "when": "view == prismatic.integrationsView && viewItem == integrationItem",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "command": "prismatic.integrations.test",
+          "when": "view == prismatic.integrationsView && viewItem == integrationItem.active && prismatic.testCommandEnabled",
+          "group": "navigation@2"
+        },
+        {
+          "command": "prismatic.integrations.test",
+          "when": "view == prismatic.integrationsView && viewItem == integrationItem.active && prismatic.testCommandEnabled",
+          "group": "inline@1"
+        },
+        {
+          "command": "prismatic.integrations.import",
+          "when": "view == prismatic.integrationsView && viewItem == integrationItem.active",
+          "group": "1_integration@1"
+        },
+        {
+          "command": "prismatic.integrationDetails.refresh",
+          "when": "view == prismatic.integrationsView && viewItem == integrationItem.active",
+          "group": "1_integration@2"
+        },
+        {
+          "command": "prismatic.integrations.openInBrowser",
+          "when": "view == prismatic.integrationsView && viewItem == integrationItem.active",
+          "group": "2_navigate@1"
         },
         {
           "command": "prismatic.integrations.revealInExplorer",
-          "when": "view == prismatic.integrationsView && viewItem == integrationItem",
-          "group": "inline"
+          "when": "view == prismatic.integrationsView && viewItem =~ /^integrationItem/",
+          "group": "2_navigate@2"
+        },
+        {
+          "command": "prismatic.integrations.revealInExplorer",
+          "when": "view == prismatic.integrationsView && viewItem =~ /^integrationItem/",
+          "group": "inline@2"
+        },
+        {
+          "command": "prismatic.configWizard",
+          "when": "view == prismatic.integrationsView && viewItem == integrationItem.active",
+          "group": "3_config@1"
         },
         {
           "command": "prismatic.integrations.test",

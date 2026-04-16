@@ -28,7 +28,7 @@ export class IntegrationItem extends vscode.TreeItem {
     this.description = path.dirname(relativePath);
 
     this.tooltip = spectralPath;
-    this.contextValue = "integrationItem";
+    this.contextValue = isActive ? "integrationItem.active" : "integrationItem";
 
     // Show green dot for active integration
     this.iconPath = isActive
