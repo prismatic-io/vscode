@@ -4,9 +4,8 @@ This guide is for internal Prismatic developers working on the VS Code extension
 
 ## Prerequisites
 
-- **Node.js**: Version specified in `mise.toml` (currently 22.11.0)
-- **VS Code**: Version 1.96.0 or higher
-- **mise**: Installed globally for Node.js version management (recommended)
+- **mise**: Installed globally — it provisions Node.js and Bun pinned in `mise.toml`
+- **VS Code**: A recent release (the engine floor is pinned in `package.json`)
 - **Prismatic CLI**: Installed globally (`npm install -g @prismatic-io/prism`) — required for the Import Integration command
 - **Git**: For version control
 
@@ -20,51 +19,46 @@ git clone https://github.com/prismatic-io/vscode.git
 cd vscode
 
 # Install dependencies
-npm install
+bun install
 ```
 
 ### 2. Environment Setup
 
-The project uses mise for Node.js version management. If you don't have mise installed globally:
+This project uses [mise](https://mise.jdx.dev/) to pin its toolchain. Once mise is installed globally, run:
 
 ```bash
-# Install mise globally (if not already installed)
-# See: https://mise.jdx.dev/getting-started.html
-
-# Install the correct Node.js version for this project
 mise install
-
-# Verify Node.js version
-node --version  # Should show 22.11.0
 ```
+
+That's it — mise reads `mise.toml` and installs the pinned versions of Node.js and Bun for you.
 
 ### 3. Build and Development
 
 ```bash
 # Build for production
-npm run build
+bun run build
 
 # Start development mode with watch
-npm run watch
+bun run watch
 
 # Run type checking
-npm run check-types
+bun run check-types
 
 # Format code
-npm run format:fix
+bun run format:fix
 
 # Lint code
-npm run lint:fix
+bun run lint:fix
 
 # Lint, Format, and Check (assist code fixes)
-npm run check:fix
+bun run check:fix
 ```
 
 
 ### 4. Build VSIX
 ```bash
 # Package as VSIX
-npm run package
+bun run package
 ```
 
 ## Project Structure
@@ -100,7 +94,7 @@ src/
 
 2. **Start development mode**:
    ```bash
-   npm run watch
+   bun run watch
    ```
 
 3. **Make your changes** in the `src/` directory
@@ -120,13 +114,13 @@ Before committing, ensure:
 
 ```bash
 # Type checking
-npm run check-types
+bun run check-types
 
 # Linting and formatting
-npm run check:fix
+bun run check:fix
 
 # Build verification
-npm run build
+bun run build
 ```
 
 ### 4. Commit Message Conventions
@@ -193,7 +187,7 @@ For active development, use the Extension Development Host:
 
 ```bash
 # Package as VSIX
-npm run package
+bun run package
 ```
 
 This creates a `.vsix` file in the project root.

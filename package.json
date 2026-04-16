@@ -304,11 +304,11 @@
   "scripts": {
     "check-types": "tsc --noEmit",
     "build:icons": "fantasticon",
-    "esbuild:run": "esbuild build.ts --bundle --platform=node --packages=external --format=esm --log-level=warning | node --input-type=module -",
-    "build": "npm run check-types && npm run esbuild:run -- --production",
-    "build:dev": "npm run esbuild:run",
-    "vscode:prepublish": "npm run build",
-    "watch": "npm run esbuild:run -- --watch",
+    "build:dev": "bun run build.ts",
+    "build:prod": "bun run build.ts --production",
+    "build": "bun run check-types && bun run build:prod",
+    "vscode:prepublish": "bun run build",
+    "watch": "bun run build.ts --watch",
     "package": "vsce package",
     "format": "biome format .",
     "format:fix": "biome format --write .",
@@ -319,7 +319,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:integration": "npm run build:dev && tsc -p tsconfig.integration.json && echo '{\"type\":\"commonjs\"}' > out/package.json && vscode-test",
+    "test:integration": "bun run build:dev && tsc -p tsconfig.integration.json && echo '{\"type\":\"commonjs\"}' > out/package.json && vscode-test",
     "publish:vsce": "vsce publish --packagePath *.vsix",
     "publish:ovsx": "ovsx publish *.vsix"
   },
@@ -337,11 +337,12 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.2.2",
+    "@biomejs/biome": "2.2.2",
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.1.2",
     "@types/mocha": "^10.0.10",
     "@types/node": "20.x",
+    "@types/stylis": "^4.2.7",
     "@types/vscode": "1.96.0",
     "@typescript-eslint/eslint-plugin": "^8.28.0",
     "@typescript-eslint/parser": "^8.28.0",
@@ -357,5 +358,10 @@
     "ovsx": "^0.10.10",
     "typescript": "^5.8.2",
     "vitest": "^4.1.2"
-  }
+  },
+  "trustedDependencies": [
+    "@vscode/vsce-sign",
+    "esbuild",
+    "ttf2woff2"
+  ]
 }

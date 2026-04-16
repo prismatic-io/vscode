@@ -10,7 +10,7 @@
         "--disable-extensions"
       ],
       "outFiles": ["${workspaceFolder}/extension/**/*.js"],
-      "preLaunchTask": "npm: build:dev",
+      "preLaunchTask": "bun: build:dev",
       "env": {
         "VSCODE_DEBUG_MODE": "true",
         "NODE_ENV": "development"
@@ -27,7 +27,7 @@
         "--disable-extensions"
       ],
       "outFiles": ["${workspaceFolder}/extension/**/*.js"],
-      "preLaunchTask": "npm: build:dev",
+      "preLaunchTask": "bun: build:dev",
       "env": {
         "VSCODE_DEBUG_MODE": "true",
         "NODE_ENV": "development"
