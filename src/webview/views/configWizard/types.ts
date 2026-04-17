@@ -16,7 +16,7 @@ export type ConfigWizardMessage =
   | ConfigWizardErrorMessage;
 
 export interface ConfigWizardContextValue {
-  iframeRef: React.RefObject<HTMLIFrameElement>;
+  iframeRef: React.RefObject<HTMLIFrameElement | null>;
   iframeUrl: string;
   hasLoaded: boolean;
 }

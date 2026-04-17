@@ -1,5 +1,5 @@
 declare module "@iconscout/react-unicons" {
-  import type { SVGProps } from "react";
+  import type { JSX, SVGProps } from "react";
 
   export type IconProps = {
     color?: string;
@@ -1215,7 +1215,7 @@ declare module "@iconscout/react-unicons" {
 }
 
 declare module "@iconscout/react-unicons-solid" {
-  import { SVGProps } from "react";
+  import type { JSX, SVGProps } from "react";
 
   export type IconProps = {
     color?: string;
