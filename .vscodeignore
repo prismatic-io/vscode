@@ -10,7 +10,6 @@ src/
 .gitignore
 jest.config.js
 jest.setup.js
-eslint.config.mjs
 vsc-extension-quickstart.md
 esbuild.js
 tsconfig.json
