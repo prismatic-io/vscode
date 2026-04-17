@@ -15,12 +15,11 @@
       "./node_modules/@types",
       "./src/types"
     ],
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "@type/*": ["src/types/*"],
-      "@extension/*": ["src/extension/*"],
-      "@webview/*": ["src/webview/*"]
+      "@/*": ["./src/*"],
+      "@type/*": ["./src/types/*"],
+      "@extension/*": ["./src/extension/*"],
+      "@webview/*": ["./src/webview/*"]
     }
   },
   "include": ["src/**/*"],

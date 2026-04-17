@@ -6,6 +6,7 @@ import {
   UilTrash,
 } from "@iconscout/react-unicons";
 import { format } from "date-fns";
+import type { JSX } from "react";
 import type { Flow } from "@/types/flows";
 import { LoadingSpinner } from "@/webview/components/LoadingSpinner";
 import { useIntegrationContext } from "@/webview/providers/IntegrationProvider";

@@ -3,7 +3,7 @@
   "compilerOptions": {
     "outDir": "out",
     "module": "commonjs",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "rootDir": "src",
     "sourceMap": true,
     "types": ["node", "mocha"]
