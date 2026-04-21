@@ -21,6 +21,7 @@ export default defineConfig({
       ["src/webview/**/*.test.tsx", "jsdom"],
       ["src/shared/**/*.test.ts", "jsdom"],
     ],
+    setupFiles: ["src/test/unit/setup.ts"],
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov"],

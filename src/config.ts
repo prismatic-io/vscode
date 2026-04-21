@@ -7,12 +7,6 @@ export interface WebviewConfig {
 
 export const CONFIG = {
   webviews: {
-    executionResults: {
-      command: "prismatic.executionResults",
-      scriptPath: "dist/executionResultsView/index.js",
-      title: "Execution Results",
-      viewType: "executionResults.webview",
-    },
     configWizard: {
       command: "prismatic.configWizard",
       scriptPath: "dist/configWizardView/index.js",

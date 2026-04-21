@@ -6,14 +6,6 @@ vi.mock(import("tinyexec"), () => ({
   x: vi.fn(),
 }));
 
-vi.mock(import("vscode"), () => ({
-  workspace: {
-    getConfiguration: vi.fn(() => ({
-      get: () => "off",
-    })),
-  },
-}));
-
 vi.mock(import("@/extension"), () => ({
   log: vi.fn(),
 }));
@@ -200,7 +192,7 @@ describe("logExecContext", () => {
       args: [],
     };
 
-    vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({
+    vi.spyOn(vscode.workspace, "getConfiguration").mockReturnValue({
       get: () => "off",
     } as ReturnType<typeof vscode.workspace.getConfiguration>);
 
@@ -222,7 +214,7 @@ describe("logExecContext", () => {
       args: [],
     };
 
-    vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({
+    vi.spyOn(vscode.workspace, "getConfiguration").mockReturnValue({
       get: (_key: string, defaultValue?: string) =>
         _key === "debugMode" ? "basic" : defaultValue,
     } as ReturnType<typeof vscode.workspace.getConfiguration>);

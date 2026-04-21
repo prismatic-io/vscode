@@ -4,11 +4,11 @@ import { PrismCLIManager } from "@extension/PrismCLIManager";
 import { StateManager } from "@extension/StateManager";
 import { StatusBarManager } from "@extension/StatusBarManager";
 import { createConfigWizardPanel } from "@webview/views/configWizard/ViewProvider";
-import { createExecutionResultsViewProvider } from "@webview/views/executionResults/ViewProvider";
 import { createIntegrationDetailsViewProvider } from "@webview/views/integrationDetails/ViewProvider";
 import * as vscode from "vscode";
 import { createActor, toPromise } from "xstate";
 import { CONFIG } from "@/config";
+import { registerExecutionResults } from "@/extension/executionResults/register";
 import { enableWorkspace } from "@/extension/lib/enableWorkspace";
 import { revealIntegrationInExplorer } from "@/extension/lib/revealIntegrationInExplorer";
 import { runProjectScript } from "@/extension/lib/runProjectScript";
@@ -184,8 +184,9 @@ export async function activate(context: vscode.ExtensionContext) {
       }
     }
 
+    registerExecutionResults({ context, stateManager, authManager });
+
     context.subscriptions.push(
-      createExecutionResultsViewProvider(context, stateManager, authManager),
       createIntegrationDetailsViewProvider(context, stateManager, authManager),
       createConfigWizardPanel(context, stateManager, authManager),
     );
@@ -453,8 +454,10 @@ export async function activate(context: vscode.ExtensionContext) {
             workspaceState = await stateManager.getWorkspaceState();
           }
 
-          // Focus the execution results panel
-          vscode.commands.executeCommand("executionResults.webview.focus");
+          // Focus the execution results view
+          vscode.commands.executeCommand(
+            "prismatic.executionResultsView.focus",
+          );
 
           const selectedFlowPayload = await selectProjectFlowPayload(
             workspaceState!.activeIntegrationPath!,
@@ -543,21 +546,6 @@ export async function activate(context: vscode.ExtensionContext) {
       },
     );
     context.subscriptions.push(prismPrismaticUrlCommand);
-
-    /**
-     * command: prismatic.executionResults.refetch
-     * This command is used to trigger a refetch of execution results in the webview.
-     */
-    const executionResultsRefetchCommand = vscode.commands.registerCommand(
-      "prismatic.executionResults.refetch",
-      async () => {
-        stateManager.notifyWebviews({
-          type: "executionResults.refetch",
-          payload: new Date().toISOString(),
-        });
-      },
-    );
-    context.subscriptions.push(executionResultsRefetchCommand);
 
     /**
      * command: prismatic.integrationDetails.refresh

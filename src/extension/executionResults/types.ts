@@ -1,20 +1,3 @@
-export interface ExecutionResultsErrorMessage {
-  type: "executionResults.error";
-  payload: {
-    message: string;
-    code?: number;
-  };
-}
-
-export interface ExecutionResultsRefetchMessage {
-  type: "executionResults.refetch";
-  payload: string;
-}
-
-export type ExecutionResultsMessage =
-  | ExecutionResultsErrorMessage
-  | ExecutionResultsRefetchMessage;
-
 export enum InstanceExecutionResultInvokeType {
   CROSS_FLOW = "CROSS_FLOW",
   DEPLOY_FLOW = "DEPLOY_FLOW",
@@ -41,12 +24,6 @@ export enum LogSeverityLevel {
   WARN = "WARN",
 }
 
-export interface StepResultMeta {
-  id: string;
-  resultsMetadataUrl: string;
-  resultsUrl: string;
-}
-
 export interface StepResult {
   id: string;
   startedAt: string;
@@ -56,11 +33,6 @@ export interface StepResult {
   hasError: boolean;
   resultsMetadataUrl: string;
   resultsUrl: string;
-}
-
-export interface StepLogsAndOutputsCache {
-  output: { data: unknown; message: string | null } | null;
-  logs: ExecutionLogs | null;
 }
 
 export interface ExecutionResult {
@@ -73,10 +45,6 @@ export interface ExecutionResult {
   stepResults: StepResult[];
 }
 
-export type ExecutionResults = (Omit<ExecutionResult, "stepResults"> & {
-  stepResults: StepResult[];
-})[];
-
 export interface ExecutionLog {
   id: string;
   message: string;
@@ -87,9 +55,5 @@ export interface ExecutionLog {
   fromPreprocessFlow: boolean | null;
 }
 
-export type ExecutionLogs = ExecutionLog[];
-
-export type SvgProps = {
-  color?: string;
-  size?: string | number;
-} & React.SVGProps<SVGElement>;
+export const isExecutionTerminal = (result: ExecutionResult): boolean =>
+  result.endedAt !== null;

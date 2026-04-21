@@ -5,7 +5,7 @@ import {
   type WorkspaceState,
   WorkspaceStateSchema,
 } from "@type/state";
-import type * as vscode from "vscode";
+import * as vscode from "vscode";
 
 const GLOBAL_STATE_KEY = "prismatic-global-state";
 const WORKSPACE_STATE_KEY = "prismatic-workspace-state";
@@ -13,9 +13,17 @@ const WORKSPACE_STATE_KEY = "prismatic-workspace-state";
 export class StateManager {
   private context: vscode.ExtensionContext;
   private webviews: Set<vscode.Webview> = new Set();
+  private readonly _onDidChangeWorkspaceState = new vscode.EventEmitter<void>();
+  readonly onDidChangeWorkspaceState = this._onDidChangeWorkspaceState.event;
+  private readonly _onDidChangeGlobalState = new vscode.EventEmitter<void>();
+  readonly onDidChangeGlobalState = this._onDidChangeGlobalState.event;
 
   constructor(context: vscode.ExtensionContext) {
     this.context = context;
+    context.subscriptions.push(
+      this._onDidChangeWorkspaceState,
+      this._onDidChangeGlobalState,
+    );
   }
 
   private get globalState(): vscode.Memento {
@@ -55,6 +63,7 @@ export class StateManager {
       type: "stateChange",
       payload: { scope: "global", value: updatedState },
     });
+    this._onDidChangeGlobalState.fire();
   }
 
   public async updateWorkspaceState(
@@ -72,6 +81,7 @@ export class StateManager {
       type: "stateChange",
       payload: { scope: "workspace", value: updatedState },
     });
+    this._onDidChangeWorkspaceState.fire();
   }
 
   public async getGlobalState(): Promise<GlobalState> {
