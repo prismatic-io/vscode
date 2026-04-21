@@ -30,7 +30,6 @@ const webviewBaseConfig: esbuild.BuildOptions = {
 };
 
 const webviews = [
-  { entry: "src/webview/views/executionResults/index.tsx", outdir: "dist/executionResultsView" },
   { entry: "src/webview/views/configWizard/index.tsx", outdir: "dist/configWizardView" },
   { entry: "src/webview/views/integrationDetails/index.tsx", outdir: "dist/integrationDetailsView" },
 ];

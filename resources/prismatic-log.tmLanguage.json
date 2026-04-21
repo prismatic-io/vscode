@@ -1,0 +1,50 @@
+{
+  "name": "Prismatic Log",
+  "scopeName": "source.prismatic-log",
+  "fileTypes": [],
+  "patterns": [
+    { "include": "#line" }
+  ],
+  "repository": {
+    "line": {
+      "patterns": [
+        {
+          "match": "^(\\d{2}:\\d{2}:\\d{2})\\s+(\\[(?:FATAL|ERROR)\\])\\s*(\\[[^\\]]+\\])?\\s*(.*)$",
+          "captures": {
+            "1": { "name": "constant.numeric.timestamp.prismatic-log" },
+            "2": { "name": "invalid.illegal.error.prismatic-log" },
+            "3": { "name": "entity.name.tag.step.prismatic-log" },
+            "4": { "name": "string.unquoted.message.prismatic-log" }
+          }
+        },
+        {
+          "match": "^(\\d{2}:\\d{2}:\\d{2})\\s+(\\[WARN\\])\\s*(\\[[^\\]]+\\])?\\s*(.*)$",
+          "captures": {
+            "1": { "name": "constant.numeric.timestamp.prismatic-log" },
+            "2": { "name": "markup.bold.warn.prismatic-log" },
+            "3": { "name": "entity.name.tag.step.prismatic-log" },
+            "4": { "name": "string.unquoted.message.prismatic-log" }
+          }
+        },
+        {
+          "match": "^(\\d{2}:\\d{2}:\\d{2})\\s+(\\[(?:INFO|METRIC)\\])\\s*(\\[[^\\]]+\\])?\\s*(.*)$",
+          "captures": {
+            "1": { "name": "constant.numeric.timestamp.prismatic-log" },
+            "2": { "name": "support.type.info.prismatic-log" },
+            "3": { "name": "entity.name.tag.step.prismatic-log" },
+            "4": { "name": "string.unquoted.message.prismatic-log" }
+          }
+        },
+        {
+          "match": "^(\\d{2}:\\d{2}:\\d{2})\\s+(\\[(?:DEBUG|TRACE)\\])\\s*(\\[[^\\]]+\\])?\\s*(.*)$",
+          "captures": {
+            "1": { "name": "constant.numeric.timestamp.prismatic-log" },
+            "2": { "name": "comment.line.debug.prismatic-log" },
+            "3": { "name": "entity.name.tag.step.prismatic-log" },
+            "4": { "name": "string.unquoted.message.prismatic-log" }
+          }
+        }
+      ]
+    }
+  }
+}

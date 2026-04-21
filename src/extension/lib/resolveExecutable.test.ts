@@ -1,11 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock(import("vscode"), () => ({
-  workspace: {
-    getConfiguration: vi.fn(),
-  },
-}));
-
 vi.mock(import("tinyexec"), () => ({
   x: vi.fn(),
 }));
@@ -28,7 +22,7 @@ import {
 } from "./resolveExecutable";
 
 const mockConfig = (values: Record<string, string>) => {
-  vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({
+  vi.spyOn(vscode.workspace, "getConfiguration").mockReturnValue({
     get: (key: string) => values[key] ?? "",
   } as ReturnType<typeof vscode.workspace.getConfiguration>);
 };

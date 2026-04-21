@@ -4,14 +4,6 @@ vi.mock(import("node:fs"), () => ({
   existsSync: vi.fn(),
 }));
 
-vi.mock(import("vscode"), () => ({
-  window: {
-    showWarningMessage: vi.fn(),
-    withProgress: vi.fn(),
-  },
-  ProgressLocation: { Notification: 15 },
-}));
-
 vi.mock(import("@/extension"), () => ({
   log: vi.fn(),
 }));
@@ -73,7 +65,8 @@ const mockSpawnedProc = (lines: string[], exitCode = 0) => {
 
 beforeEach(() => {
   vi.mocked(runExecutable).mockResolvedValue({ stdout: "", stderr: "" });
-  vi.mocked(vscode.window.withProgress).mockImplementation(
+  vi.spyOn(vscode.window, "showWarningMessage");
+  vi.spyOn(vscode.window, "withProgress").mockImplementation(
     async (_opts, task) =>
       task({ report: vi.fn() }, {
         isCancellationRequested: false,

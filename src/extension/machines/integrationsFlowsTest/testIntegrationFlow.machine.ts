@@ -141,7 +141,9 @@ export const testIntegrationFlowMachine = setup({
         EXECUTING_TEST: {
           entry: ({ context }) => {
             log("INFO", `Running test for flow: ${context.flowId}`);
-            vscode.commands.executeCommand("executionResults.webview.focus");
+            vscode.commands.executeCommand(
+              "prismatic.executionResultsView.focus",
+            );
           },
           invoke: {
             id: "testIntegrationFlow",
@@ -162,11 +164,10 @@ export const testIntegrationFlowMachine = setup({
                     "Integration flow test completed successfully!",
                     true,
                   ),
-                ({ context }) => {
-                  context["@input"].stateManager.notifyWebviews({
-                    type: "executionResults.refetch",
-                    payload: new Date().toISOString(),
-                  });
+                () => {
+                  vscode.commands.executeCommand(
+                    "prismatic.executionResults.refresh",
+                  );
                 },
               ],
               target: "#testIntegrationFlow.WAITING_FOR_TEST",

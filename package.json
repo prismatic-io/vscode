@@ -136,11 +136,23 @@
         "enablement": "prismatic.workspaceEnabled"
       },
       {
-        "command": "prismatic.executionResults.refetch",
+        "command": "prismatic.executionResults.refresh",
         "title": "Refresh Execution Results",
         "category": "Prismatic",
         "enablement": "prismatic.workspaceEnabled",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "prismatic.executionResults.openLogs",
+        "title": "Open Execution Logs",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled"
+      },
+      {
+        "command": "prismatic.executionResults.openStep",
+        "title": "Open Step Output",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled"
       },
       {
         "command": "prismatic.integrationDetails.refresh",
@@ -178,14 +190,6 @@
           "icon": "resources/prismatic.svg",
           "when": "prismatic.workspaceEnabled"
         }
-      ],
-      "panel": [
-        {
-          "id": "executionResults",
-          "title": "Prismatic",
-          "icon": "resources/prismatic.svg",
-          "when": "prismatic.workspaceEnabled"
-        }
       ]
     },
     "views": {
@@ -211,18 +215,31 @@
           "icon": "resources/prismatic.svg",
           "contextualTitle": "Flow Test Payloads",
           "when": "prismatic.workspaceEnabled"
-        }
-      ],
-      "executionResults": [
+        },
         {
-          "type": "webview",
-          "id": "executionResults.webview",
+          "id": "prismatic.executionResultsView",
           "name": "Execution Results",
           "icon": "resources/prismatic.svg",
+          "contextualTitle": "Execution Results",
           "when": "prismatic.workspaceEnabled"
         }
       ]
     },
+    "languages": [
+      {
+        "id": "prismatic-log",
+        "aliases": ["Prismatic Log"],
+        "extensions": [],
+        "configuration": "./resources/prismatic-log-language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "prismatic-log",
+        "scopeName": "source.prismatic-log",
+        "path": "./resources/prismatic-log.tmLanguage.json"
+      }
+    ],
     "viewsWelcome": [
       {
         "view": "prismatic.integrationsView",
@@ -230,31 +247,26 @@
       }
     ],
     "menus": {
+      "commandPalette": [
+        {
+          "command": "prismatic.executionResults.openLogs",
+          "when": "false"
+        },
+        {
+          "command": "prismatic.executionResults.openStep",
+          "when": "false"
+        }
+      ],
       "view/title": [
         {
           "command": "prismatic.integrations.test",
-          "when": "view == executionResults.webview && prismatic.testCommandEnabled && prismatic.workspaceEnabled",
+          "when": "view == prismatic.executionResultsView && prismatic.testCommandEnabled && prismatic.workspaceEnabled",
           "group": "navigation@1"
         },
         {
-          "command": "prismatic.executionResults.refetch",
-          "when": "view == executionResults.webview && prismatic.workspaceEnabled",
+          "command": "prismatic.executionResults.refresh",
+          "when": "view == prismatic.executionResultsView && prismatic.workspaceEnabled",
           "group": "navigation@2"
-        },
-        {
-          "command": "prismatic.configWizard",
-          "when": "view == executionResults.webview && prismatic.workspaceEnabled",
-          "group": "navigation@3"
-        },
-        {
-          "command": "prismatic.integrations.import",
-          "when": "view == executionResults.webview && prismatic.workspaceEnabled",
-          "group": "navigation@4"
-        },
-        {
-          "command": "prismatic.integrations.openInBrowser",
-          "when": "view == executionResults.webview && prismatic.workspaceEnabled",
-          "group": "navigation@5"
         },
         {
           "command": "prismatic.integrationDetails.refresh",
