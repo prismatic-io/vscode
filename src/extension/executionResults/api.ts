@@ -2,6 +2,9 @@ import { decode } from "@msgpack/msgpack";
 import { isValid } from "date-fns";
 import { fetcher } from "@/shared/fetcher";
 import type { GraphQLResponse } from "@/types/graphql";
+import GET_EXECUTION_LOGS from "./getExecutionLogs.graphql";
+import GET_EXECUTION_RESULTS from "./getExecutionResults.graphql";
+import GET_STEP_RESULT_META from "./getStepResultMeta.graphql";
 import type {
   ExecutionLog,
   ExecutionResult,
@@ -17,46 +20,6 @@ export interface ApiCredentials {
   accessToken: string;
   prismaticUrl: string;
 }
-
-const GET_EXECUTION_RESULTS = `
-  query getExecutionResults(
-    $cursor: String
-    $endedDate: DateTime
-    $flowId: ID
-    $limit: Int
-    $startedDate: DateTime
-  ) {
-    executionResults(
-      after: $cursor
-      first: $limit
-      flowConfig_Flow: $flowId
-      orderBy: { field: STARTED_AT, direction: DESC }
-      startedAt_Gte: $startedDate
-      startedAt_Lte: $endedDate
-    ) {
-      nodes {
-        id
-        invokeType
-        startedAt
-        resultType
-        endedAt
-        error
-        stepResults(first: 10, orderBy: { field: STARTED_AT, direction: ASC }) {
-          nodes {
-            id
-            startedAt
-            endedAt
-            stepName
-            displayStepName
-            hasError
-            resultsMetadataUrl
-            resultsUrl
-          }
-        }
-      }
-    }
-  }
-`;
 
 type GetExecutionResultsQuery = {
   executionResults: {
@@ -126,36 +89,6 @@ export const fetchExecutionResults = async (
   return results;
 };
 
-const GET_EXECUTION_LOGS = `
-  query getExecutionLogs(
-    $after: String
-    $executionId: ID!
-    $startedDate: DateTime
-  ) {
-    logs(
-      after: $after
-      executionResult: $executionId
-      first: 100
-      orderBy: { direction: ASC, field: TIMESTAMP }
-      timestamp_Gte: $startedDate
-    ) {
-      nodes {
-        id
-        message
-        requiredConfigVariableKey
-        severity
-        stepName
-        timestamp
-        fromPreprocessFlow
-      }
-      pageInfo {
-        endCursor
-        hasNextPage
-      }
-    }
-  }
-`;
-
 type GetExecutionLogsQuery = {
   logs: {
     nodes: (ExecutionLog | null)[];
@@ -199,28 +132,6 @@ export const fetchExecutionLogs = async (
 
   return out;
 };
-
-const GET_STEP_RESULT_META = `
-  query GetStepResultMeta(
-    $executionId: ID!
-    $startedAt: DateTime
-    $endedAt: DateTime
-  ) {
-    stepResults(
-      startedAt_Gte: $startedAt
-      endedAt_Gte: $endedAt
-      executionResult: $executionId
-    ) {
-      nodes {
-        id
-        endedAt
-        startedAt
-        resultsMetadataUrl
-        resultsUrl
-      }
-    }
-  }
-`;
 
 type GetStepResultMetaQuery = {
   stepResults: {

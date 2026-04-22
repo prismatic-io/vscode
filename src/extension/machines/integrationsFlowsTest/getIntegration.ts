@@ -4,6 +4,7 @@ import type { Connection, ConnectionInput } from "@/types/connections";
 import type { Flow } from "@/types/flows";
 import type { GraphQLVariables } from "@/types/graphql";
 import type { InstanceConfigState } from "@/types/state";
+import GET_INTEGRATION from "./getIntegration.graphql";
 
 type GetIntegrationQuery = {
   integration: {
@@ -29,7 +30,6 @@ type GetIntegrationQuery = {
             onPremiseConnectionConfig: unknown | null;
             connection: {
               key: string;
-              label: string;
               oauth2Type: string | null;
               component: {
                 key: string;
@@ -46,32 +46,19 @@ type GetIntegrationQuery = {
             } | null;
             scopedConfigVariable: {
               id: string;
-              status: string;
               variableScope: string;
               managedBy: string;
-              key: string;
-              description: string | null;
               connection: {
                 key: string;
                 label: string;
                 component: {
-                  key: string;
                   label: string;
                   forCodeNativeIntegration: boolean;
                 } | null;
               } | null;
-              customer: {
-                id: string;
-                name: string;
-              } | null;
               customerConfigVariables: {
                 nodes: {
-                  id: string;
-                  isTest: boolean;
                   status: string;
-                  customer: {
-                    id: string;
-                  } | null;
                   inputs: {
                     nodes: {
                       name: string;
@@ -103,103 +90,6 @@ type GetIntegrationQuery = {
 interface GetIntegrationVariables {
   integrationId: string;
 }
-
-const GET_INTEGRATION = `
-  query GetIntegration($integrationId: ID!) {
-    integration(id: $integrationId) {
-      systemInstance {
-        id
-        configState
-        configVariables {
-          nodes {
-            id
-            status
-            authorizeUrl
-            inputs {
-              nodes {
-                name
-                value
-                hasValue
-              }
-            }
-            requiredConfigVariable {
-              key
-              stableKey
-              dataType
-              onPremiseConnectionConfig
-              connection {
-                key
-                label
-                oauth2Type
-                component {
-                  key
-                  label
-                  forCodeNativeIntegration
-                }
-                inputs {
-                  nodes {
-                    key
-                    label
-                    type
-                  }
-                }
-              }
-              scopedConfigVariable {
-                id
-                status
-                variableScope
-                managedBy
-                key
-                description
-                connection {
-                  key
-                  label
-                  component {
-                    key
-                    label
-                    forCodeNativeIntegration
-                  }
-                }
-                customer {
-                  id
-                  name
-                }
-                customerConfigVariables(isTest: true) {
-                  nodes {
-                    id
-                    isTest
-                    status
-                    customer {
-                      id
-                    }
-                    inputs {
-                      nodes {
-                        name
-                        value
-                        hasValue
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      flows {
-        nodes {
-          id
-          name
-          stableKey
-          isSynchronous
-          usesFifoQueue
-          endpointSecurityType
-          testUrl
-        }
-      }
-    }
-  }
-`;
 
 export interface GetIntegrationOutput {
   systemInstanceId: string;

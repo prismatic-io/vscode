@@ -1,0 +1,25 @@
+mutation TestIntegrationFlow(
+  $flowId: ID!
+  $payload: String
+  $contentType: String
+  $headers: String
+) {
+  testIntegrationFlow(
+    input: {
+      id: $flowId
+      payload: $payload
+      contentType: $contentType
+      headers: $headers
+    }
+  ) {
+    errors {
+      field
+      messages
+    }
+    testIntegrationFlowResult {
+      execution {
+        id
+      }
+    }
+  }
+}

@@ -1,22 +1,17 @@
 import { fromPromise } from "xstate";
 import { fetcher } from "@/shared/fetcher";
 import type { GraphQLVariables } from "@/types/graphql";
+import TEST_INTEGRATION_FLOW from "./testIntegrationFlow.graphql";
 
 type TestIntegrationFlowQuery = {
   testIntegrationFlow: {
+    errors: {
+      field: string;
+      messages: string[];
+    }[];
     testIntegrationFlowResult: {
-      __typename: "TestIntegrationFlowResult";
-      statusCode: number | null;
-      headers: string | null;
-      body: string | null;
       execution: {
-        __typename: "InstanceExecutionResult";
         id: string;
-        flowConfig: {
-          __typename: "InstanceFlowConfig";
-          id: string;
-          flow: { __typename: "IntegrationFlow"; id: string; name: string };
-        } | null;
       } | null;
     } | null;
   };
@@ -28,44 +23,6 @@ interface TestIntegrationFlowVariables {
   contentType?: string;
   headers?: string;
 }
-
-const TEST_INTEGRATION_FLOW = `
-  mutation testIntegrationFlow(
-    $flowId: ID!
-    $payload: String
-    $contentType: String
-    $headers: String
-  ) {
-    testIntegrationFlow(
-      input: {
-        id: $flowId
-        payload: $payload
-        contentType: $contentType
-        headers: $headers
-      }
-    ) {
-      errors {
-        field
-        messages
-      }
-      testIntegrationFlowResult {
-        statusCode
-        headers
-        body
-        execution {
-          id
-          flowConfig {
-            id
-            flow {
-              id
-              name
-            }
-          }
-        }
-      }
-    }
-  }
-`;
 
 export type TestIntegrationFlowOutput = {};
 
@@ -104,6 +61,14 @@ export const testIntegrationFlow = fromPromise<
 
   if (!testIntegrationFlow) {
     throw new Error("Integration data not found in response");
+  }
+
+  if (testIntegrationFlow.errors.length > 0) {
+    throw new Error(
+      testIntegrationFlow.errors
+        .map((e) => `${e.field}: ${e.messages.join(", ")}`)
+        .join("; "),
+    );
   }
 
   return {};

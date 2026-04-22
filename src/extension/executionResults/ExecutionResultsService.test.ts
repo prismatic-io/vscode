@@ -253,13 +253,10 @@ describe("ExecutionResultsService", () => {
     fetchExecutionResultsMock.mockResolvedValue([terminalExecution]);
     fetchExecutionLogsMock.mockResolvedValueOnce([]).mockResolvedValueOnce([
       {
-        id: "log-1",
         message: "late arrival",
-        requiredConfigVariableKey: null,
         severity: "INFO",
         stepName: null,
         timestamp: "2026-04-17T12:00:10Z",
-        fromPreprocessFlow: null,
       },
     ]);
 

@@ -1,0 +1,17 @@
+query GetStepResultMeta(
+  $executionId: ID!
+  $startedAt: DateTime
+  $endedAt: DateTime
+) {
+  stepResults(
+    startedAt_Gte: $startedAt
+    endedAt_Gte: $endedAt
+    executionResult: $executionId
+  ) {
+    nodes {
+      id
+      resultsMetadataUrl
+      resultsUrl
+    }
+  }
+}

@@ -1,0 +1,13 @@
+query GetAuthenticatedUser {
+  authenticatedUser {
+    name
+    email
+    tenantId
+    org {
+      name
+    }
+    customer {
+      name
+    }
+  }
+}
