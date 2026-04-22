@@ -1,7 +1,21 @@
+import { readFile } from "node:fs/promises";
 import * as esbuild from "esbuild";
 
 const production = process.argv.includes("--production");
 const watch = process.argv.includes("--watch");
+
+const graphqlLoader: esbuild.Plugin = {
+  name: "graphql-loader",
+  setup(build) {
+    build.onLoad({ filter: /\.graphql$/ }, async (args) => {
+      const contents = await readFile(args.path, "utf-8");
+      return {
+        contents: `export default ${JSON.stringify(contents)};`,
+        loader: "js",
+      };
+    });
+  },
+};
 
 const extensionConfig: esbuild.BuildOptions = {
   entryPoints: ["src/extension.ts"],
@@ -14,6 +28,7 @@ const extensionConfig: esbuild.BuildOptions = {
   sourcemap: !production,
   minify: production,
   logLevel: "info",
+  plugins: [graphqlLoader],
 };
 
 const webviewBaseConfig: esbuild.BuildOptions = {

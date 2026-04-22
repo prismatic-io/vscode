@@ -1,0 +1,80 @@
+query GetIntegration($integrationId: ID!) {
+  integration(id: $integrationId) {
+    systemInstance {
+      id
+      configState
+      configVariables {
+        nodes {
+          id
+          status
+          authorizeUrl
+          inputs {
+            nodes {
+              name
+              value
+              hasValue
+            }
+          }
+          requiredConfigVariable {
+            key
+            stableKey
+            dataType
+            onPremiseConnectionConfig
+            connection {
+              key
+              oauth2Type
+              component {
+                key
+                label
+                forCodeNativeIntegration
+              }
+              inputs {
+                nodes {
+                  key
+                  label
+                  type
+                }
+              }
+            }
+            scopedConfigVariable {
+              id
+              variableScope
+              managedBy
+              connection {
+                key
+                label
+                component {
+                  label
+                  forCodeNativeIntegration
+                }
+              }
+              customerConfigVariables(isTest: true) {
+                nodes {
+                  status
+                  inputs {
+                    nodes {
+                      name
+                      value
+                      hasValue
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    flows {
+      nodes {
+        id
+        name
+        stableKey
+        isSynchronous
+        usesFifoQueue
+        endpointSecurityType
+        testUrl
+      }
+    }
+  }
+}

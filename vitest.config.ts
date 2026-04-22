@@ -1,5 +1,6 @@
-import { defineConfig } from "vitest/config";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   resolve: {
@@ -10,6 +11,19 @@ export default defineConfig({
       "@webview/": `${path.resolve(import.meta.dirname, "src/webview")}/`,
     },
   },
+  plugins: [
+    {
+      name: "graphql-loader",
+      async transform(_src, id) {
+        if (!id.endsWith(".graphql")) return null;
+        const contents = await readFile(id, "utf-8");
+        return {
+          code: `export default ${JSON.stringify(contents)};`,
+          map: null,
+        };
+      },
+    },
+  ],
   test: {
     globals: true,
     clearMocks: true,

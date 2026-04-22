@@ -10,13 +10,10 @@ describe("formatExecutionLogs", () => {
   it("formats timestamp as HH:mm:ss with severity, step name, and message", () => {
     const out = formatExecutionLogs([
       {
-        id: "1",
         timestamp: "2026-04-21T23:14:32.493000+00:00",
         severity: LogSeverityLevel.INFO,
         stepName: "fetchUsers",
         message: "starting",
-        requiredConfigVariableKey: null,
-        fromPreprocessFlow: null,
       },
     ]);
 
@@ -26,13 +23,10 @@ describe("formatExecutionLogs", () => {
   it("omits the step tag when stepName is null", () => {
     const out = formatExecutionLogs([
       {
-        id: "1",
         timestamp: "2026-04-21T23:14:32.493000+00:00",
         severity: LogSeverityLevel.ERROR,
         stepName: null,
         message: "boom",
-        requiredConfigVariableKey: null,
-        fromPreprocessFlow: null,
       },
     ]);
 
@@ -42,13 +36,10 @@ describe("formatExecutionLogs", () => {
   it("handles timestamps with no sub-second component", () => {
     const out = formatExecutionLogs([
       {
-        id: "1",
         timestamp: "2026-04-21T23:14:32Z",
         severity: LogSeverityLevel.INFO,
         stepName: null,
         message: "msg",
-        requiredConfigVariableKey: null,
-        fromPreprocessFlow: null,
       },
     ]);
 

@@ -1,0 +1,37 @@
+query GetExecutionResults(
+  $cursor: String
+  $endedDate: DateTime
+  $flowId: ID
+  $limit: Int
+  $startedDate: DateTime
+) {
+  executionResults(
+    after: $cursor
+    first: $limit
+    flowConfig_Flow: $flowId
+    orderBy: { field: STARTED_AT, direction: DESC }
+    startedAt_Gte: $startedDate
+    startedAt_Lte: $endedDate
+  ) {
+    nodes {
+      id
+      invokeType
+      startedAt
+      resultType
+      endedAt
+      error
+      stepResults(first: 10, orderBy: { field: STARTED_AT, direction: ASC }) {
+        nodes {
+          id
+          startedAt
+          endedAt
+          stepName
+          displayStepName
+          hasError
+          resultsMetadataUrl
+          resultsUrl
+        }
+      }
+    }
+  }
+}

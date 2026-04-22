@@ -46,13 +46,10 @@ export interface ExecutionResult {
 }
 
 export interface ExecutionLog {
-  id: string;
   message: string;
-  requiredConfigVariableKey: string | null;
   severity: LogSeverityLevel;
   stepName: string | null;
   timestamp: string;
-  fromPreprocessFlow: boolean | null;
 }
 
 export const isExecutionTerminal = (result: ExecutionResult): boolean =>

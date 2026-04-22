@@ -1,0 +1,24 @@
+query GetExecutionLogs(
+  $after: String
+  $executionId: ID!
+  $startedDate: DateTime
+) {
+  logs(
+    after: $after
+    executionResult: $executionId
+    first: 100
+    orderBy: { direction: ASC, field: TIMESTAMP }
+    timestamp_Gte: $startedDate
+  ) {
+    nodes {
+      message
+      severity
+      stepName
+      timestamp
+    }
+    pageInfo {
+      endCursor
+      hasNextPage
+    }
+  }
+}

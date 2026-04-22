@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { graphqlRequest } from "@/shared/graphqlClient";
+import GET_AUTHENTICATED_USER from "./getAuthenticatedUser.graphql";
+import LIST_USER_TENANTS from "./listUserTenants.graphql";
 import {
   AuthenticatedUserSchema,
   type PrismaticUserInfo,
@@ -23,24 +25,11 @@ export const fetchPrismaticUser = async (
   prismaticUrl: string,
   accessToken: string,
 ): Promise<PrismaticUserInfo> => {
-  const query = `{
-    authenticatedUser {
-      name
-      email
-      tenantId
-      org {
-        name
-      }
-      customer {
-        name
-      }
-    }
-  }`;
-
-  const data = await graphqlRequest(query, AuthenticatedUserDataSchema, {
-    prismaticUrl,
-    accessToken,
-  });
+  const data = await graphqlRequest(
+    GET_AUTHENTICATED_USER,
+    AuthenticatedUserDataSchema,
+    { prismaticUrl, accessToken },
+  );
 
   const user = data.authenticatedUser;
   if (!user) {
@@ -60,18 +49,7 @@ export const fetchUserTenants = async (
   prismaticUrl: string,
   accessToken: string,
 ): Promise<Tenant[]> => {
-  const query = `{
-    listUserTenants {
-      nodes {
-        tenantId
-        url
-        orgName
-        awsRegion
-      }
-    }
-  }`;
-
-  const data = await graphqlRequest(query, TenantDataSchema, {
+  const data = await graphqlRequest(LIST_USER_TENANTS, TenantDataSchema, {
     prismaticUrl,
     accessToken,
   });
