@@ -380,10 +380,10 @@
     "package-manager-detector": "^1.6.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "styled-components": "^6.1.17",
-    "tinyexec": "^1.1.1",
-    "xstate": "^5.19.3",
-    "zod": "^4.3.6"
+    "styled-components": "^6.4.1",
+    "tinyexec": "^1.1.2",
+    "xstate": "^5.31.0",
+    "zod": "^4.4.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.2",
@@ -395,18 +395,18 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@types/stylis": "^4.2.7",
-    "@types/vscode": "1.116.0",
-    "@vitest/coverage-v8": "^4.1.2",
+    "@types/vscode": "1.118.0",
+    "@vitest/coverage-v8": "^4.1.5",
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
-    "@vscode/vsce": "^3.6.0",
+    "@vscode/vsce": "^3.9.1",
     "esbuild": "^0.28.0",
     "fantasticon": "^4.1.0",
-    "jsdom": "^29.0.2",
+    "jsdom": "^29.1.1",
     "npm-run-all": "^4.1.5",
     "ovsx": "^0.10.10",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.2"
+    "vitest": "^4.1.5"
   },
   "trustedDependencies": [
     "@vscode/vsce-sign",
