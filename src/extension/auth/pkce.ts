@@ -155,7 +155,6 @@ export const buildAuthorizeUrl = (
     code_challenge: challenge,
     code_challenge_method: "S256",
     state,
-    connection: meta.connection,
   });
 
   return `${endpoints.authorizationEndpoint}?${params.toString()}`;

@@ -4,7 +4,6 @@ export const AuthMetaSchema = z.object({
   domain: z.string(),
   audience: z.string(),
   clientId: z.string(),
-  connection: z.string(),
 });
 export type AuthMeta = z.infer<typeof AuthMetaSchema>;
 
