@@ -15,7 +15,6 @@ const meta: AuthMeta = {
   domain: "auth.example.com",
   audience: "https://api.example.com",
   clientId: "test-client-id",
-  connection: "Username-Password-Authentication",
 };
 
 const endpoints: OIDCEndpoints = {
@@ -95,7 +94,7 @@ describe("buildAuthorizeUrl", () => {
     expect(parsed.searchParams.get("code_challenge")).toBe("test-challenge");
     expect(parsed.searchParams.get("code_challenge_method")).toBe("S256");
     expect(parsed.searchParams.get("state")).toBe("test-state");
-    expect(parsed.searchParams.get("connection")).toBe(meta.connection);
+    expect(parsed.searchParams.get("connection")).toBeNull();
   });
 });
 

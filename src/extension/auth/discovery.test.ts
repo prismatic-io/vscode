@@ -10,7 +10,6 @@ const authMeta: AuthMeta = {
   domain: "auth.example.com",
   audience: "https://api.example.com",
   clientId: "client-123",
-  connection: "Username-Password-Authentication",
 };
 
 const oidcConfig = {
