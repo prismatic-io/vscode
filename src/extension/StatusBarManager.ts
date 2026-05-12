@@ -24,7 +24,6 @@ export class StatusBarManager {
       0,
     );
     this.userStatusBarItem.name = "Prismatic User";
-    this.userStatusBarItem.command = "prismatic.switchTenant";
 
     // Create Active Integration status bar item (left side, priority -1 = right of user item)
     this.integrationStatusBarItem = vscode.window.createStatusBarItem(
@@ -61,12 +60,12 @@ export class StatusBarManager {
           `- **Organization:** ${userInfo.organization}\n` +
           `- **Endpoint:** ${userInfo.endpointUrl}`,
       );
+      this.userStatusBarItem.command = "prismatic.switchTenant";
       this.userStatusBarItem.show();
     } catch {
-      // On error (e.g., not logged in), show "Not logged in"
       this.userStatusBarItem.text = "$(prismatic-logo) Not logged in";
-      this.userStatusBarItem.tooltip =
-        "Prismatic: Not logged in. Use 'Prismatic: Login' command.";
+      this.userStatusBarItem.tooltip = "Prismatic: Click to log in";
+      this.userStatusBarItem.command = "prismatic.login";
       this.userStatusBarItem.show();
     }
   }
@@ -116,6 +115,10 @@ export class StatusBarManager {
   public show(): void {
     this.userStatusBarItem.show();
     this.integrationStatusBarItem.show();
+  }
+
+  public get userStatusBarCommand(): string | vscode.Command | undefined {
+    return this.userStatusBarItem.command;
   }
 
   public dispose(): void {
