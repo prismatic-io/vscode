@@ -22,6 +22,7 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    environment: release
     timeout-minutes: 5
     outputs:
       version: ${{ steps.bump.outputs.version }}
@@ -64,6 +65,7 @@ jobs:
   publish:
     needs: release
     runs-on: ubuntu-latest
+    environment: release
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
