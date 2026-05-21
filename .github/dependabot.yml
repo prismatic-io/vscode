@@ -17,6 +17,9 @@ updates:
       # Biome bumps require updating the $schema URL in biome.json files,
       # which dependabot doesn't do. Bump manually.
       - dependency-name: "@biomejs/biome"
+      # @types/vscode must not exceed engines.vscode in package.json or
+      # vsce package fails. Bump manually alongside engines.vscode.
+      - dependency-name: "@types/vscode"
 
   - package-ecosystem: "github-actions"
     directory: "/"
