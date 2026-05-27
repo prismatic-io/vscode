@@ -95,6 +95,10 @@ Displays the results of the Code-Native Integration (CNI) test. This includes th
 
 ![Execution Results](resources/marketplace-execution-results.png)
 
+##### Batched executions
+
+Integrations that fan out into multiple batches (large data sync) expand to show each batch as a third tree level under the parent execution. The parent row reports `x/y batches` and any failures, and a status bar item summarises in-flight progress while the Execution Results view is visible. Cancel an in-flight batched run from the parent row's inline action; running batches finish, queued batches are skipped.
+
 #### `Prismatic: Config Wizard`
 Displays the Config Wizard to edit configuration values for your integration instance.
 

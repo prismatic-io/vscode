@@ -2,6 +2,8 @@ import * as vscode from "vscode";
 import { log } from "@/extension";
 import type { AuthManager } from "@/extension/AuthManager";
 import type { StateManager } from "@/extension/StateManager";
+import { createBatchProgressPanel } from "@/webview/views/batchProgress/ViewProvider";
+import { BatchProgressService } from "./BatchProgressService";
 import { ExecutionResultsService } from "./ExecutionResultsService";
 import { ExecutionsTreeDataProvider } from "./ExecutionsTreeDataProvider";
 import { LogsContentProvider } from "./LogsContentProvider";
@@ -19,6 +21,7 @@ export interface RegisterOptions {
 
 export interface RegisterResult {
   service: ExecutionResultsService;
+  batchService: BatchProgressService;
   treeView: vscode.TreeView<unknown>;
   treeDataProvider: ExecutionsTreeDataProvider;
 }
@@ -31,7 +34,18 @@ export const registerExecutionResults = (
   const service = new ExecutionResultsService({ stateManager, authManager });
   context.subscriptions.push({ dispose: () => service.dispose() });
 
-  const treeDataProvider = new ExecutionsTreeDataProvider(service);
+  const batchService = new BatchProgressService({
+    stateManager,
+    authManager,
+    executionResultsService: service,
+  });
+  context.subscriptions.push({ dispose: () => batchService.dispose() });
+
+  context.subscriptions.push(
+    createBatchProgressPanel(context, stateManager, authManager, batchService),
+  );
+
+  const treeDataProvider = new ExecutionsTreeDataProvider(service, batchService);
   context.subscriptions.push(treeDataProvider);
 
   const treeView = vscode.window.createTreeView(VIEW_ID, {
@@ -41,9 +55,11 @@ export const registerExecutionResults = (
   context.subscriptions.push(treeView);
 
   service.setPaused(!treeView.visible);
+  batchService.setPaused(!treeView.visible);
   context.subscriptions.push(
     treeView.onDidChangeVisibility((event) => {
       service.setPaused(!event.visible);
+      batchService.setPaused(!event.visible);
     }),
   );
 
@@ -65,18 +81,20 @@ export const registerExecutionResults = (
     ),
   );
 
+  const openLogsFor = async (executionId: string) => {
+    const uri = buildLogsUri(executionId);
+    const doc = await vscode.workspace.openTextDocument(uri);
+    await vscode.languages.setTextDocumentLanguage(doc, LOG_LANGUAGE_ID);
+    await vscode.window.showTextDocument(doc, { preview: true });
+  };
+
   context.subscriptions.push(
     vscode.commands.registerCommand("prismatic.executionResults.refresh", () =>
       service.refresh(),
     ),
     vscode.commands.registerCommand(
       "prismatic.executionResults.openLogs",
-      async (executionId: string) => {
-        const uri = buildLogsUri(executionId);
-        const doc = await vscode.workspace.openTextDocument(uri);
-        await vscode.languages.setTextDocumentLanguage(doc, LOG_LANGUAGE_ID);
-        await vscode.window.showTextDocument(doc, { preview: true });
-      },
+      (executionId: string) => openLogsFor(executionId),
     ),
     vscode.commands.registerCommand(
       "prismatic.executionResults.openStep",
@@ -86,6 +104,97 @@ export const registerExecutionResults = (
         const uri = buildStepUri(executionId, stepId, step?.stepName ?? null);
         const doc = await vscode.workspace.openTextDocument(uri);
         await vscode.window.showTextDocument(doc, { preview: true });
+      },
+    ),
+    vscode.commands.registerCommand(
+      "prismatic.executionResults.cancelBatch",
+      async (executionId: string) => {
+        const confirm = await vscode.window.showWarningMessage(
+          "Cancel batch processing for this execution? Running batches will continue, queued batches will not start.",
+          { modal: true },
+          "Cancel Batch",
+          "Keep Running",
+        );
+        if (confirm !== "Cancel Batch") return;
+        try {
+          await batchService.cancel(executionId);
+          await vscode.window.showInformationMessage(
+            "Batch cancellation requested.",
+          );
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : String(error);
+          await vscode.window.showErrorMessage(
+            `Failed to cancel batch processing: ${message}`,
+          );
+        }
+      },
+    ),
+    vscode.commands.registerCommand(
+      "prismatic.executionResults.loadMoreBatches",
+      (executionId: string) => batchService.loadMore(executionId),
+    ),
+    vscode.commands.registerCommand(
+      "prismatic.executionResults.openBatchLogs",
+      (_executionId: string, batchExecutionId: string) =>
+        openLogsFor(batchExecutionId),
+    ),
+    vscode.commands.registerCommand(
+      "prismatic.executionResults.openBatchStep",
+      async (batchExecutionId: string, stepId: string) => {
+        await vscode.commands.executeCommand(
+          "prismatic.executionResults.openStep",
+          batchExecutionId,
+          stepId,
+        );
+      },
+    ),
+    vscode.commands.registerCommand(
+      "prismatic.executionResults.copyBatchId",
+      async (batchExecutionId: string) => {
+        await vscode.env.clipboard.writeText(batchExecutionId);
+        await vscode.window.showInformationMessage(
+          `Copied batch id: ${batchExecutionId}`,
+        );
+      },
+    ),
+    vscode.commands.registerCommand(
+      "prismatic.executionResults.openBatchInBrowser",
+      async (batchExecutionId: string) => {
+        try {
+          const globalState = await stateManager.getGlobalState();
+          const prismaticUrl = globalState?.prismaticUrl;
+          if (!prismaticUrl) {
+            throw new Error("No Prismatic URL configured");
+          }
+          await vscode.env.openExternal(
+            vscode.Uri.parse(
+              `${prismaticUrl}/executions/${encodeURIComponent(batchExecutionId)}`,
+            ),
+          );
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : String(error);
+          await vscode.window.showErrorMessage(
+            `Failed to open batch in browser: ${message}`,
+          );
+        }
+      },
+    ),
+    vscode.commands.registerCommand(
+      "prismatic.executionResults.subscribeBatched",
+      (executionId: string) => {
+        batchService.subscribe(executionId);
+      },
+    ),
+    vscode.commands.registerCommand(
+      "prismatic.executionResults.revealBatchedParent",
+      async (executionId: string) => {
+        await vscode.commands.executeCommand(`${VIEW_ID}.focus`);
+        const node = treeDataProvider.getNodeByExecutionId(executionId);
+        if (node) {
+          await treeView.reveal(node, { focus: true, expand: true });
+        }
       },
     ),
   );
@@ -112,5 +221,5 @@ export const registerExecutionResults = (
     }),
   );
 
-  return { service, treeView, treeDataProvider };
+  return { service, batchService, treeView, treeDataProvider };
 };

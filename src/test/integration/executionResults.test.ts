@@ -13,6 +13,15 @@ suite("Execution Results view and commands", () => {
       "prismatic.executionResults.refresh",
       "prismatic.executionResults.openLogs",
       "prismatic.executionResults.openStep",
+      "prismatic.executionResults.cancelBatch",
+      "prismatic.executionResults.loadMoreBatches",
+      "prismatic.executionResults.openBatchLogs",
+      "prismatic.executionResults.openBatchStep",
+      "prismatic.executionResults.copyBatchId",
+      "prismatic.executionResults.openBatchInBrowser",
+      "prismatic.executionResults.openBatchSummary",
+      "prismatic.executionResults.subscribeBatched",
+      "prismatic.executionResults.revealBatchedParent",
     ];
     for (const id of expected) {
       assert.ok(
@@ -52,5 +61,42 @@ suite("Execution Results view and commands", () => {
     // Without authentication the service returns early; the command should
     // still resolve cleanly.
     await vscode.commands.executeCommand("prismatic.executionResults.refresh");
+  });
+
+  test("cancelBatch shows a modal confirmation and aborts on dismissal", async () => {
+    // Stub showWarningMessage to capture invocation and return "Keep Running"
+    // so the cancel mutation is never reached. We assert the dialog path
+    // without needing a real backend or authenticated session.
+    const original = vscode.window.showWarningMessage;
+    const calls: Array<{ message: string; items: string[] }> = [];
+    (vscode.window as { showWarningMessage: typeof original }).showWarningMessage = ((
+      message: string,
+      ..._args: unknown[]
+    ) => {
+      // Second positional arg is options, then items.
+      const items = _args
+        .slice(1)
+        .filter((v): v is string => typeof v === "string");
+      calls.push({ message, items });
+      return Promise.resolve("Keep Running");
+    }) as unknown as typeof original;
+
+    try {
+      await vscode.commands.executeCommand(
+        "prismatic.executionResults.cancelBatch",
+        "fake-execution-id",
+      );
+    } finally {
+      (vscode.window as { showWarningMessage: typeof original }).showWarningMessage =
+        original;
+    }
+
+    assert.strictEqual(calls.length, 1, "expected a single confirmation");
+    assert.ok(
+      calls[0].message.toLowerCase().includes("cancel batch processing"),
+      `unexpected confirmation message: ${calls[0].message}`,
+    );
+    assert.ok(calls[0].items.includes("Cancel Batch"));
+    assert.ok(calls[0].items.includes("Keep Running"));
   });
 });

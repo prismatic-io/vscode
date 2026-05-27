@@ -1,0 +1,40 @@
+query GetBatchDetail(
+  $id: ID!
+  $after: String
+  $status: String
+  $role: String
+  $discoveredBy: ID
+) {
+  executionResult(id: $id) {
+    id
+    executionBatches(
+      first: 50
+      after: $after
+      status: $status
+      role: $role
+      discoveredBy: $discoveredBy
+      orderBy: { field: STARTED_AT, direction: DESC }
+    ) {
+      totalCount
+      nodes {
+        id
+        key
+        displayKey
+        status
+        role
+        recordCount
+        stepCount
+        errorMessage
+        startedAt
+        completedAt
+        discoveredBy {
+          id
+        }
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+    }
+  }
+}

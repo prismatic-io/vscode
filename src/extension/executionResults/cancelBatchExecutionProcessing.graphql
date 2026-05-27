@@ -1,0 +1,16 @@
+mutation CancelBatchExecutionProcessing($executionId: ID!) {
+  cancelBatchExecutionProcessing(input: { id: $executionId }) {
+    errors {
+      field
+      messages
+    }
+    instanceExecutionResult {
+      id
+      status
+      cancelRequestedAt
+      canceledBy {
+        id
+      }
+    }
+  }
+}

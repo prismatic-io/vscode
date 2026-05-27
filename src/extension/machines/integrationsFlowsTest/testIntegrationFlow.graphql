@@ -19,6 +19,8 @@ mutation TestIntegrationFlow(
     testIntegrationFlowResult {
       execution {
         id
+        usesBatching
+        status
       }
     }
   }

@@ -1,6 +1,13 @@
 import { encode } from "@msgpack/msgpack";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchStepOutput, transformStepOutput } from "./api";
+import {
+  adaptBatchNode,
+  cancelBatchExecution,
+  fetchStepOutput,
+  shortIdFromGlobalId,
+  toBatchNodeStatus,
+  transformStepOutput,
+} from "./api";
 
 describe("transformStepOutput", () => {
   it("returns primitives unchanged", () => {
@@ -46,6 +53,165 @@ describe("transformStepOutput", () => {
         inner: "<data (2 bytes)>",
       },
     });
+  });
+});
+
+describe("toBatchNodeStatus", () => {
+  it("maps uppercase COMPLETED to success", () => {
+    expect(toBatchNodeStatus("COMPLETED", null, null)).toBe("success");
+  });
+
+  it("maps uppercase FAILED to fail", () => {
+    expect(toBatchNodeStatus("FAILED", null, null)).toBe("fail");
+  });
+
+  it("treats a completedAt as success when status is unrecognized", () => {
+    expect(toBatchNodeStatus("UNKNOWN", "x", "y")).toBe("success");
+  });
+
+  it("returns running when startedAt set without completedAt", () => {
+    expect(toBatchNodeStatus("UNKNOWN", "x", null)).toBe("running");
+  });
+
+  it("returns queued by default", () => {
+    expect(toBatchNodeStatus("UNKNOWN", null, null)).toBe("queued");
+  });
+});
+
+describe("adaptBatchNode", () => {
+  it("uses displayKey when provided", () => {
+    const node = adaptBatchNode(
+      {
+        id: "node:1",
+        key: null,
+        displayKey: "batch-0007",
+        status: "COMPLETED",
+        role: "PROCESSING",
+        recordCount: 25,
+        stepCount: 3,
+        errorMessage: null,
+        startedAt: "2026-05-20T00:00:00Z",
+        completedAt: "2026-05-20T00:00:30Z",
+        discoveredBy: null,
+      },
+      6,
+    );
+    expect(node.displayKey).toBe("batch-0007");
+    expect(node.status).toBe("success");
+    expect(node.label).toBe("25 records");
+  });
+
+  it("falls back to key, then short id, then ordinal label", () => {
+    const noDisplayKey = adaptBatchNode(
+      {
+        id: "node:k",
+        key: "k123",
+        displayKey: "",
+        status: "FAILED",
+        role: "PROCESSING",
+        recordCount: 1,
+        stepCount: 0,
+        errorMessage: "boom",
+        startedAt: null,
+        completedAt: null,
+        discoveredBy: null,
+      },
+      0,
+    );
+    expect(noDisplayKey.displayKey).toBe("k123");
+    expect(noDisplayKey.status).toBe("fail");
+    expect(noDisplayKey.label).toBe("1 record");
+  });
+
+  it("derives DISCOVERY role", () => {
+    const node = adaptBatchNode(
+      {
+        id: "discovery:1",
+        key: null,
+        displayKey: null,
+        status: "COMPLETED",
+        role: "DISCOVERY",
+        recordCount: null,
+        stepCount: null,
+        errorMessage: null,
+        startedAt: null,
+        completedAt: null,
+        discoveredBy: null,
+      },
+      0,
+    );
+    expect(node.role).toBe("discovery");
+    expect(node.recordCount).toBe(1);
+  });
+});
+
+describe("shortIdFromGlobalId", () => {
+  it("trims the last 6 chars of an unencoded id", () => {
+    expect(shortIdFromGlobalId("0123456789")).toBe("456789");
+  });
+});
+
+describe("cancelBatchExecution", () => {
+  const originalFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it("returns the execution id on success", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            cancelBatchExecutionProcessing: {
+              errors: [],
+              instanceExecutionResult: {
+                id: "exec-1",
+                status: "CANCELING",
+                cancelRequestedAt: "2026-05-20T00:00:00Z",
+                canceledBy: { id: "user-1" },
+              },
+            },
+          },
+        }),
+        { status: 200 },
+      ),
+    ) as unknown as typeof fetch;
+
+    const result = await cancelBatchExecution({
+      accessToken: "tok",
+      prismaticUrl: "https://example",
+      executionId: "exec-1",
+    });
+    expect(result).toEqual({ id: "exec-1" });
+  });
+
+  it("surfaces a typed errors[].messages payload", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            cancelBatchExecutionProcessing: {
+              errors: [
+                {
+                  field: "feature",
+                  messages: ["LARGE_DATA_SYNC flag disabled"],
+                },
+              ],
+              instanceExecutionResult: null,
+            },
+          },
+        }),
+        { status: 200 },
+      ),
+    ) as unknown as typeof fetch;
+
+    await expect(
+      cancelBatchExecution({
+        accessToken: "tok",
+        prismaticUrl: "https://example",
+        executionId: "exec-1",
+      }),
+    ).rejects.toThrow("LARGE_DATA_SYNC flag disabled");
   });
 });
 

@@ -19,6 +19,12 @@ export const CONFIG = {
       title: "Development Instance",
       viewType: "integrationDetails.webview",
     },
+    batchProgress: {
+      command: "prismatic.executionResults.openBatchSummary",
+      scriptPath: "dist/batchProgressView/index.js",
+      title: "Batch Progress",
+      viewType: "batchProgress.webview",
+    },
   },
   prismaticUrl: "https://app.prismatic.io",
 } as const;

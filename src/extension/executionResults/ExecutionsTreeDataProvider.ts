@@ -1,20 +1,33 @@
 import * as vscode from "vscode";
+import type { BatchProgressService } from "./BatchProgressService";
 import type { ExecutionResultsService } from "./ExecutionResultsService";
-import type { ExecutionResult, StepResult } from "./types";
-import { isExecutionTerminal } from "./types";
+import type {
+  ExecutionBatchNode,
+  ExecutionResult,
+  StepResult,
+} from "./types";
+import { isExecutionBatched, isExecutionTerminal } from "./types";
 import { buildLogsUri, buildStepUri } from "./uris";
 
 const NEW_EXECUTION_INDICATOR_MS = 30_000;
 
-export type ExecutionsTreeNode = ExecutionNode | StepNode;
+export type ExecutionsTreeNode =
+  | ExecutionNode
+  | StepNode
+  | BatchNode
+  | LoadMoreNode
+  | LoadingNode;
 
 export class ExecutionNode extends vscode.TreeItem {
   readonly kind = "execution" as const;
 
   constructor(public readonly execution: ExecutionResult) {
+    const batched = isExecutionBatched(execution);
+    const hasChildren =
+      execution.stepResults.length > 0 || batched;
     super(
       executionLabel(execution),
-      execution.stepResults.length > 0
+      hasChildren
         ? vscode.TreeItemCollapsibleState.Collapsed
         : vscode.TreeItemCollapsibleState.None,
     );
@@ -23,9 +36,7 @@ export class ExecutionNode extends vscode.TreeItem {
     this.description = executionDescription(execution);
     this.tooltip = executionTooltip(execution);
     this.iconPath = executionIcon(execution);
-    this.contextValue = isExecutionTerminal(execution)
-      ? "executionItem.terminal"
-      : "executionItem.running";
+    this.contextValue = executionContextValue(execution);
 
     this.resourceUri = buildLogsUri(execution.id);
     this.command = {
@@ -60,6 +71,57 @@ export class StepNode extends vscode.TreeItem {
   }
 }
 
+export class BatchNode extends vscode.TreeItem {
+  readonly kind = "batch" as const;
+
+  constructor(
+    public readonly execution: ExecutionResult,
+    public readonly batchNode: ExecutionBatchNode,
+  ) {
+    super(batchNode.displayKey, vscode.TreeItemCollapsibleState.None);
+
+    this.id = `batch:${execution.id}:${batchNode.id}`;
+    this.description = batchNodeDescription(batchNode);
+    this.tooltip = batchNodeTooltip(batchNode);
+    this.iconPath = batchNodeIcon(batchNode);
+    this.contextValue = `batchItem.${batchNode.status}`;
+
+    this.resourceUri = buildLogsUri(batchNode.id);
+    this.command = {
+      command: "prismatic.executionResults.openBatchLogs",
+      title: "Open Batch Logs",
+      arguments: [execution.id, batchNode.id],
+    };
+  }
+}
+
+export class LoadMoreNode extends vscode.TreeItem {
+  readonly kind = "loadMore" as const;
+
+  constructor(public readonly execution: ExecutionResult) {
+    super("Load more batches…", vscode.TreeItemCollapsibleState.None);
+    this.id = `loadMore:${execution.id}`;
+    this.iconPath = new vscode.ThemeIcon("more");
+    this.contextValue = "loadMoreBatches";
+    this.command = {
+      command: "prismatic.executionResults.loadMoreBatches",
+      title: "Load More Batches",
+      arguments: [execution.id],
+    };
+  }
+}
+
+export class LoadingNode extends vscode.TreeItem {
+  readonly kind = "loading" as const;
+
+  constructor(public readonly execution: ExecutionResult) {
+    super("Loading batches…", vscode.TreeItemCollapsibleState.None);
+    this.id = `loading:${execution.id}`;
+    this.iconPath = new vscode.ThemeIcon("sync~spin");
+    this.contextValue = "loadingBatches";
+  }
+}
+
 export class ExecutionsTreeDataProvider
   implements vscode.TreeDataProvider<ExecutionsTreeNode>
 {
@@ -71,11 +133,21 @@ export class ExecutionsTreeDataProvider
 
   private readonly disposables: vscode.Disposable[] = [];
 
-  constructor(private readonly service: ExecutionResultsService) {
+  constructor(
+    private readonly service: ExecutionResultsService,
+    private readonly batchService: BatchProgressService | null = null,
+  ) {
     this.disposables.push(
       service.onDidChangeExecutions(() => this._onDidChangeTreeData.fire()),
       this._onDidChangeTreeData,
     );
+    if (batchService) {
+      this.disposables.push(
+        batchService.onDidChangeBatches(() => {
+          this._onDidChangeTreeData.fire();
+        }),
+      );
+    }
   }
 
   getTreeItem(element: ExecutionsTreeNode): vscode.TreeItem {
@@ -90,12 +162,30 @@ export class ExecutionsTreeDataProvider
     }
 
     if (element.kind === "execution") {
+      if (isExecutionBatched(element.execution) && this.batchService) {
+        this.batchService.subscribe(element.execution.id);
+        if (this.batchService.isLoading(element.execution.id)) {
+          return [new LoadingNode(element.execution)];
+        }
+        const nodes = this.batchService
+          .getBatches(element.execution.id)
+          .map((b) => new BatchNode(element.execution, b));
+        if (this.batchService.hasMore(element.execution.id)) {
+          nodes.push(new LoadMoreNode(element.execution) as never);
+        }
+        return nodes;
+      }
       return element.execution.stepResults.map(
         (step) => new StepNode(element.execution, step),
       );
     }
 
     return [];
+  }
+
+  getNodeByExecutionId(executionId: string): ExecutionNode | null {
+    const execution = this.service.getExecution(executionId);
+    return execution ? new ExecutionNode(execution) : null;
   }
 
   dispose(): void {
@@ -110,6 +200,14 @@ const executionLabel = (execution: ExecutionResult): string => {
 
 const executionDescription = (execution: ExecutionResult): string => {
   const parts: string[] = [];
+
+  if (isExecutionBatched(execution) && execution.batchProgress) {
+    const p = execution.batchProgress;
+    const denom = p.total > 0 ? p.total : p.discovered;
+    parts.push(`${p.completed}/${denom} batches`);
+    if (p.failed > 0) parts.push(`${p.failed} failed`);
+  }
+
   if (execution.endedAt) {
     const durationMs =
       new Date(execution.endedAt).getTime() -
@@ -126,6 +224,20 @@ const executionDescription = (execution: ExecutionResult): string => {
   return parts.join(" · ");
 };
 
+const executionContextValue = (execution: ExecutionResult): string => {
+  if (!isExecutionBatched(execution)) {
+    return isExecutionTerminal(execution)
+      ? "executionItem.terminal"
+      : "executionItem.running";
+  }
+  if (execution.status === "CANCELING" || execution.cancelRequestedAt) {
+    return "executionItem.batched.canceling";
+  }
+  return isExecutionTerminal(execution)
+    ? "executionItem.batched.terminal"
+    : "executionItem.batched.running";
+};
+
 const executionTooltip = (
   execution: ExecutionResult,
 ): vscode.MarkdownString => {
@@ -136,6 +248,23 @@ const executionTooltip = (
   if (execution.resultType) {
     md.appendMarkdown(`Result: ${execution.resultType}\n\n`);
   }
+  if (isExecutionBatched(execution)) {
+    if (execution.triggerResolverBatchSize !== null) {
+      md.appendMarkdown(
+        `Resolver batch size: ${execution.triggerResolverBatchSize}\n\n`,
+      );
+    }
+    const limit = execution.batchProgress?.concurrencyLimit;
+    const limitSource = execution.batchProgress?.concurrencyLimitSource;
+    if (limit !== null && limit !== undefined) {
+      md.appendMarkdown(
+        `Concurrency limit: ${limit}${limitSource ? ` (${limitSource})` : ""}\n\n`,
+      );
+    }
+    if (execution.cancelRequestedAt) {
+      md.appendMarkdown(`Cancel requested at: ${execution.cancelRequestedAt}\n\n`);
+    }
+  }
   if (execution.error) {
     md.appendMarkdown(`Error: ${execution.error}`);
   }
@@ -143,6 +272,13 @@ const executionTooltip = (
 };
 
 const executionIcon = (execution: ExecutionResult): vscode.ThemeIcon => {
+  if (
+    isExecutionBatched(execution) &&
+    execution.batchProgress?.discoveryComplete === false
+  ) {
+    return new vscode.ThemeIcon("sync~spin");
+  }
+
   if (!isExecutionTerminal(execution)) {
     return new vscode.ThemeIcon("sync~spin");
   }
@@ -201,6 +337,58 @@ const stepIcon = (
   }
 
   return new vscode.ThemeIcon("circle-filled");
+};
+
+const batchNodeDescription = (node: ExecutionBatchNode): string => {
+  const parts: string[] = [];
+  parts.push(node.label);
+  parts.push(node.role);
+  if (node.startedAt && node.completedAt) {
+    const ms =
+      new Date(node.completedAt).getTime() - new Date(node.startedAt).getTime();
+    parts.push(formatDuration(ms));
+  } else if (node.startedAt) {
+    parts.push("running…");
+  } else {
+    parts.push("queued");
+  }
+  return parts.join(" · ");
+};
+
+const batchNodeTooltip = (node: ExecutionBatchNode): vscode.MarkdownString => {
+  const md = new vscode.MarkdownString();
+  md.appendMarkdown(`**Batch** \`${node.displayKey}\`\n\n`);
+  md.appendMarkdown(`Records: ${node.recordCount}\n\n`);
+  md.appendMarkdown(`Steps: ${node.stepCount}\n\n`);
+  md.appendMarkdown(`Status: ${node.status}\n\n`);
+  if (node.startedAt) md.appendMarkdown(`Started: ${node.startedAt}\n\n`);
+  if (node.completedAt) md.appendMarkdown(`Completed: ${node.completedAt}\n\n`);
+  if (node.errorMessage) md.appendMarkdown(`Error: ${node.errorMessage}`);
+  return md;
+};
+
+const batchNodeIcon = (node: ExecutionBatchNode): vscode.ThemeIcon => {
+  switch (node.status) {
+    case "success":
+      return new vscode.ThemeIcon(
+        "pass-filled",
+        new vscode.ThemeColor("testing.iconPassed"),
+      );
+    case "fail":
+      return new vscode.ThemeIcon(
+        "error",
+        new vscode.ThemeColor("testing.iconFailed"),
+      );
+    case "partial":
+      return new vscode.ThemeIcon(
+        "warning",
+        new vscode.ThemeColor("notebookStatusErrorIcon.foreground"),
+      );
+    case "running":
+      return new vscode.ThemeIcon("sync~spin");
+    default:
+      return new vscode.ThemeIcon("circle-outline");
+  }
 };
 
 const formatDuration = (ms: number): string => {

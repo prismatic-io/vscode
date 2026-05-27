@@ -158,13 +158,29 @@ export const testIntegrationFlowMachine = setup({
             }),
             onDone: {
               actions: [
-                () =>
-                  log(
-                    "SUCCESS",
-                    "Integration flow test completed successfully!",
-                    true,
-                  ),
-                () => {
+                ({ event }) => {
+                  const output = event.output;
+                  if (output?.usesBatching) {
+                    log(
+                      "INFO",
+                      `Batched run started${output.executionId ? ` (execution ${output.executionId})` : ""}.`,
+                      true,
+                    );
+                  } else {
+                    log(
+                      "SUCCESS",
+                      "Integration flow test completed successfully!",
+                      true,
+                    );
+                  }
+                },
+                ({ event }) => {
+                  if (event.output?.usesBatching && event.output.executionId) {
+                    vscode.commands.executeCommand(
+                      "prismatic.executionResults.subscribeBatched",
+                      event.output.executionId,
+                    );
+                  }
                   vscode.commands.executeCommand(
                     "prismatic.executionResults.refresh",
                   );

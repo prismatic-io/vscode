@@ -1,0 +1,26 @@
+query GetBatchSnapshot($id: ID!) {
+  executionResult(id: $id) {
+    id
+    usesBatching
+    status
+    cancelRequestedAt
+    canceledBy {
+      id
+      email
+    }
+    registeredBatchCount
+    triggerResolverBatchSize
+    batchProgress {
+      discovered
+      total
+      queued
+      running
+      completed
+      failed
+      canceled
+      discoveryComplete
+      concurrencyLimit
+      concurrencyLimitSource
+    }
+  }
+}

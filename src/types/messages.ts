@@ -1,4 +1,5 @@
 import type { GlobalState, WorkspaceState } from "@type/state";
+import type { BatchProgressMessage } from "@webview/views/batchProgress/types";
 import type { ConfigWizardMessage } from "@webview/views/configWizard/types";
 import type { IntegrationDetailsMessage } from "@webview/views/integrationDetails/types";
 
@@ -62,7 +63,8 @@ export type MessageType =
   | AccessTokenMessage
   | AuthStateChangedMessage
   | ConfigWizardMessage
-  | IntegrationDetailsMessage;
+  | IntegrationDetailsMessage
+  | BatchProgressMessage;
 
 export interface WebviewApi {
   postMessage(message: MessageType): void;

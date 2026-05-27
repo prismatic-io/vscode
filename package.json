@@ -155,6 +155,62 @@
         "enablement": "prismatic.workspaceEnabled"
       },
       {
+        "command": "prismatic.executionResults.cancelBatch",
+        "title": "Cancel Batch Processing",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled",
+        "icon": "$(stop-circle)"
+      },
+      {
+        "command": "prismatic.executionResults.loadMoreBatches",
+        "title": "Load More Batches",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled"
+      },
+      {
+        "command": "prismatic.executionResults.openBatchLogs",
+        "title": "Open Batch Logs",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled"
+      },
+      {
+        "command": "prismatic.executionResults.openBatchStep",
+        "title": "Open Batch Step Output",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled"
+      },
+      {
+        "command": "prismatic.executionResults.copyBatchId",
+        "title": "Copy Batch ID",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled"
+      },
+      {
+        "command": "prismatic.executionResults.openBatchInBrowser",
+        "title": "Open Batch in Browser",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled",
+        "icon": "$(globe)"
+      },
+      {
+        "command": "prismatic.executionResults.openBatchSummary",
+        "title": "Open Batch Summary",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled"
+      },
+      {
+        "command": "prismatic.executionResults.subscribeBatched",
+        "title": "Subscribe to Batched Execution",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled"
+      },
+      {
+        "command": "prismatic.executionResults.revealBatchedParent",
+        "title": "Reveal Batched Execution",
+        "category": "Prismatic",
+        "enablement": "prismatic.workspaceEnabled"
+      },
+      {
         "command": "prismatic.integrationDetails.refresh",
         "title": "Refresh Integration Details",
         "category": "Prismatic",
@@ -257,6 +313,42 @@
         {
           "command": "prismatic.executionResults.openStep",
           "when": "false"
+        },
+        {
+          "command": "prismatic.executionResults.cancelBatch",
+          "when": "false"
+        },
+        {
+          "command": "prismatic.executionResults.loadMoreBatches",
+          "when": "false"
+        },
+        {
+          "command": "prismatic.executionResults.openBatchLogs",
+          "when": "false"
+        },
+        {
+          "command": "prismatic.executionResults.openBatchStep",
+          "when": "false"
+        },
+        {
+          "command": "prismatic.executionResults.copyBatchId",
+          "when": "false"
+        },
+        {
+          "command": "prismatic.executionResults.openBatchInBrowser",
+          "when": "false"
+        },
+        {
+          "command": "prismatic.executionResults.openBatchSummary",
+          "when": "false"
+        },
+        {
+          "command": "prismatic.executionResults.subscribeBatched",
+          "when": "false"
+        },
+        {
+          "command": "prismatic.executionResults.revealBatchedParent",
+          "when": "false"
         }
       ],
       "view/title": [
@@ -346,6 +438,36 @@
           "command": "prismatic.flows.createPayload",
           "when": "view == prismatic.flowPayloadsView && viewItem == flowItem",
           "group": "inline@2"
+        },
+        {
+          "command": "prismatic.executionResults.cancelBatch",
+          "when": "view == prismatic.executionResultsView && viewItem =~ /^executionItem\\.batched\\.(running|canceling)/",
+          "group": "inline@1"
+        },
+        {
+          "command": "prismatic.executionResults.openBatchSummary",
+          "when": "view == prismatic.executionResultsView && viewItem =~ /^executionItem\\.batched/",
+          "group": "navigation@1"
+        },
+        {
+          "command": "prismatic.executionResults.openBatchLogs",
+          "when": "view == prismatic.executionResultsView && viewItem =~ /^batchItem/",
+          "group": "navigation@1"
+        },
+        {
+          "command": "prismatic.executionResults.openBatchStep",
+          "when": "view == prismatic.executionResultsView && viewItem =~ /^batchItem/",
+          "group": "navigation@2"
+        },
+        {
+          "command": "prismatic.executionResults.copyBatchId",
+          "when": "view == prismatic.executionResultsView && viewItem =~ /^batchItem/",
+          "group": "2_navigate@1"
+        },
+        {
+          "command": "prismatic.executionResults.openBatchInBrowser",
+          "when": "view == prismatic.executionResultsView && viewItem =~ /^batchItem/",
+          "group": "2_navigate@2"
         }
       ]
     }

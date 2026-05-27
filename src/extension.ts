@@ -184,7 +184,16 @@ export async function activate(context: vscode.ExtensionContext) {
       }
     }
 
-    registerExecutionResults({ context, stateManager, authManager });
+    const executionResultsRegistration = registerExecutionResults({
+      context,
+      stateManager,
+      authManager,
+    });
+    statusBarManager.attachExecutionResults(
+      executionResultsRegistration.service,
+      executionResultsRegistration.batchService,
+      executionResultsRegistration.treeView,
+    );
 
     context.subscriptions.push(
       createIntegrationDetailsViewProvider(context, stateManager, authManager),

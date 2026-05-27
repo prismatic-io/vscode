@@ -37,9 +37,16 @@ const makeExecution = (
   invokeType: null,
   startedAt: "2026-04-17T12:00:00Z",
   resultType: InstanceExecutionResultResultType.COMPLETED,
+  status: null,
   endedAt: "2026-04-17T12:00:05Z",
   error: null,
   stepResults: [],
+  usesBatching: null,
+  batchProgress: null,
+  cancelRequestedAt: null,
+  canceledBy: null,
+  registeredBatchCount: null,
+  triggerResolverBatchSize: null,
   ...overrides,
 });
 

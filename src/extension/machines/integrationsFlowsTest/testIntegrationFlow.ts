@@ -12,6 +12,8 @@ type TestIntegrationFlowQuery = {
     testIntegrationFlowResult: {
       execution: {
         id: string;
+        usesBatching: boolean | null;
+        status: string | null;
       } | null;
     } | null;
   };
@@ -24,7 +26,10 @@ interface TestIntegrationFlowVariables {
   headers?: string;
 }
 
-export type TestIntegrationFlowOutput = {};
+export type TestIntegrationFlowOutput = {
+  executionId: string | null;
+  usesBatching: boolean;
+};
 
 interface TestIntegrationFlowInput {
   flowId: string;
@@ -71,5 +76,11 @@ export const testIntegrationFlow = fromPromise<
     );
   }
 
-  return {};
+  const execution =
+    testIntegrationFlow.testIntegrationFlowResult?.execution ?? null;
+
+  return {
+    executionId: execution?.id ?? null,
+    usesBatching: Boolean(execution?.usesBatching),
+  };
 });

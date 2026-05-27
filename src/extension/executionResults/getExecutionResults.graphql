@@ -18,8 +18,29 @@ query GetExecutionResults(
       invokeType
       startedAt
       resultType
+      status
       endedAt
       error
+      usesBatching
+      cancelRequestedAt
+      canceledBy {
+        id
+        email
+      }
+      registeredBatchCount
+      triggerResolverBatchSize
+      batchProgress {
+        discovered
+        total
+        queued
+        running
+        completed
+        failed
+        canceled
+        discoveryComplete
+        concurrencyLimit
+        concurrencyLimitSource
+      }
       stepResults(first: 10, orderBy: { field: STARTED_AT, direction: ASC }) {
         nodes {
           id

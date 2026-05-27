@@ -133,6 +133,36 @@ export const ViewColumn = {
   Three: 3,
 } as const;
 
+export const StatusBarAlignment = {
+  Left: 1,
+  Right: 2,
+} as const;
+
+class StatusBarItemStub {
+  alignment: number;
+  priority: number;
+  text = "";
+  name = "";
+  tooltip: unknown;
+  command: unknown;
+  backgroundColor: unknown;
+  color: unknown;
+  visible = false;
+  constructor(alignment: number = StatusBarAlignment.Left, priority = 0) {
+    this.alignment = alignment;
+    this.priority = priority;
+  }
+  show(): void {
+    this.visible = true;
+  }
+  hide(): void {
+    this.visible = false;
+  }
+  dispose(): void {
+    this.visible = false;
+  }
+}
+
 const noop = () => {};
 const noopReturningDispose = () => ({ dispose: noop });
 
@@ -153,6 +183,7 @@ export const createVscodeMock = (
   ProgressLocation,
   ExtensionMode,
   ViewColumn,
+  StatusBarAlignment,
   commands: {
     registerCommand: noopReturningDispose,
     executeCommand: noop,
@@ -172,6 +203,21 @@ export const createVscodeMock = (
       reveal: async () => {},
       dispose: noop,
     }),
+    createStatusBarItem: (
+      idOrAlignment?: string | number,
+      alignmentOrPriority?: number,
+      priority?: number,
+    ) => {
+      const alignment =
+        typeof idOrAlignment === "number"
+          ? idOrAlignment
+          : (alignmentOrPriority ?? StatusBarAlignment.Left);
+      const prio =
+        typeof idOrAlignment === "number"
+          ? (alignmentOrPriority ?? 0)
+          : (priority ?? 0);
+      return new StatusBarItemStub(alignment, prio);
+    },
     showInformationMessage: noop,
     showWarningMessage: noop,
     showErrorMessage: noop,

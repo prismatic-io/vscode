@@ -1,11 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import * as vscode from "vscode";
+import type { BatchProgressService } from "./BatchProgressService";
 import type { ExecutionResultsService } from "./ExecutionResultsService";
 import {
+  BatchNode,
   ExecutionNode,
   ExecutionsTreeDataProvider,
+  LoadingNode,
+  LoadMoreNode,
   StepNode,
 } from "./ExecutionsTreeDataProvider";
+import type { ExecutionBatchNode } from "./types";
 import {
   type ExecutionResult,
   InstanceExecutionResultResultType,
@@ -31,9 +36,16 @@ const makeExecution = (
   invokeType: null,
   startedAt: "2026-04-17T12:00:00Z",
   resultType: InstanceExecutionResultResultType.COMPLETED,
+  status: null,
   endedAt: "2026-04-17T12:00:05Z",
   error: null,
   stepResults: [makeStep()],
+  usesBatching: null,
+  batchProgress: null,
+  cancelRequestedAt: null,
+  canceledBy: null,
+  registeredBatchCount: null,
+  triggerResolverBatchSize: null,
   ...overrides,
 });
 
@@ -48,6 +60,44 @@ const makeService = (
     onDidChangeStepOutput: new vscode.EventEmitter().event,
   } as unknown as ExecutionResultsService;
 };
+
+const makeBatchService = (
+  batches: ExecutionBatchNode[] = [],
+  { loading = false, hasMore = false }: { loading?: boolean; hasMore?: boolean } = {},
+): BatchProgressService => {
+  const emitter = new vscode.EventEmitter<string>();
+  return {
+    onDidChangeBatches: emitter.event,
+    subscribe: vi.fn(),
+    unsubscribe: vi.fn(),
+    refresh: vi.fn(),
+    loadMore: vi.fn(),
+    cancel: vi.fn(),
+    getSnapshot: () => null,
+    getBatches: () => batches,
+    hasMore: () => hasMore,
+    totalCount: () => batches.length,
+    isLoading: () => loading,
+    setPaused: vi.fn(),
+    dispose: vi.fn(),
+  } as unknown as BatchProgressService;
+};
+
+const makeBatchNode = (
+  overrides: Partial<ExecutionBatchNode> = {},
+): ExecutionBatchNode => ({
+  id: "b-1",
+  displayKey: "batch-0001",
+  role: "processing",
+  status: "running",
+  recordCount: 1,
+  stepCount: 0,
+  errorMessage: null,
+  startedAt: null,
+  completedAt: null,
+  label: "1 record",
+  ...overrides,
+});
 
 describe("ExecutionsTreeDataProvider", () => {
   it("returns an ExecutionNode per execution at the root", () => {
@@ -144,5 +194,115 @@ describe("StepNode", () => {
     };
     expect(command.command).toBe("prismatic.executionResults.openStep");
     expect(command.arguments).toEqual(["exec-1", "step-1"]);
+  });
+});
+
+describe("ExecutionsTreeDataProvider — batched", () => {
+  it("returns BatchNode children for a batched parent", () => {
+    const batchService = makeBatchService([makeBatchNode()]);
+    const provider = new ExecutionsTreeDataProvider(
+      makeService([
+        makeExecution({
+          usesBatching: true,
+          batchProgress: {
+            discovered: 1,
+            discoveryComplete: true,
+            completed: 1,
+            failed: 0,
+            canceled: 0,
+            queued: 0,
+            running: 0,
+            total: 1,
+            concurrencyLimit: null,
+            concurrencyLimitSource: null,
+          },
+        }),
+      ]),
+      batchService,
+    );
+    const [parent] = provider.getChildren();
+    const children = provider.getChildren(parent);
+    expect(children).toHaveLength(1);
+    expect(children[0]).toBeInstanceOf(BatchNode);
+  });
+
+  it("returns a LoadingNode while the first page is loading", () => {
+    const batchService = makeBatchService([], { loading: true });
+    const provider = new ExecutionsTreeDataProvider(
+      makeService([makeExecution({ usesBatching: true })]),
+      batchService,
+    );
+    const [parent] = provider.getChildren();
+    const children = provider.getChildren(parent);
+    expect(children).toHaveLength(1);
+    expect(children[0]).toBeInstanceOf(LoadingNode);
+  });
+
+  it("appends a LoadMoreNode when more pages are available", () => {
+    const batchService = makeBatchService([makeBatchNode()], {
+      hasMore: true,
+    });
+    const provider = new ExecutionsTreeDataProvider(
+      makeService([makeExecution({ usesBatching: true })]),
+      batchService,
+    );
+    const [parent] = provider.getChildren();
+    const children = provider.getChildren(parent);
+    expect(children[children.length - 1]).toBeInstanceOf(LoadMoreNode);
+  });
+
+  it("still returns step children when execution is not batched", () => {
+    const batchService = makeBatchService();
+    const provider = new ExecutionsTreeDataProvider(
+      makeService([makeExecution()]),
+      batchService,
+    );
+    const [parent] = provider.getChildren();
+    const children = provider.getChildren(parent);
+    expect(children[0]).toBeInstanceOf(StepNode);
+  });
+
+  it("keeps sync~spin icon while discovery is incomplete after parent end", () => {
+    const node = new ExecutionNode(
+      makeExecution({
+        usesBatching: true,
+        endedAt: "2026-05-20T00:00:30Z",
+        batchProgress: {
+          discovered: 5,
+          discoveryComplete: false,
+          completed: 5,
+          failed: 0,
+          canceled: 0,
+          queued: 0,
+          running: 0,
+          total: 5,
+          concurrencyLimit: null,
+          concurrencyLimitSource: null,
+        },
+      }),
+    );
+    expect((node.iconPath as vscode.ThemeIcon).id).toBe("sync~spin");
+  });
+
+  it("includes x/y batches summary in the parent description", () => {
+    const node = new ExecutionNode(
+      makeExecution({
+        usesBatching: true,
+        batchProgress: {
+          discovered: 100,
+          discoveryComplete: true,
+          completed: 75,
+          failed: 2,
+          canceled: 0,
+          queued: 20,
+          running: 5,
+          total: 100,
+          concurrencyLimit: null,
+          concurrencyLimitSource: null,
+        },
+      }),
+    );
+    expect(String(node.description)).toContain("75/100 batches");
+    expect(String(node.description)).toContain("2 failed");
   });
 });
