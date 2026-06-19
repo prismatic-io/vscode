@@ -21,8 +21,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6.0.2
-      - uses: jdx/mise-action@v4.0.1
+      - uses: actions/checkout@v6.0.3
+      - uses: jdx/mise-action@v4.1.0
       - run: mise exec -- bun install --frozen-lockfile
       - run: mise run ci
 
@@ -30,8 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6.0.2
-      - uses: jdx/mise-action@v4.0.1
+      - uses: actions/checkout@v6.0.3
+      - uses: jdx/mise-action@v4.1.0
       - run: mise exec -- bun install --frozen-lockfile
       - run: npm install -g @prismatic-io/prism
       # @vscode/test-electron launches a real VS Code instance, which needs a display.
