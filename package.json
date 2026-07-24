@@ -391,12 +391,12 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^26.1.0",
+    "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@types/stylis": "^4.2.7",
     "@types/vscode": "1.116.0",
-    "@vitest/coverage-v8": "^4.1.9",
+    "@vitest/coverage-v8": "^4.1.10",
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.0.0",
     "@vscode/vsce": "^3.9.2",
@@ -405,8 +405,8 @@
     "jsdom": "^29.1.1",
     "npm-run-all": "^4.1.5",
     "ovsx": "^1.0.2",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.9"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   },
   "trustedDependencies": [
     "@vscode/vsce-sign",
