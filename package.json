@@ -382,7 +382,7 @@
     "react-dom": "^19.2.7",
     "styled-components": "^6.4.3",
     "tinyexec": "^1.2.4",
-    "xstate": "^5.32.4",
+    "xstate": "^5.32.5",
     "zod": "^4.4.3"
   },
   "devDependencies": {
