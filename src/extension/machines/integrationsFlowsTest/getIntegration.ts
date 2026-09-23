@@ -81,6 +81,7 @@ type GetIntegrationQuery = {
         isSynchronous: boolean;
         usesFifoQueue: boolean;
         endpointSecurityType: string;
+        organizationApiKeys: string[] | null;
         testUrl: string;
       }[];
     };
@@ -230,6 +231,7 @@ export const getIntegration = fromPromise<
       usesFifoQueue: node.usesFifoQueue,
       endpointSecurityType: node.endpointSecurityType,
       testUrl: node.testUrl,
+      hasOrganizationApiKeys: (node.organizationApiKeys?.length ?? 0) > 0,
     })) ?? [];
 
   // Transform connections from configVariables

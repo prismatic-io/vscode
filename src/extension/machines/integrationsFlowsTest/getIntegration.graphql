@@ -73,6 +73,7 @@ query GetIntegration($integrationId: ID!) {
         isSynchronous
         usesFifoQueue
         endpointSecurityType
+        organizationApiKeys
         testUrl
       }
     }

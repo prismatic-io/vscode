@@ -351,7 +351,13 @@ export async function activate(context: vscode.ExtensionContext) {
           const integrationId =
             await prismCLIManager.integrationsImport(accessToken);
 
-          stateManager.updateWorkspaceState({ integrationId });
+          await stateManager.updateWorkspaceState({ integrationId });
+
+          // Re-importing keeps the same integration ID, so nothing else
+          // notices that flows or config state may have changed.
+          await vscode.commands.executeCommand(
+            "prismatic.integrationDetails.refresh",
+          );
 
           // show the result
           log(
