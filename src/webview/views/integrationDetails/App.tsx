@@ -1,7 +1,11 @@
 import { messageHandlerManager } from "@extension/MessageHandlerManager";
 import type React from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
+import {
+  getFlowNamesMissingOrgApiKeys,
+  getMissingOrgApiKeysMessage,
+} from "@/shared/missingOrgApiKeys";
 import type { Connection } from "@/types/connections";
 import { useVSCodeState } from "@/webview/hooks/useVSCodeState";
 import { useIntegrationContext } from "@/webview/providers/IntegrationProvider";
@@ -218,6 +222,22 @@ const WarningList = styled.ul`
   color: var(--vscode-foreground);
 `;
 
+const ErrorSection = styled.div`
+  margin-top: 8px;
+  padding: 8px;
+  background-color: var(--vscode-inputValidation-errorBackground);
+  border: 1px solid var(--vscode-inputValidation-errorBorder);
+  border-radius: 4px;
+  line-height: 1.4;
+  font-size: 11px;
+  color: var(--vscode-foreground);
+`;
+
+const ErrorTitle = styled.div`
+  font-weight: 600;
+  margin-bottom: 4px;
+`;
+
 const LoadingText = styled.div`
   color: var(--vscode-descriptionForeground);
   font-size: 12px;
@@ -341,6 +361,16 @@ export const App: React.FC = () => {
 
   const configStateDisplay = getConfigStateDisplay(configState);
 
+  const flowNamesMissingOrgApiKeys = useMemo(
+    () => getFlowNamesMissingOrgApiKeys(flows),
+    [flows],
+  );
+  const missingOrgApiKeysMessage = getMissingOrgApiKeysMessage(
+    flowNamesMissingOrgApiKeys,
+  );
+  const isActiveFlowMissingOrgApiKey =
+    !!flow && flowNamesMissingOrgApiKeys.includes(flow.name);
+
   const toggleConnection = (id: string) => {
     setExpandedConnections((prev) => {
       const next = new Set(prev);
@@ -384,6 +414,13 @@ export const App: React.FC = () => {
             </StatusBadge>
           )}
         </div>
+        {!isLoading && missingOrgApiKeysMessage && (
+          <ErrorSection>
+            <ErrorTitle>Tests are blocked</ErrorTitle>
+            {missingOrgApiKeysMessage}. Add organizationApiKeys to the flow
+            definition, then import the integration.
+          </ErrorSection>
+        )}
       </Section>
 
       {connections.length > 0 && (
@@ -597,7 +634,9 @@ export const App: React.FC = () => {
             >
               {flows.map((f) => (
                 <option key={f.id} value={f.id}>
-                  {f.name}
+                  {flowNamesMissingOrgApiKeys.includes(f.name)
+                    ? `⚠ ${f.name}`
+                    : f.name}
                 </option>
               ))}
             </FlowSelect>
@@ -620,6 +659,13 @@ export const App: React.FC = () => {
                 <DetailRow>
                   <DetailLabel>Security:</DetailLabel>
                   <DetailValue>{flow.endpointSecurityType}</DetailValue>
+                  {isActiveFlowMissingOrgApiKey && (
+                    <StatusDot
+                      $status="error"
+                      title="Missing Organization API key"
+                      style={{ alignSelf: "center" }}
+                    />
+                  )}
                 </DetailRow>
                 {flow.testUrl && (
                   <DetailRow style={{ flexWrap: "wrap" }}>

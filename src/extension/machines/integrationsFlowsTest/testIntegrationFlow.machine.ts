@@ -2,6 +2,10 @@ import * as vscode from "vscode";
 import { type ActorRefFrom, assign, setup } from "xstate";
 import { log } from "@/extension";
 import type { StateManager } from "@/extension/StateManager";
+import {
+  getFlowNamesMissingOrgApiKeys,
+  getMissingOrgApiKeysMessage,
+} from "@/shared/missingOrgApiKeys";
 import type { Flow } from "@/types/flows";
 import { InstanceConfigState } from "@/types/state";
 import { testIntegrationFlow } from "./testIntegrationFlow";
@@ -12,6 +16,7 @@ type TestIntegrationFlowInput = {
 
 interface TestIntegrationFlowContext {
   configState: InstanceConfigState | null;
+  flows: Flow[];
   flowId: string | null;
   integrationId: string | null;
   systemInstanceId: string | null;
@@ -54,8 +59,23 @@ export const testIntegrationFlowMachine = setup({
     configureInstance: async () => {
       await vscode.commands.executeCommand("prismatic.configWizard");
     },
+    reportMissingOrgApiKeys: ({ context }) => {
+      const message = getMissingOrgApiKeysMessage(
+        getFlowNamesMissingOrgApiKeys(context.flows),
+      );
+      log(
+        "ERROR",
+        `Unable to run test. ${message}. Add organizationApiKeys to the flow definition, then import the integration and try again.`,
+        true,
+      );
+      // The import command refreshes integration details itself; this covers
+      // a fix imported outside the extension, e.g. with prism in a terminal.
+      vscode.commands.executeCommand("prismatic.integrationDetails.refresh");
+    },
   },
   guards: {
+    hasFlowsMissingOrgApiKeys: ({ context }) =>
+      getFlowNamesMissingOrgApiKeys(context.flows).length > 0,
     isFullyConfigured: ({ context }) =>
       context.configState === InstanceConfigState.FULLY_CONFIGURED,
   },
@@ -68,6 +88,7 @@ export const testIntegrationFlowMachine = setup({
   context: ({ input }) => {
     const context: TestIntegrationFlowContext = {
       configState: null,
+      flows: [],
       flowId: null,
       integrationId: null,
       systemInstanceId: null,
@@ -90,6 +111,7 @@ export const testIntegrationFlowMachine = setup({
               accessToken: event.accessToken,
               prismaticUrl: event.prismaticUrl,
               configState: event.configState,
+              flows: event.flows,
               systemInstanceId: event.systemInstanceId,
               payload: event.payload,
               contentType: event.contentType,
@@ -104,6 +126,7 @@ export const testIntegrationFlowMachine = setup({
       exit: assign({
         accessToken: null,
         configState: null,
+        flows: [],
         flowId: null,
         integrationId: null,
         prismaticUrl: null,
@@ -116,6 +139,14 @@ export const testIntegrationFlowMachine = setup({
           entry: ({ context }) =>
             log("INFO", `Checking config state: ${context.configState}`),
           always: [
+            // Checked ahead of config state: a missing Organization API key
+            // keeps the instance from ever reading as fully configured, and
+            // it lives in the flow definition rather than the config wizard.
+            {
+              guard: "hasFlowsMissingOrgApiKeys",
+              target:
+                "#testIntegrationFlow.TESTING_INTEGRATION.MISSING_ORG_API_KEYS",
+            },
             {
               guard: "isFullyConfigured",
               target: "#testIntegrationFlow.TESTING_INTEGRATION.EXECUTING_TEST",
@@ -125,6 +156,10 @@ export const testIntegrationFlowMachine = setup({
                 "#testIntegrationFlow.TESTING_INTEGRATION.CONFIGURING_INSTANCE",
             },
           ],
+        },
+        MISSING_ORG_API_KEYS: {
+          entry: "reportMissingOrgApiKeys",
+          always: [{ target: "#testIntegrationFlow.WAITING_FOR_TEST" }],
         },
         CONFIGURING_INSTANCE: {
           entry: [

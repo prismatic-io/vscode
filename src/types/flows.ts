@@ -12,4 +12,9 @@ export interface Flow {
   usesFifoQueue: boolean;
   endpointSecurityType: string;
   testUrl: string;
+  /**
+   * Whether an Organization API key is attached. Only meaningful when
+   * endpointSecurityType is organization; the keys themselves are never kept.
+   */
+  hasOrganizationApiKeys?: boolean;
 }
