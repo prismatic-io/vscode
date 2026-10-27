@@ -6,6 +6,8 @@ vi.mock(import("@/extension"), () => ({
 
 const fetchExecutionResultsMock = vi.fn();
 const fetchExecutionLogsMock = vi.fn();
+const fetchExecutionBatchesMock = vi.fn();
+const fetchExecutionBatchStepResultsMock = vi.fn();
 
 vi.mock(import("./api"), async (original) => {
   const actual = await original();
@@ -14,14 +16,21 @@ vi.mock(import("./api"), async (original) => {
     fetchExecutionResults: (...args: unknown[]) =>
       fetchExecutionResultsMock(...args),
     fetchExecutionLogs: (...args: unknown[]) => fetchExecutionLogsMock(...args),
+    fetchExecutionBatches: (...args: unknown[]) =>
+      fetchExecutionBatchesMock(...args),
+    fetchExecutionBatchStepResults: (...args: unknown[]) =>
+      fetchExecutionBatchStepResultsMock(...args),
   };
 });
 
 import * as vscode from "vscode";
 import { ExecutionResultsService } from "./ExecutionResultsService";
 import {
+  type ExecutionBatch,
+  ExecutionBatchStatus,
   type ExecutionResult,
   InstanceExecutionResultResultType,
+  type StepResult,
 } from "./types";
 
 const tick = async () => {
@@ -40,6 +49,32 @@ const makeExecution = (
   endedAt: "2026-04-17T12:00:05Z",
   error: null,
   stepResults: [],
+  usesBatching: false,
+  batchProgress: null,
+  ...overrides,
+});
+
+const makeBatch = (
+  overrides: Partial<ExecutionBatch> = {},
+): ExecutionBatch => ({
+  id: "batch-1",
+  status: ExecutionBatchStatus.COMPLETED,
+  recordCount: 10,
+  errorMessage: null,
+  startedAt: "2026-04-17T12:00:00Z",
+  completedAt: "2026-04-17T12:00:05Z",
+  ...overrides,
+});
+
+const makeStep = (overrides: Partial<StepResult> = {}): StepResult => ({
+  id: "step-1",
+  startedAt: "2026-04-17T12:00:00Z",
+  endedAt: "2026-04-17T12:00:05Z",
+  stepName: "fetch",
+  displayStepName: "Fetch",
+  hasError: false,
+  resultsMetadataUrl: "https://meta",
+  resultsUrl: "https://results",
   ...overrides,
 });
 
@@ -387,6 +422,87 @@ describe("ExecutionResultsService", () => {
     service.untrackLogDoc(exec.id);
     await service.refresh();
     expect(fetchExecutionLogsMock.mock.calls.length).toBe(afterOpen);
+
+    service.dispose();
+  });
+
+  it("refetches batches and batch steps until they finish", async () => {
+    const running = makeExecution({ endedAt: null, usesBatching: true });
+    const finished: ExecutionResult = {
+      ...running,
+      endedAt: "2026-04-17T12:00:05Z",
+    };
+    fetchExecutionResultsMock
+      .mockResolvedValueOnce([running])
+      .mockResolvedValue([finished]);
+    fetchExecutionBatchesMock.mockResolvedValue({
+      batches: [makeBatch()],
+      totalCount: 1,
+    });
+    fetchExecutionBatchStepResultsMock.mockResolvedValue([makeStep()]);
+
+    const deps = makeDeps();
+    const service = new ExecutionResultsService({
+      // biome-ignore lint/suspicious/noExplicitAny: test double
+      stateManager: deps.stateManager as any,
+      // biome-ignore lint/suspicious/noExplicitAny: test double
+      authManager: deps.authManager as any,
+      pollIntervalMs: 10_000,
+    });
+
+    service.setPaused(false);
+    await service.refresh(); // running
+    await service.loadBatches(running.id);
+    await service.loadBatches(running.id);
+    expect(fetchExecutionBatchesMock).toHaveBeenCalledTimes(2);
+
+    await service.refresh(); // finished
+    await service.loadBatches(running.id); // first fetch after finishing
+    await service.loadBatches(running.id); // served from cache
+    expect(fetchExecutionBatchesMock).toHaveBeenCalledTimes(3);
+
+    const runningBatch = makeBatch({ completedAt: null });
+    await service.loadBatchSteps(running.id, runningBatch);
+    await service.loadBatchSteps(running.id, runningBatch);
+    expect(fetchExecutionBatchStepResultsMock).toHaveBeenCalledTimes(2);
+
+    await service.loadBatchSteps(running.id, makeBatch()); // first fetch after finishing
+    await service.loadBatchSteps(running.id, makeBatch()); // served from cache
+    expect(fetchExecutionBatchStepResultsMock).toHaveBeenCalledTimes(3);
+    expect(service.findStep(running.id, "step-1")).toBeDefined();
+
+    service.dispose();
+  });
+
+  it("fetches batch logs scoped to the batch without tracking them", async () => {
+    const exec = makeExecution({ usesBatching: true });
+    fetchExecutionResultsMock.mockResolvedValue([exec]);
+    fetchExecutionLogsMock.mockResolvedValue([]);
+
+    const deps = makeDeps();
+    const service = new ExecutionResultsService({
+      // biome-ignore lint/suspicious/noExplicitAny: test double
+      stateManager: deps.stateManager as any,
+      // biome-ignore lint/suspicious/noExplicitAny: test double
+      authManager: deps.authManager as any,
+      pollIntervalMs: 10_000,
+    });
+
+    service.setPaused(false);
+    await service.refresh();
+    await service.loadBatchLogs(exec.id, "batch-1");
+
+    expect(fetchExecutionLogsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        executionId: exec.id,
+        executionBatchId: "batch-1",
+        startedDate: exec.startedAt,
+      }),
+    );
+
+    fetchExecutionLogsMock.mockClear();
+    await service.refresh();
+    expect(fetchExecutionLogsMock).not.toHaveBeenCalled();
 
     service.dispose();
   });

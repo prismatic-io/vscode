@@ -1,0 +1,19 @@
+query GetExecutionBatches($executionId: ID!, $first: Int) {
+  executionResult(id: $executionId) {
+    id
+    executionBatches(
+      first: $first
+      orderBy: { field: STARTED_AT, direction: ASC }
+    ) {
+      totalCount
+      nodes {
+        id
+        status
+        recordCount
+        errorMessage
+        startedAt
+        completedAt
+      }
+    }
+  }
+}

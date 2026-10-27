@@ -2,10 +2,15 @@ import { decode } from "@msgpack/msgpack";
 import { isValid } from "date-fns";
 import { fetcher } from "@/shared/fetcher";
 import type { GraphQLResponse } from "@/types/graphql";
+import GET_EXECUTION_BATCHES from "./getExecutionBatches.graphql";
+import GET_EXECUTION_BATCH_STEP_RESULTS from "./getExecutionBatchStepResults.graphql";
 import GET_EXECUTION_LOGS from "./getExecutionLogs.graphql";
 import GET_EXECUTION_RESULTS from "./getExecutionResults.graphql";
 import GET_STEP_RESULT_META from "./getStepResultMeta.graphql";
 import type {
+  BatchProgress,
+  ExecutionBatch,
+  ExecutionBatchList,
   ExecutionLog,
   ExecutionResult,
   InstanceExecutionResultInvokeType,
@@ -21,6 +26,12 @@ export interface ApiCredentials {
   prismaticUrl: string;
 }
 
+type BatchProgressNode = {
+  total: number | null;
+  completed: number | null;
+  failed: number | null;
+};
+
 type GetExecutionResultsQuery = {
   executionResults: {
     nodes: ({
@@ -30,6 +41,8 @@ type GetExecutionResultsQuery = {
       resultType: InstanceExecutionResultResultType | null;
       endedAt: string | null;
       error: string | null;
+      usesBatching: boolean | null;
+      batchProgress: BatchProgressNode | null;
       stepResults: {
         nodes: ({
           id: string;
@@ -83,10 +96,111 @@ export const fetchExecutionResults = async (
       endedAt: node.endedAt,
       error: node.error,
       stepResults,
+      usesBatching: node.usesBatching ?? false,
+      batchProgress: toBatchProgress(node.batchProgress),
     });
   }
 
   return results;
+};
+
+const toBatchProgress = (
+  progress: BatchProgressNode | null,
+): BatchProgress | null =>
+  progress
+    ? {
+        total: progress.total ?? 0,
+        completed: progress.completed ?? 0,
+        failed: progress.failed ?? 0,
+      }
+    : null;
+
+type GetExecutionBatchesQuery = {
+  executionResult: {
+    id: string;
+    executionBatches: {
+      totalCount: number;
+      nodes: (ExecutionBatch | null)[];
+    };
+  } | null;
+};
+
+export interface FetchExecutionBatchesInput extends ApiCredentials {
+  executionId: string;
+  first: number;
+}
+
+export const fetchExecutionBatches = async (
+  input: FetchExecutionBatchesInput,
+): Promise<ExecutionBatchList> => {
+  const response = await fetcher<GetExecutionBatchesQuery, typeof input>(
+    GET_EXECUTION_BATCHES,
+    input,
+  );
+
+  if (response.errors?.length) {
+    throw new Error(response.errors[0].message);
+  }
+
+  const connection = response.data.executionResult?.executionBatches;
+  const batches: ExecutionBatch[] = [];
+  for (const node of connection?.nodes ?? []) {
+    if (!node) continue;
+    batches.push(node);
+  }
+
+  return { batches, totalCount: connection?.totalCount ?? batches.length };
+};
+
+type GetExecutionBatchStepResultsQuery = {
+  executionBatch: {
+    id: string;
+    stepResults: {
+      nodes: (StepResult | null)[];
+      pageInfo: { endCursor: string | null; hasNextPage: boolean };
+    };
+  } | null;
+};
+
+export interface FetchExecutionBatchStepResultsInput extends ApiCredentials {
+  batchId: string;
+}
+
+interface BatchStepResultsPageVariables
+  extends FetchExecutionBatchStepResultsInput {
+  after: string | null;
+}
+
+export const fetchExecutionBatchStepResults = async (
+  input: FetchExecutionBatchStepResultsInput,
+): Promise<StepResult[]> => {
+  const out: StepResult[] = [];
+  let after: string | null = null;
+
+  while (true) {
+    const response: GraphQLResponse<GetExecutionBatchStepResultsQuery> =
+      await fetcher<
+        GetExecutionBatchStepResultsQuery,
+        BatchStepResultsPageVariables
+      >(GET_EXECUTION_BATCH_STEP_RESULTS, { ...input, after });
+
+    if (response.errors?.length) {
+      throw new Error(response.errors[0].message);
+    }
+
+    const stepResults = response.data.executionBatch?.stepResults;
+    if (!stepResults) break;
+
+    for (const node of stepResults.nodes) {
+      if (!node) continue;
+      out.push(node);
+    }
+
+    if (!stepResults.pageInfo.hasNextPage) break;
+    after = stepResults.pageInfo.endCursor;
+  }
+
+  return out;
 };
 
 type GetExecutionLogsQuery = {
@@ -98,6 +212,8 @@ type GetExecutionLogsQuery = {
 
 export interface FetchExecutionLogsInput extends ApiCredentials {
   executionId: string;
+  // Scopes logs to a single batch of a batched execution.
+  executionBatchId?: string;
   startedDate: string;
 }
 

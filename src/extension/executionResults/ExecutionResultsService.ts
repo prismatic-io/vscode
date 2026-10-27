@@ -5,16 +5,27 @@ import type { AuthManager } from "@/extension/AuthManager";
 import type { StateManager } from "@/extension/StateManager";
 import {
   type ApiCredentials,
+  fetchExecutionBatches,
+  fetchExecutionBatchStepResults,
   fetchExecutionLogs,
   fetchExecutionResults,
   fetchStepOutput,
   fetchStepResultMeta,
   type StepOutput,
 } from "./api";
-import type { ExecutionLog, ExecutionResult } from "./types";
-import { isExecutionTerminal } from "./types";
+import type {
+  ExecutionBatch,
+  ExecutionBatchList,
+  ExecutionLog,
+  ExecutionResult,
+  StepResult,
+} from "./types";
+import { isBatchTerminal, isExecutionTerminal } from "./types";
 
 const DEFAULT_LIMIT = 20;
+// Batched executions can fan out into thousands of batches; the tree only
+// lists the first page.
+const MAX_BATCHES = 100;
 const POLL_INTERVAL_MS = 3000;
 const IDLE_POLL_INTERVAL_MS = 10000;
 
@@ -60,6 +71,17 @@ export class ExecutionResultsService {
   private readonly logPollState = new Map<string, LogPollState>();
   private readonly watchedLogIds = new Set<string>();
   private readonly stepOutputCache = new Map<string, StepOutput>();
+  // Batches and batch steps are fetched when their tree node expands. The
+  // tree re-requests children on every poll, so entries are only reused when
+  // fetched after the execution or batch finished (`final`).
+  private readonly batchesCache = new Map<
+    string,
+    { list: ExecutionBatchList; final: boolean }
+  >();
+  private readonly batchStepsCache = new Map<
+    string,
+    { executionId: string; steps: StepResult[]; final: boolean }
+  >();
 
   private executions: ExecutionResult[] = [];
   private activeFlowId: string | null = null;
@@ -97,6 +119,21 @@ export class ExecutionResultsService {
     return this.logsCache.get(executionId);
   }
 
+  // Steps of a batched execution live on its batches, so look there too.
+  findStep(executionId: string, stepId: string): StepResult | undefined {
+    const direct = this.getExecution(executionId)?.stepResults.find(
+      (s) => s.id === stepId,
+    );
+    if (direct) return direct;
+
+    for (const entry of this.batchStepsCache.values()) {
+      if (entry.executionId !== executionId) continue;
+      const match = entry.steps.find((s) => s.id === stepId);
+      if (match) return match;
+    }
+    return undefined;
+  }
+
   getCachedStepOutput(
     executionId: string,
     stepId: string,
@@ -112,6 +149,8 @@ export class ExecutionResultsService {
     this.logPollState.clear();
     this.watchedLogIds.clear();
     this.stepOutputCache.clear();
+    this.batchesCache.clear();
+    this.batchStepsCache.clear();
     this._onDidChangeExecutions.fire();
     if (!this.paused) {
       this.kickPoll(0);
@@ -191,6 +230,87 @@ export class ExecutionResultsService {
     }
   }
 
+  // Batch logs are fetched fresh on each open and aren't polled while open.
+  async loadBatchLogs(
+    executionId: string,
+    batchId: string,
+  ): Promise<ExecutionLog[]> {
+    const creds = await this.credentials();
+    if (!creds) return [];
+
+    const execution = this.getExecution(executionId);
+    const startedDate =
+      execution?.startedAt ?? addHours(new Date(), -24).toISOString();
+
+    try {
+      return await fetchExecutionLogs({
+        ...creds,
+        executionId,
+        executionBatchId: batchId,
+        startedDate,
+      });
+    } catch (error) {
+      log(
+        "ERROR",
+        `Failed to fetch logs for batch ${batchId}: ${describeError(error)}`,
+      );
+      return [];
+    }
+  }
+
+  async loadBatches(executionId: string): Promise<ExecutionBatchList> {
+    const cached = this.batchesCache.get(executionId);
+    if (cached?.final) return cached.list;
+
+    const creds = await this.credentials();
+    if (!creds) return cached?.list ?? { batches: [], totalCount: 0 };
+
+    const execution = this.getExecution(executionId);
+    const final = execution ? isExecutionTerminal(execution) : false;
+    try {
+      const list = await fetchExecutionBatches({
+        ...creds,
+        executionId,
+        first: MAX_BATCHES,
+      });
+      this.batchesCache.set(executionId, { list, final });
+      return list;
+    } catch (error) {
+      log(
+        "ERROR",
+        `Failed to fetch batches for execution ${executionId}: ${describeError(error)}`,
+      );
+      return cached?.list ?? { batches: [], totalCount: 0 };
+    }
+  }
+
+  async loadBatchSteps(
+    executionId: string,
+    batch: ExecutionBatch,
+  ): Promise<StepResult[]> {
+    const cached = this.batchStepsCache.get(batch.id);
+    if (cached?.final) return cached.steps;
+
+    const creds = await this.credentials();
+    if (!creds) return cached?.steps ?? [];
+
+    const final = isBatchTerminal(batch);
+    try {
+      const steps = await fetchExecutionBatchStepResults({
+        ...creds,
+        batchId: batch.id,
+      });
+      this.batchStepsCache.set(batch.id, { executionId, steps, final });
+      return steps;
+    } catch (error) {
+      log(
+        "ERROR",
+        `Failed to fetch steps for batch ${batch.id}: ${describeError(error)}`,
+      );
+      return cached?.steps ?? [];
+    }
+  }
+
   async loadStepOutput(
     executionId: string,
     stepId: string,
@@ -199,9 +319,8 @@ export class ExecutionResultsService {
     const cached = this.stepOutputCache.get(key);
     if (cached) return cached;
 
-    const execution = this.getExecution(executionId);
-    const step = execution?.stepResults.find((s) => s.id === stepId);
-    if (!step || !execution) return null;
+    const step = this.findStep(executionId, stepId);
+    if (!step) return null;
 
     const creds = await this.credentials();
     if (!creds) return null;
@@ -229,7 +348,9 @@ export class ExecutionResultsService {
         resultsUrl: meta.resultsUrl,
       });
 
-      this.stepOutputCache.set(key, output);
+      // Unfinished batch steps aren't diffed by the poll loop, so caching
+      // their output would pin a stale preview.
+      if (step.endedAt) this.stepOutputCache.set(key, output);
       return output;
     } catch (error) {
       log(
@@ -425,6 +546,8 @@ export class ExecutionResultsService {
     this.logPollState.clear();
     this.watchedLogIds.clear();
     this.stepOutputCache.clear();
+    this.batchesCache.clear();
+    this.batchStepsCache.clear();
     this._onDidChangeExecutions.fire();
     if (!this.paused) {
       this.kickPoll(0);

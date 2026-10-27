@@ -43,6 +43,35 @@ export interface ExecutionResult {
   endedAt: string | null;
   error: string | null;
   stepResults: StepResult[];
+  // Batched executions fan out across ExecutionBatches; their step results
+  // hang off each batch rather than the execution itself.
+  usesBatching: boolean;
+  batchProgress: BatchProgress | null;
+}
+
+export interface BatchProgress {
+  total: number;
+  completed: number;
+  failed: number;
+}
+
+export enum ExecutionBatchStatus {
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED",
+}
+
+export interface ExecutionBatch {
+  id: string;
+  status: ExecutionBatchStatus;
+  recordCount: number | null;
+  errorMessage: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
+export interface ExecutionBatchList {
+  batches: ExecutionBatch[];
+  totalCount: number;
 }
 
 export interface ExecutionLog {
@@ -54,3 +83,6 @@ export interface ExecutionLog {
 
 export const isExecutionTerminal = (result: ExecutionResult): boolean =>
   result.endedAt !== null;
+
+export const isBatchTerminal = (batch: ExecutionBatch): boolean =>
+  batch.completedAt !== null;

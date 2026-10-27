@@ -20,6 +20,12 @@ query GetExecutionResults(
       resultType
       endedAt
       error
+      usesBatching
+      batchProgress {
+        total
+        completed
+        failed
+      }
       stepResults(first: 10, orderBy: { field: STARTED_AT, direction: ASC }) {
         nodes {
           id

@@ -1,11 +1,13 @@
 query GetExecutionLogs(
   $after: String
   $executionId: ID!
+  $executionBatchId: ID
   $startedDate: DateTime
 ) {
   logs(
     after: $after
     executionResult: $executionId
+    executionBatch: $executionBatchId
     first: 100
     orderBy: { direction: ASC, field: TIMESTAMP }
     timestamp_Gte: $startedDate
