@@ -4,12 +4,26 @@ import { buildLogsUri, buildStepUri, parseLogsUri, parseStepUri } from "./uris";
 describe("logs URIs", () => {
   it("roundtrips execution ids", () => {
     const uri = buildLogsUri("abc-123");
-    expect(parseLogsUri(uri)).toEqual({ executionId: "abc-123" });
+    expect(parseLogsUri(uri)).toEqual({
+      executionId: "abc-123",
+      batchId: null,
+    });
+  });
+
+  it("roundtrips execution + batch ids", () => {
+    const uri = buildLogsUri("exec/1", "batch/2");
+    expect(parseLogsUri(uri)).toEqual({
+      executionId: "exec/1",
+      batchId: "batch/2",
+    });
   });
 
   it("roundtrips execution ids containing special characters", () => {
     const uri = buildLogsUri("weird/id with spaces");
-    expect(parseLogsUri(uri)).toEqual({ executionId: "weird/id with spaces" });
+    expect(parseLogsUri(uri)).toEqual({
+      executionId: "weird/id with spaces",
+      batchId: null,
+    });
   });
 
   it("returns null for foreign schemes", () => {

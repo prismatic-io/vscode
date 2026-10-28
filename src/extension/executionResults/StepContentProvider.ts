@@ -15,8 +15,7 @@ export class StepContentProvider
     this.disposables.push(
       this._onDidChange,
       service.onDidChangeStepOutput(({ executionId, stepId }) => {
-        const execution = this.service.getExecution(executionId);
-        const step = execution?.stepResults.find((s) => s.id === stepId);
+        const step = this.service.findStep(executionId, stepId);
         const uri = buildStepUri(executionId, stepId, step?.stepName ?? null);
         this._onDidChange.fire(uri);
       }),

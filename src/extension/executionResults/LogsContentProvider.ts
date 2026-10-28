@@ -19,7 +19,7 @@ export class LogsContentProvider
       }),
       vscode.workspace.onDidCloseTextDocument((doc) => {
         const parts = parseLogsUri(doc.uri);
-        if (parts) service.untrackLogDoc(parts.executionId);
+        if (parts && !parts.batchId) service.untrackLogDoc(parts.executionId);
       }),
     );
   }
@@ -28,6 +28,12 @@ export class LogsContentProvider
     const parts = parseLogsUri(uri);
     if (!parts) {
       return `// Invalid logs URI: ${uri.toString()}`;
+    }
+
+    if (parts.batchId) {
+      return formatExecutionLogs(
+        await this.service.loadBatchLogs(parts.executionId, parts.batchId),
+      );
     }
 
     // Marking watched here covers both the first open and any time VS Code

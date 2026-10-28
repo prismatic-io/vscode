@@ -1,12 +1,20 @@
 import * as vscode from "vscode";
 import type { ExecutionResultsService } from "./ExecutionResultsService";
-import type { ExecutionResult, StepResult } from "./types";
-import { isExecutionTerminal } from "./types";
+import type { ExecutionBatch, ExecutionResult, StepResult } from "./types";
+import {
+  ExecutionBatchStatus,
+  isBatchTerminal,
+  isExecutionTerminal,
+} from "./types";
 import { buildLogsUri, buildStepUri } from "./uris";
 
 const NEW_EXECUTION_INDICATOR_MS = 30_000;
 
-export type ExecutionsTreeNode = ExecutionNode | StepNode;
+export type ExecutionsTreeNode =
+  | ExecutionNode
+  | BatchNode
+  | StepNode
+  | MoreBatchesNode;
 
 export class ExecutionNode extends vscode.TreeItem {
   readonly kind = "execution" as const;
@@ -14,7 +22,7 @@ export class ExecutionNode extends vscode.TreeItem {
   constructor(public readonly execution: ExecutionResult) {
     super(
       executionLabel(execution),
-      execution.stepResults.length > 0
+      execution.usesBatching || execution.stepResults.length > 0
         ? vscode.TreeItemCollapsibleState.Collapsed
         : vscode.TreeItemCollapsibleState.None,
     );
@@ -36,19 +44,59 @@ export class ExecutionNode extends vscode.TreeItem {
   }
 }
 
+export class BatchNode extends vscode.TreeItem {
+  readonly kind = "batch" as const;
+
+  constructor(
+    public readonly execution: ExecutionResult,
+    public readonly batch: ExecutionBatch,
+    index: number,
+  ) {
+    super(`Batch ${index + 1}`, vscode.TreeItemCollapsibleState.Collapsed);
+
+    this.id = `batch:${execution.id}:${batch.id}`;
+    this.description = batchDescription(batch);
+    this.tooltip = batchTooltip(batch);
+    this.iconPath = batchIcon(batch);
+    this.contextValue = "batchItem";
+
+    this.resourceUri = buildLogsUri(execution.id, batch.id);
+    this.command = {
+      command: "prismatic.executionResults.openLogs",
+      title: "Open Logs",
+      arguments: [execution.id, batch.id],
+    };
+  }
+}
+
+// Placeholder for batches past the first page, which the tree doesn't list.
+export class MoreBatchesNode extends vscode.TreeItem {
+  readonly kind = "moreBatches" as const;
+
+  constructor(executionId: string, hiddenCount: number) {
+    super(
+      `${hiddenCount.toLocaleString()} more ${hiddenCount === 1 ? "batch" : "batches"} not shown`,
+      vscode.TreeItemCollapsibleState.None,
+    );
+    this.id = `moreBatches:${executionId}`;
+    this.iconPath = new vscode.ThemeIcon("ellipsis");
+  }
+}
+
 export class StepNode extends vscode.TreeItem {
   readonly kind = "step" as const;
 
   constructor(
     public readonly execution: ExecutionResult,
     public readonly step: StepResult,
+    parentTerminal: boolean = isExecutionTerminal(execution),
   ) {
     super(stepLabel(step), vscode.TreeItemCollapsibleState.None);
 
     this.id = `step:${execution.id}:${step.id}`;
     this.description = stepDescription(step);
     this.tooltip = stepTooltip(step);
-    this.iconPath = stepIcon(step, isExecutionTerminal(execution));
+    this.iconPath = stepIcon(step, parentTerminal);
     this.contextValue = "stepItem";
 
     this.resourceUri = buildStepUri(execution.id, step.id, step.stepName);
@@ -82,7 +130,9 @@ export class ExecutionsTreeDataProvider
     return element;
   }
 
-  getChildren(element?: ExecutionsTreeNode): ExecutionsTreeNode[] {
+  async getChildren(
+    element?: ExecutionsTreeNode,
+  ): Promise<ExecutionsTreeNode[]> {
     if (!element) {
       return this.service
         .getExecutions()
@@ -90,8 +140,37 @@ export class ExecutionsTreeDataProvider
     }
 
     if (element.kind === "execution") {
-      return element.execution.stepResults.map(
-        (step) => new StepNode(element.execution, step),
+      const { execution } = element;
+      if (!execution.usesBatching) {
+        return execution.stepResults.map(
+          (step) => new StepNode(execution, step),
+        );
+      }
+
+      const { batches, totalCount } = await this.service.loadBatches(
+        execution.id,
+      );
+      const nodes: ExecutionsTreeNode[] = batches.map(
+        (batch, index) => new BatchNode(execution, batch, index),
+      );
+      if (totalCount > batches.length) {
+        nodes.push(
+          new MoreBatchesNode(execution.id, totalCount - batches.length),
+        );
+      }
+      return nodes;
+    }
+
+    if (element.kind === "batch") {
+      const steps = await this.service.loadBatchSteps(
+        element.execution.id,
+        element.batch,
+      );
+      const batchTerminal =
+        isBatchTerminal(element.batch) ||
+        isExecutionTerminal(element.execution);
+      return steps.map(
+        (step) => new StepNode(element.execution, step, batchTerminal),
       );
     }
 
@@ -123,6 +202,16 @@ const executionDescription = (execution: ExecutionResult): string => {
     parts.push(execution.invokeType.replace(/_/g, " ").toLowerCase());
   }
 
+  const progress = execution.batchProgress;
+  if (execution.usesBatching && progress && progress.total > 0) {
+    parts.push(
+      `${progress.total.toLocaleString()} ${progress.total === 1 ? "batch" : "batches"}`,
+    );
+    if (progress.failed > 0) {
+      parts.push(`${progress.failed.toLocaleString()} failed`);
+    }
+  }
+
   return parts.join(" · ");
 };
 
@@ -136,10 +225,74 @@ const executionTooltip = (
   if (execution.resultType) {
     md.appendMarkdown(`Result: ${execution.resultType}\n\n`);
   }
+  const progress = execution.batchProgress;
+  if (execution.usesBatching && progress) {
+    md.appendMarkdown(
+      `Batches: ${progress.completed} of ${progress.total} completed, ${progress.failed} failed\n\n`,
+    );
+  }
   if (execution.error) {
     md.appendMarkdown(`Error: ${execution.error}`);
   }
   return md;
+};
+
+const batchDescription = (batch: ExecutionBatch): string => {
+  const parts: string[] = [];
+  if (batch.recordCount !== null) {
+    parts.push(
+      `${batch.recordCount.toLocaleString()} ${batch.recordCount === 1 ? "record" : "records"}`,
+    );
+  }
+
+  if (!isBatchTerminal(batch)) {
+    parts.push("running…");
+  } else if (batch.startedAt && batch.completedAt) {
+    parts.push(
+      formatDuration(
+        new Date(batch.completedAt).getTime() -
+          new Date(batch.startedAt).getTime(),
+      ),
+    );
+  }
+
+  return parts.join(" · ");
+};
+
+const batchTooltip = (batch: ExecutionBatch): vscode.MarkdownString => {
+  const md = new vscode.MarkdownString();
+  md.appendMarkdown(`**Batch** \`${batch.id}\`\n\n`);
+  md.appendMarkdown(`Started: ${batch.startedAt ?? "queued"}\n\n`);
+  md.appendMarkdown(`Completed: ${batch.completedAt ?? "running"}\n\n`);
+  if (isBatchTerminal(batch)) {
+    md.appendMarkdown(`Status: ${batch.status}\n\n`);
+  }
+  if (batch.errorMessage) {
+    md.appendMarkdown(`Error: ${batch.errorMessage}`);
+  }
+  return md;
+};
+
+const batchIcon = (batch: ExecutionBatch): vscode.ThemeIcon => {
+  if (!batch.startedAt) {
+    return new vscode.ThemeIcon("circle-outline");
+  }
+
+  if (!isBatchTerminal(batch)) {
+    return new vscode.ThemeIcon("sync~spin");
+  }
+
+  if (batch.status === ExecutionBatchStatus.FAILED) {
+    return new vscode.ThemeIcon(
+      "error",
+      new vscode.ThemeColor("testing.iconFailed"),
+    );
+  }
+
+  return new vscode.ThemeIcon(
+    "pass",
+    new vscode.ThemeColor("testing.iconPassed"),
+  );
 };
 
 const executionIcon = (execution: ExecutionResult): vscode.ThemeIcon => {

@@ -1,0 +1,25 @@
+query GetExecutionBatchStepResults($batchId: ID!, $after: String) {
+  executionBatch(id: $batchId) {
+    id
+    stepResults(
+      after: $after
+      first: 100
+      orderBy: { field: STARTED_AT, direction: ASC }
+    ) {
+      nodes {
+        id
+        startedAt
+        endedAt
+        stepName
+        displayStepName
+        hasError
+        resultsMetadataUrl
+        resultsUrl
+      }
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+    }
+  }
+}

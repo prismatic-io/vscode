@@ -71,8 +71,8 @@ export const registerExecutionResults = (
     ),
     vscode.commands.registerCommand(
       "prismatic.executionResults.openLogs",
-      async (executionId: string) => {
-        const uri = buildLogsUri(executionId);
+      async (executionId: string, batchId: string | null = null) => {
+        const uri = buildLogsUri(executionId, batchId);
         const doc = await vscode.workspace.openTextDocument(uri);
         await vscode.languages.setTextDocumentLanguage(doc, LOG_LANGUAGE_ID);
         await vscode.window.showTextDocument(doc, { preview: true });
@@ -81,8 +81,7 @@ export const registerExecutionResults = (
     vscode.commands.registerCommand(
       "prismatic.executionResults.openStep",
       async (executionId: string, stepId: string) => {
-        const execution = service.getExecution(executionId);
-        const step = execution?.stepResults.find((s) => s.id === stepId);
+        const step = service.findStep(executionId, stepId);
         const uri = buildStepUri(executionId, stepId, step?.stepName ?? null);
         const doc = await vscode.workspace.openTextDocument(uri);
         await vscode.window.showTextDocument(doc, { preview: true });
